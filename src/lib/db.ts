@@ -101,6 +101,9 @@ async function migrateV1(tx: UpgradeTx): Promise<void> {
 }
 
 export class Store {
+  /** Timestamp of the last answer written, to keep the log strictly ordered. */
+  private lastAnswerMs = 0;
+
   private constructor(private readonly db: IDBPDatabase<KloptDB>) {}
 
   static async open(name = "klopt"): Promise<Store> {
@@ -312,9 +315,14 @@ export class Store {
     const card = await tx.objectStore("cards").get(cardId);
     if (!card) throw new Error("Card not found");
     const day = localDay(now);
+    // Two answers in the same millisecond (or a clock that jitters back a little) would make the log's
+    // order ambiguous when it is replayed; nudge the timestamp so every answer is strictly later.
+    let ms = now.getTime();
+    if (ms <= this.lastAnswerMs && this.lastAnswerMs - ms < 1000) ms = this.lastAnswerMs + 1;
+    this.lastAnswerMs = Math.max(this.lastAnswerMs, ms);
     const step = answerCard(card, grade, day);
     const next: Card = { ...step.card, hist: appendHist(card.hist, grade), lastDay: day };
-    const entry: Review = { id: newId(), cardId, at: now.toISOString(), day, grade, fromBox: step.fromBox, toBox: step.toBox, mode, counts: step.counts };
+    const entry: Review = { id: newId(), cardId, at: new Date(ms).toISOString(), day, grade, fromBox: step.fromBox, toBox: step.toBox, mode, counts: step.counts };
     const stat = (await tx.objectStore("days").get(day)) ?? { day, answers: 0, correct: 0 };
     stat.answers++;
     if (grade === "goed") stat.correct++;

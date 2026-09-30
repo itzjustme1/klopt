@@ -138,6 +138,19 @@ describe("grading", () => {
     ]);
   });
 
+  it("keeps the log strictly ordered, even for answers in the same millisecond", async () => {
+    const deck = await store.createDeck(fr);
+    const [card] = await store.addCards(deck.id, [{ front: "Q", back: "A" }]);
+    const same = at("2026-10-01T10:00:00.000Z");
+    for (const g of ["goed", "fout", "twijfel", "goed"] as const) await store.grade(card!.id, g, "leren", same);
+    const log = await store.reviewsOf(card!.id);
+    const times = log.map((r) => r.at).sort();
+    expect(new Set(times).size).toBe(4);
+    expect((await store.getCard(card!.id))!.hist).toBe("gftg");
+    const { rebuildCaches } = await import("../../src/lib/history");
+    expect(rebuildCaches(log).cards.get(card!.id)!.hist).toBe("gftg");
+  });
+
   it("the review log replays to the stored card state", async () => {
     const deck = await store.createDeck(fr);
     const [card] = await store.addCards(deck.id, [{ front: "Q", back: "A" }], at("2026-10-01T09:00:00+02:00"));
