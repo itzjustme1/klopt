@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { getLang, num, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
   import Illustration from "../components/Illustration.svelte";
@@ -39,6 +40,14 @@
       for (const { deck, cards } of demoLists(lang, { french: t("demo.french"), economics: t("demo.economics") })) {
         const d = await app.createDeck(deck);
         await app.addCards(d.id, cards);
+      }
+      // The demo button sits low on a phone: start at the top of the new home screen.
+      await tick();
+      window.scrollTo(0, 0);
+      const h = document.querySelector<HTMLElement>("main h1");
+      if (h) {
+        h.tabIndex = -1;
+        h.focus({ preventScroll: true });
       }
     } catch {
       app.showFlash(t("common.saveFailed"));

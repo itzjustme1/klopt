@@ -51,6 +51,9 @@ for (const scheme of ["light", "dark"] as const) {
     await check("welcome");
     await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
     await page.locator(".hero-num").waitFor();
+    // The button sits below the fold; the new home screen starts at the top, focus on its heading.
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await check("today");
     await page.goto(base + "#/lijsten");
     await check("lists");
