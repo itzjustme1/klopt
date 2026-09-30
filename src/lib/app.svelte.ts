@@ -1,4 +1,5 @@
 import { setLang } from "../i18n/index.svelte";
+import type { SharedDeck } from "./backup";
 import { localDay } from "./dates";
 import { Store, defaultSettings, type NewCard, type Snapshot } from "./db";
 import { requestPersist } from "./persist";
@@ -152,6 +153,13 @@ class App {
     const { card, review } = await this.db.grade(cardId, grade);
     this.cards = this.cards.map((c) => (c.id === cardId ? card : c));
     return { fromBox: review.fromBox, toBox: review.toBox };
+  }
+
+  /** Adds a shared deck as a new deck with fresh cards (box 1, due today). */
+  async importShared(shared: SharedDeck): Promise<Deck> {
+    const deck = await this.createDeck(shared.deck);
+    await this.addCards(deck.id, shared.cards);
+    return deck;
   }
 
   // Whole database

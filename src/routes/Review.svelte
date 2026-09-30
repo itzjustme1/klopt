@@ -4,7 +4,8 @@
   import BoxRow from "../components/BoxRow.svelte";
   import { app } from "../lib/app.svelte";
   import { href } from "../lib/router";
-  import { buildSession } from "../lib/session";
+  import { nextBox } from "../lib/scheduler";
+import { buildSession } from "../lib/session";
   import { GRADES, type Grade } from "../lib/types";
 
   let { deckId }: { deckId?: string } = $props();
@@ -13,7 +14,6 @@
   const queue = untrack(() => buildSession(app.cardsIn(deckId), app.today).map((c) => c.id));
   let index = $state(0);
   let flipped = $state(false);
-  let busy = $state(false);
   let results = $state({ fout: 0, twijfel: 0, goed: 0 });
   let note = $state<{ text: string; box: number; key: number } | null>(null);
   let noteTimer: ReturnType<typeof setTimeout> | undefined;
@@ -44,26 +44,26 @@
     cardEl?.focus({ preventScroll: true });
   }
 
+  /** Moves on immediately (so a fast next keypress isn't lost) and saves in the background. */
   async function grade(g: Grade) {
-    if (!card || !flipped || busy) return;
-    busy = true;
+    if (!card || !flipped) return;
+    const id = card.id;
+    const fromBox = card.box;
+    const toBox = nextBox(fromBox, g);
+    results[g]++;
+    const key = toBox === fromBox ? "review.stays" : toBox < fromBox ? "review.backTo" : "review.toBox";
+    note = { text: t(key, { n: toBox }), box: toBox, key: (note?.key ?? 0) + 1 };
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => (note = null), 2200);
+    flipped = false;
+    index++;
     try {
-      const { toBox, fromBox } = await app.grade(card.id, g);
-      results[g]++;
-      const key = toBox === fromBox ? "review.stays" : toBox < fromBox ? "review.backTo" : "review.toBox";
-      const text = t(key, { n: toBox });
-      note = { text, box: toBox, key: (note?.key ?? 0) + 1 };
-      clearTimeout(noteTimer);
-      noteTimer = setTimeout(() => (note = null), 2200);
-      flipped = false;
-      index++;
-      await tick();
-      cardEl?.focus({ preventScroll: true });
+      await app.grade(id, g);
     } catch {
       app.showFlash(t("common.saveFailed"));
-    } finally {
-      busy = false;
     }
+    await tick();
+    if (!finished && document.activeElement === document.body) cardEl?.focus({ preventScroll: true });
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -170,7 +170,7 @@
       {:else}
         <div class="grades" role="group" aria-label={t("review.gradesLabel")}>
           {#each GRADES as g, i (g)}
-            <button type="button" class="btn grade {g}" disabled={busy} onclick={() => grade(g)} aria-keyshortcuts={String(i + 1)}>
+            <button type="button" class="btn grade {g}" onclick={() => grade(g)} aria-keyshortcuts={String(i + 1)}>
               <span>{t(`grade.${g}`)}</span><kbd class="mono" aria-hidden="true">{i + 1}</kbd>
             </button>
           {/each}
