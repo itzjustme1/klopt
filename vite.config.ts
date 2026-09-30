@@ -26,6 +26,22 @@ function htmlPlugin(): Plugin {
     configResolved(c) {
       isBuild = c.command === "build";
     },
+    generateBundle() {
+      // Real HTTP headers for hosts that read a _headers file (Netlify, Cloudflare Pages). Ignored elsewhere.
+      this.emitFile({
+        type: "asset",
+        fileName: "_headers",
+        source: [
+          "/*",
+          `  Content-Security-Policy: ${CSP}; frame-ancestors 'none'`,
+          "  X-Content-Type-Options: nosniff",
+          "  Referrer-Policy: no-referrer",
+          "  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          "  Cross-Origin-Opener-Policy: same-origin",
+          "",
+        ].join("\n"),
+      });
+    },
     transformIndexHtml(html) {
       let out = html.replaceAll("%APP_NAME%", APP_NAME);
       if (isBuild) out = out.replace("<!--CSP-->", `<meta http-equiv="Content-Security-Policy" content="${CSP}" />`);

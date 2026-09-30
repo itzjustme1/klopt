@@ -1,12 +1,12 @@
 <script lang="ts">
   import { getLang, t, tp } from "../i18n/index.svelte";
-  import { APP_NAME, LIMITS } from "../config";
+  import { LIMITS } from "../config";
   import ConfirmInline from "../components/ConfirmInline.svelte";
   import { app } from "../lib/app.svelte";
-  import { backupFileName, makeBackup, parseBackup } from "../lib/backup";
+  import { parseBackup } from "../lib/backup";
   import { formatDay, localDay } from "../lib/dates";
   import type { Snapshot } from "../lib/db";
-  import { downloadText, readTextFile } from "../lib/files";
+  import { readTextFile } from "../lib/files";
   import { backupErrorText } from "../lib/messages";
   import { isPersisted } from "../lib/persist";
   import { href } from "../lib/router";
@@ -33,9 +33,7 @@
 
   async function exportBackup() {
     try {
-      const data = await app.snapshot();
-      downloadText(backupFileName(APP_NAME), JSON.stringify(makeBackup(data)));
-      await app.markExported();
+      await app.exportBackup();
     } catch {
       app.showFlash(t("common.saveFailed"));
     }

@@ -1,5 +1,7 @@
 import { setLang } from "../i18n/index.svelte";
-import type { SharedDeck } from "./backup";
+import { APP_NAME } from "../config";
+import { backupFileName, makeBackup, type SharedDeck } from "./backup";
+import { downloadText } from "./files";
 import { localDay } from "./dates";
 import { Store, defaultSettings, type NewCard, type Snapshot } from "./db";
 import { requestPersist } from "./persist";
@@ -177,6 +179,13 @@ class App {
     const counts = await this.db.merge(data);
     await this.reload();
     return counts;
+  }
+
+  /** Downloads a full backup and resets the reminder counter. */
+  async exportBackup(): Promise<void> {
+    const data = await this.db.snapshot();
+    downloadText(backupFileName(APP_NAME), JSON.stringify(makeBackup(data)));
+    await this.markExported();
   }
 
   async markExported(): Promise<void> {
