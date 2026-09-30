@@ -42,7 +42,8 @@ export const en: Messages = {
   "empty.create": "Create a deck",
   "empty.import": "Import a list",
   "empty.demo": "Try a sample deck",
-  "empty.how": "How it works: every card sits in one of five boxes. Know the answer and the card moves up a box, so you see it less often. Get it wrong and it goes back to box 1 and returns tomorrow.",
+  "empty.howTitle": "How it works",
+  "empty.how": "Every card sits in one of five boxes. Know the answer and the card moves up a box, so you see it less often. Get it wrong and it goes back to box 1 and returns tomorrow.",
   "demo.name": "Sample deck",
 
   "review.title": "Review",
@@ -55,6 +56,7 @@ export const en: Messages = {
   "review.gradesLabel": "How did it go?",
   "review.toBox": "To box {n}",
   "review.stays": "Stays in box {n}",
+  "review.backTo": "Back to box {n}",
   "review.stop": "Stop",
   "review.nothing": "No cards are due right now.",
   "review.backHome": "Back to Today",

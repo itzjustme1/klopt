@@ -43,7 +43,8 @@ export const nl = {
   "empty.create": "Stapel maken",
   "empty.import": "Lijst importeren",
   "empty.demo": "Probeer een voorbeeldstapel",
-  "empty.how": "Zo werkt het: elke kaart zit in een van vijf vakken. Weet je het antwoord, dan schuift de kaart een vak op en zie je hem later pas terug. Fout? Dan gaat hij terug naar vak 1 en komt morgen weer.",
+  "empty.howTitle": "Zo werkt het",
+  "empty.how": "Elke kaart zit in een van vijf vakken. Weet je het antwoord, dan schuift de kaart een vak op en zie je hem later pas terug. Fout? Dan gaat hij terug naar vak 1 en komt morgen weer.",
   "demo.name": "Voorbeeldstapel",
 
   "review.title": "Overhoren",
@@ -56,6 +57,7 @@ export const nl = {
   "review.gradesLabel": "Hoe ging het?",
   "review.toBox": "Naar vak {n}",
   "review.stays": "Blijft in vak {n}",
+  "review.backTo": "Terug naar vak {n}",
   "review.stop": "Stoppen",
   "review.nothing": "Er staan nu geen kaarten klaar.",
   "review.backHome": "Terug naar Vandaag",
