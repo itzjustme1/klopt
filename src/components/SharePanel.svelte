@@ -43,6 +43,40 @@
   function download() {
     downloadText(backupFileName(APP_NAME, new Date(), "deck", deck.name), shareJson(deck, cards));
   }
+
+  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  async function nativeShare() {
+    try {
+      if (link) {
+        await navigator.share({ title: deck.name, text: t("share.nativeText"), url: link });
+      } else {
+        const file = new File([shareJson(deck, cards)], backupFileName(APP_NAME, new Date(), "deck", deck.name), { type: "application/json" });
+        if (navigator.canShare?.({ files: [file] })) await navigator.share({ title: deck.name, files: [file] });
+        else download();
+      }
+    } catch {
+      // The student closed the share sheet; nothing to do.
+    }
+  }
+
+  /** One word per line, tab between the sides: what Quizlet and spreadsheets import. */
+  const asText = $derived(cards.map((c) => `${c.front.replace(/[\t\r\n]+/g, " ")}\t${c.back.replace(/[\t\r\n]+/g, " ")}`).join("\n"));
+  let textCopied = $state<"" | "ok" | "failed">("");
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(asText);
+      textCopied = "ok";
+    } catch {
+      textCopied = "failed";
+    }
+  }
+
+  function downloadAsText() {
+    const base = backupFileName(APP_NAME, new Date(), "deck", deck.name).replace(/\.json$/, ".txt");
+    downloadText(base, asText, "text/plain;charset=utf-8");
+  }
 </script>
 
 <section class="card card-pad share" aria-labelledby="share-title">
@@ -63,10 +97,23 @@
       </p>
     {/if}
     <div class="row">
-      {#if link}<button type="button" class="btn btn-primary" onclick={copy}>{t("share.copyLink")}</button>{/if}
-      <button type="button" class={link === null ? "btn btn-primary" : "btn"} onclick={download}>{t("share.file")}</button>
-      <button type="button" class="btn btn-quiet" onclick={onclose}>{t("common.close")}</button>
+      {#if canNativeShare}<button type="button" class="btn btn-primary" onclick={nativeShare}>{t("share.native")}</button>{/if}
+      {#if link}<button type="button" class={canNativeShare ? "btn" : "btn btn-primary"} onclick={copy}>{t("share.copyLink")}</button>{/if}
+      <button type="button" class={link === null && !canNativeShare ? "btn btn-primary" : "btn"} onclick={download}>{t("share.file")}</button>
     </div>
+
+    <div class="export">
+      <h3>{t("share.export")}</h3>
+      <p class="small muted">{t("share.exportIntro")}</p>
+      <div class="row">
+        <button type="button" class="btn" onclick={copyText}>{t("share.copyText")}</button>
+        <button type="button" class="btn" onclick={downloadAsText}>{t("share.downloadText")}</button>
+      </div>
+      <p class="small" aria-live="polite">
+        {#if textCopied === "ok"}{t("share.textCopied")}{:else if textCopied === "failed"}<span class="error">{t("share.copyFailed")}</span>{/if}
+      </p>
+    </div>
+    <button type="button" class="btn btn-quiet close" onclick={onclose}>{t("common.close")}</button>
   {/if}
 </section>
 
@@ -78,6 +125,15 @@
   }
   .share h2 {
     outline: none;
+  }
+  .export {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .close {
+    justify-self: start;
   }
   input[readonly] {
     font-size: var(--fs-caption);

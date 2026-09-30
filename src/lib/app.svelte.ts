@@ -42,6 +42,11 @@ class App {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") this.today = localDay();
     });
+    // An app left open past midnight moves on to the new day by itself.
+    setInterval(() => {
+      const day = localDay();
+      if (day !== this.today) this.today = day;
+    }, 60_000);
     try {
       this.store = await Store.open();
       this.settings = await this.store.getSettings(navigator.language);
@@ -114,6 +119,13 @@ class App {
     if (!cards.length) return 0;
     const known = cards.filter((c) => difficulty(c.hist) === "goed").length;
     return Math.round((known / cards.length) * 100);
+  }
+
+  /** Local day the list was last practised on, if ever. */
+  lastPracticed(deckId: string): string | undefined {
+    let last: string | undefined;
+    for (const c of this.cardsIn(deckId)) if (c.lastDay && (!last || c.lastDay > last)) last = c.lastDay;
+    return last;
   }
 
   /** Earliest due date after today, if any. */
@@ -191,6 +203,18 @@ class App {
   async updateDeck(id: string, patch: Partial<DeckInput>): Promise<void> {
     const deck = await this.db.updateDeck(id, patch);
     this.decks = this.decks.map((d) => (d.id === id ? deck : d));
+  }
+
+  /** Copies a list with all its words and fresh progress. */
+  async duplicateDeck(id: string, name: string): Promise<Deck> {
+    const src = this.deck(id);
+    if (!src) throw new Error("Deck not found");
+    const copy = await this.createDeck({ name, langFront: src.langFront, langBack: src.langBack, ...(src.subject ? { subject: src.subject } : {}) });
+    await this.addCards(
+      copy.id,
+      this.sortedCards(id).map((c) => ({ front: c.front, back: c.back, ...(c.topic ? { topic: c.topic } : {}) })),
+    );
+    return copy;
   }
 
   async deleteDeck(id: string): Promise<void> {

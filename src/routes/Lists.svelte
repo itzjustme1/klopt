@@ -8,6 +8,7 @@
 
   let query = $state("");
   let subject = $state<string>("");
+  let sort = $state<"recent" | "name" | "new">("recent");
 
   const subjects = $derived([...new Set(app.decks.map((d) => d.subject?.trim()).filter((s): s is string => !!s))].sort((a, b) => a.localeCompare(b)));
   const shown = $derived.by(() => {
@@ -15,7 +16,14 @@
     return app.decks
       .filter((d) => !subject || d.subject?.trim() === subject)
       .filter((d) => !q || normalize(`${d.name} ${d.subject ?? ""}`).includes(q))
-      .toSorted((a, b) => a.name.localeCompare(b.name));
+      .toSorted((a, b) => {
+        if (sort === "name") return a.name.localeCompare(b.name);
+        if (sort === "new") return b.createdAt.localeCompare(a.createdAt);
+        // Recently practised first; never-practised lists after, newest first.
+        const la = app.lastPracticed(a.id) ?? "";
+        const lb = app.lastPracticed(b.id) ?? "";
+        return lb.localeCompare(la) || b.createdAt.localeCompare(a.createdAt);
+      });
   });
 </script>
 
@@ -34,6 +42,12 @@
         <label class="visually-hidden" for="list-search">{t("lists.search")}</label>
         <input id="list-search" type="search" placeholder={t("lists.search")} bind:value={query} autocomplete="off" />
       </div>
+      <fieldset class="segmented">
+        <legend class="visually-hidden">{t("lists.sort")}</legend>
+        <label><input type="radio" name="list-sort" value="recent" bind:group={sort} />{t("lists.sortRecent")}</label>
+        <label><input type="radio" name="list-sort" value="name" bind:group={sort} />{t("lists.sortName")}</label>
+        <label><input type="radio" name="list-sort" value="new" bind:group={sort} />{t("lists.sortNew")}</label>
+      </fieldset>
       {#if subjects.length > 1}
         <fieldset class="segmented filters">
           <legend class="visually-hidden">{t("editor.subject")}</legend>
@@ -78,9 +92,8 @@
   .search input {
     padding-left: 2.75rem;
   }
-  .filters {
+  .tools :global(.segmented) {
     justify-self: start;
-    max-width: 100%;
   }
   .grid {
     display: grid;

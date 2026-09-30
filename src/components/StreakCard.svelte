@@ -21,7 +21,7 @@
       <Icon name="flame" size={30} filled />
     </div>
     <div class="text">
-      <p class="count"><span class="num">{tp("home.streak", s.days)}</span></p>
+      <p class="count"><span class="num">{s.days > 0 ? tp("home.streak", s.days) : t("home.noStreak")}</span></p>
       <p class="small muted">{s.today ? t("home.streakDone") : s.days > 0 ? t("home.streakKeep") : t("home.streakStart")}</p>
     </div>
     <div class="goal" title={t("home.goal", { done, goal })}>

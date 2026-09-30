@@ -17,6 +17,31 @@ export interface ParseResult {
   tooBig: boolean;
 }
 
+/**
+ * Index of the first separator outside double quotes: a tab if there is one, otherwise a semicolon.
+ * Spreadsheets quote cells that contain a separator ("a;b";c), so those don't split the line.
+ */
+export function separatorIndex(line: string): number {
+  const find = (sep: string) => {
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') quoted = !quoted;
+      else if (ch === sep && !quoted) return i;
+    }
+    return -1;
+  };
+  const tab = find("\t");
+  return tab !== -1 ? tab : find(";");
+}
+
+/** Removes spreadsheet quoting: "say ""hi""" becomes say "hi". Unquoted text is left alone. */
+export function unquote(side: string): string {
+  const s = side.trim();
+  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1).replace(/""/g, '"').trim();
+  return s;
+}
+
 export function cardKey(front: string, back: string): string {
   return `${front}\u0000${back}`;
 }
@@ -38,14 +63,13 @@ export function parseImport(text: string, existing: ReadonlySet<string> = new Se
     const line = i + 1;
     if (raw.trim() === "") continue;
 
-    let at = raw.indexOf("\t");
-    if (at === -1) at = raw.indexOf(";");
+    const at = separatorIndex(raw);
     if (at === -1) {
       skipped.push({ line, reason: "noSeparator" });
       continue;
     }
-    const front = raw.slice(0, at).trim();
-    const back = raw.slice(at + 1).trim();
+    const front = unquote(raw.slice(0, at));
+    const back = unquote(raw.slice(at + 1));
     if (!front) skipped.push({ line, reason: "emptyFront" });
     else if (!back) skipped.push({ line, reason: "emptyBack" });
     else if (front.length > LIMITS.sideChars || back.length > LIMITS.sideChars) skipped.push({ line, reason: "tooLong" });

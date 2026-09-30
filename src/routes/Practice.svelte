@@ -87,6 +87,8 @@
 
   async function showFeedback(f: Feedback) {
     feedback = f;
+    const cur = q;
+    if (cur && app.settings.autoSpeak && cur.answerLang !== "xx" && f.verdict !== "correct") speak(cur.answer, cur.answerLang);
     await tick();
     nextBtn?.focus();
   }
@@ -352,7 +354,12 @@
                 <p class="small">{feedback.note === "accents" ? t("practice.noteAccents") : t("practice.noteTypo")}</p>
               {/if}
               {#if feedback.verdict !== "correct"}
-                <p class="sheet-answer">{t("practice.theAnswer", { answer: q.answer })}</p>
+                <div class="sheet-answer-row">
+                  <p class="sheet-answer">{t("practice.theAnswer", { answer: q.answer })}</p>
+                  {#if q.answerLang !== "xx" && canSpeak(q.answerLang)}
+                    <button type="button" class="icon-btn sheet-speak" aria-label="{t('common.speak')}: {q.answer}" onclick={() => speak(q.answer, q.answerLang)}><Icon name="speaker" size={20} /></button>
+                  {/if}
+                </div>
                 {#if feedback.given && q.kind !== "mc"}<p class="small">{t("practice.youTyped", { given: feedback.given })}</p>{/if}
               {/if}
             </div>
@@ -703,6 +710,14 @@
   .sheet-title {
     font-size: var(--fs-h2);
     font-weight: 800;
+  }
+  .sheet-answer-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .sheet-speak {
+    color: inherit;
   }
   .sheet-answer {
     font-weight: 700;

@@ -7,6 +7,7 @@
   import Icon from "../components/Icon.svelte";
   import { insertAtCaret } from "../lib/accents";
   import { app } from "../lib/app.svelte";
+  import { SUBJECTS } from "../lib/subjects";
   import { href } from "../lib/router";
   import { CONTENT_LANGS, type ContentLang } from "../lib/types";
 
@@ -33,7 +34,6 @@
   let table: HTMLElement | undefined = $state();
   let nameInput: HTMLInputElement | undefined = $state();
 
-  const SUBJECTS = ["Nederlands", "Engels", "Frans", "Duits", "Spaans", "Latijn", "Grieks", "Economie", "Bedrijfseconomie", "Informatica", "Geschiedenis", "Aardrijkskunde", "Biologie", "Scheikunde", "Natuurkunde", "Wiskunde", "Maatschappijleer"];
 
   $effect(() => {
     if (!existing) nameInput?.focus();
@@ -157,7 +157,7 @@
       <label for="list-subject">{t("editor.subject")}</label>
       <input id="list-subject" type="text" bind:value={subject} list="subject-list" maxlength={LIMITS.labelChars} autocomplete="off" />
       <datalist id="subject-list">
-        {#each SUBJECTS as s (s)}<option value={s}></option>{/each}
+        {#each SUBJECTS[getLang()] as s (s)}<option value={s}></option>{/each}
       </datalist>
     </div>
     <div class="langs">

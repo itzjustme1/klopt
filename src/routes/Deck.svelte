@@ -8,6 +8,7 @@
   import SharePanel from "../components/SharePanel.svelte";
   import SpeakButton from "../components/SpeakButton.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
+  import { LIMITS } from "../config";
   import { app } from "../lib/app.svelte";
   import { difficulty } from "../lib/history";
   import type { Direction } from "../lib/practice";
@@ -57,6 +58,21 @@
 
   const DIFF_ORDER = ["vaak", "soms", "goed", "nieuw"] as const;
 
+  let copying = $state(false);
+  async function duplicate() {
+    if (!deck) return;
+    copying = true;
+    try {
+      const copy = await app.duplicateDeck(id, t("deck.copyName", { name: deck.name.slice(0, LIMITS.deckNameChars - 12) }));
+      app.showFlash(t("deck.copied"));
+      location.hash = href.deck(copy.id);
+    } catch {
+      app.showFlash(t("common.saveFailed"));
+    } finally {
+      copying = false;
+    }
+  }
+
   async function remove() {
     await app.deleteDeck(id);
     app.showFlash(t("deck.deleted"));
@@ -77,14 +93,15 @@
       <SubjectBadge subject={deck.subject || deck.name} size="lg" />
       <div class="titles">
         <h1>{deck.name}</h1>
-        <p class="meta small muted">
-          {#if deck.subject}<span>{deck.subject}</span><span aria-hidden="true">·</span>{/if}
-          <span>{tp("common.wordsCount", cards.length)}</span>
+        <ul class="meta">
+          {#if deck.subject}<li class="chip">{deck.subject}</li>{/if}
+          <li class="chip">{tp("common.wordsCount", cards.length)}</li>
           {#if !sameLang}
-            <span aria-hidden="true">·</span>
-            <span class="langs"><Flag lang={deck.langFront} size={18} />{t(`lang.${deck.langFront}`)}<span aria-hidden="true">›</span><Flag lang={deck.langBack} size={18} />{t(`lang.${deck.langBack}`)}</span>
+            <li class="chip">
+              <Flag lang={deck.langFront} size={18} /><span class="visually-hidden">{t("lists.langs", { a: t(`lang.${deck.langFront}`), b: t(`lang.${deck.langBack}`) })}</span><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={18} />
+            </li>
           {/if}
-        </p>
+        </ul>
       </div>
     </header>
 
@@ -92,6 +109,9 @@
       <a class="btn" href={href.edit(id)}><Icon name="edit" size={20} />{t("common.edit")}</a>
       {#if cards.length > 0 && !share}
         <a class="btn" href={href.shareDeck(id)}><Icon name="share" size={20} />{t("deck.share")}</a>
+      {/if}
+      {#if cards.length > 0}
+        <button type="button" class="btn" disabled={copying} onclick={duplicate}><Icon name="cards" size={20} />{t("deck.copy")}</button>
       {/if}
     </div>
 
@@ -232,13 +252,13 @@
   .meta {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
     gap: 0.5rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
   }
-  .langs {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+  .meta .chip {
+    color: var(--ink-2);
   }
   .actions {
     gap: 0.5rem;

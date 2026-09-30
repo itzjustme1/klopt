@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { LIMITS } from "../../src/config";
-import { cardKey, parseImport } from "../../src/lib/importText";
+import { cardKey, parseImport, separatorIndex, unquote } from "../../src/lib/importText";
 
 describe("parseImport", () => {
   it("splits on tab (Quizlet / spreadsheet)", () => {
@@ -93,5 +93,28 @@ describe("parseImport", () => {
 
   it("returns nothing for empty input", () => {
     expect(parseImport("")).toEqual({ cards: [], skipped: [], tooMany: false, tooBig: false });
+  });
+});
+
+describe("spreadsheet quoting", () => {
+  it("ignores separators inside quotes and removes the quotes", () => {
+    const r = parseImport('"to be; to exist";zijn\n"say ""hi""";zeg hoi\nkort;"lang; met puntkomma"');
+    expect(r.cards).toEqual([
+      { line: 1, front: "to be; to exist", back: "zijn" },
+      { line: 2, front: 'say "hi"', back: "zeg hoi" },
+      { line: 3, front: "kort", back: "lang; met puntkomma" },
+    ]);
+  });
+
+  it("still prefers an unquoted tab", () => {
+    expect(separatorIndex('a;b\tc')).toBe(3);
+    expect(separatorIndex('"a\tb"\tc')).toBe(5);
+    expect(separatorIndex('"a;b"')).toBe(-1);
+  });
+
+  it("leaves text without surrounding quotes alone", () => {
+    expect(unquote(' "half')).toBe('"half');
+    expect(unquote("he said \"hi\"")).toBe('he said "hi"');
+    expect(unquote('""')).toBe("");
   });
 });
