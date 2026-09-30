@@ -59,9 +59,22 @@ interface Item {
 /** Positions ahead where a missed card comes back in "leren". */
 const LEARN_GAP = 3;
 
+/** Everything needed to continue a session later, as plain JSON. */
+export interface PracticeSnapshot {
+  v: 1;
+  mode: Mode;
+  total: number;
+  done: number;
+  right: number;
+  wrong: number;
+  first: [string, Grade][];
+  mistakes: { cardId: string; prompt: string; answer: string; given?: string }[];
+  queue: { cardId: string; ask: "front" | "back"; level: number; attempts: number }[];
+}
+
 export class Practice {
   readonly mode: Mode;
-  readonly total: number;
+  total: number;
   /** Cards finished (mastered, or answered once in single-pass modes). */
   done = 0;
   /** All answers given, like StudyGo's tick and cross counters. */
@@ -144,6 +157,49 @@ export class Practice {
     else if (grade === "fout") item.level = 0;
     // twijfel keeps the level: ask again later.
     this.queue.splice(Math.min(LEARN_GAP, this.queue.length), 0, item);
+  }
+
+  snapshot(): PracticeSnapshot {
+    return {
+      v: 1,
+      mode: this.mode,
+      total: this.total,
+      done: this.done,
+      right: this.right,
+      wrong: this.wrong,
+      first: [...this.first.entries()],
+      mistakes: this.mistakes.map((m) => ({ cardId: m.card.id, prompt: m.prompt, answer: m.answer, ...(m.given ? { given: m.given } : {}) })),
+      queue: this.queue.map((i) => ({ cardId: i.card.id, ask: i.ask, level: i.level, attempts: i.attempts })),
+    };
+  }
+
+  /**
+   * Continues a saved session with the current cards. Words deleted since are dropped;
+   * returns null when the snapshot doesn't fit (other mode, or nothing left to ask).
+   */
+  static restore(cards: readonly PracticeCard[], config: PracticeConfig, snap: PracticeSnapshot, rng: Rng = Math.random): Practice | null {
+    if (snap.v !== 1 || snap.mode !== config.mode) return null;
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    const queue = snap.queue.flatMap((i) => {
+      const card = byId.get(i.cardId);
+      return card ? [{ card, ask: i.ask, level: i.level, attempts: i.attempts }] : [];
+    });
+    if (!queue.length) return null;
+    const p = new Practice(cards, { ...config, keepOrder: true }, rng);
+    p.queue = queue;
+    p.total = snap.total;
+    p.done = snap.done;
+    p.right = snap.right;
+    p.wrong = snap.wrong;
+    p.first.clear();
+    for (const [id, g] of snap.first) p.first.set(id, g);
+    p.mistakes.length = 0;
+    for (const m of snap.mistakes) {
+      const card = byId.get(m.cardId);
+      if (card) p.mistakes.push({ card, prompt: m.prompt, answer: m.answer, ...(m.given ? { given: m.given } : {}) });
+    }
+    p.next();
+    return p;
   }
 
   private next(): void {

@@ -7,7 +7,8 @@
   import { insertAtCaret } from "../lib/accents";
   import { checkAnswer, hintText, type Verdict } from "../lib/answer";
   import { app } from "../lib/app.svelte";
-  import { Practice, type Direction, type PracticeCard } from "../lib/practice";
+  import { Practice, type Direction, type PracticeCard, type PracticeSnapshot } from "../lib/practice";
+  import { clearSession, loadSession, saveSession } from "../lib/resume";
   import { href, type Count, type Which } from "../lib/router";
   import { playRight, playWrong } from "../lib/sounds";
   import { canSpeak, loadVoices, speak, stopSpeaking } from "../lib/speech";
@@ -44,10 +45,38 @@
   });
   const progress = $derived(stats.total ? (stats.done / stats.total) * 100 : 0);
 
+  const sessionKey = $derived(`${scope}/${mode}/${dir}/${which}/${count}`);
+  /** The daily review queue changes as it's answered, so only the other modes can be continued. */
+  const resumable = $derived(mode !== "herhalen");
+  let resumeSnap = $state.raw<PracticeSnapshot | null>(null);
+
   function start(cards: PracticeCard[]) {
     engine = new Practice(cards, { mode, direction: dir, canSpeak, keepOrder: mode === "herhalen" });
     version++;
     void prepareQuestion();
+  }
+
+  function persist() {
+    if (!resumable || !engine) return;
+    if (engine.finished) clearSession();
+    else saveSession(sessionKey, engine.snapshot());
+  }
+
+  function continueSaved() {
+    const snap = resumeSnap;
+    resumeSnap = null;
+    const restored = snap ? Practice.restore(app.practiceCards(scope, "all"), { mode, direction: dir, canSpeak }, snap) : null;
+    if (restored) {
+      engine = restored;
+      version++;
+      void prepareQuestion();
+    } else start(app.practiceCards(scope, which, count));
+  }
+
+  function startOver() {
+    resumeSnap = null;
+    clearSession();
+    start(app.practiceCards(scope, which, count));
   }
 
   // Build the session once, after the voices are known (dictee needs them).
@@ -55,7 +84,9 @@
     untrack(() => {
       void loadVoices().then(() => {
         voices = true;
-        start(app.practiceCards(scope, which, count));
+        const saved = resumable ? loadSession(sessionKey) : null;
+        if (saved && saved.queue.length > 0) resumeSnap = saved;
+        else start(app.practiceCards(scope, which, count));
       });
     });
     return () => stopSpeaking();
@@ -89,6 +120,7 @@
     drag = 0;
     engine.answer(grade, typed);
     version++;
+    persist();
     app.grade(cur.card.id, grade, mode).catch(() => app.showFlash(t("common.saveFailed")));
     await prepareQuestion();
   }
@@ -278,7 +310,16 @@
 
   <div class="p-body">
     <h1 class="visually-hidden">{t(`mode.${mode}`)}</h1>
-    {#if !engine}
+    {#if resumeSnap}
+      <div class="card card-pad resume">
+        <h2>{t("resume.title")}</h2>
+        <p class="muted">{tp("resume.body", resumeSnap.total - resumeSnap.done)}</p>
+        <div class="row">
+          <button type="button" class="btn btn-primary btn-lg" onclick={continueSaved}>{t("resume.continue")}</button>
+          <button type="button" class="btn btn-lg" onclick={startOver}>{t("resume.restart")}</button>
+        </div>
+      </div>
+    {:else if !engine}
       {#if voices}<p class="muted">{t("common.loading")}</p>{/if}
     {:else if engine.total === 0}
       <div class="card card-pad empty">
@@ -540,7 +581,8 @@
     margin-inline: auto;
     padding: 1rem max(var(--gutter), env(safe-area-inset-right)) calc(2rem + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
   }
-  .empty {
+  .empty,
+  .resume {
     display: grid;
     gap: 1rem;
     justify-items: start;

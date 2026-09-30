@@ -165,3 +165,34 @@ describe("Practice", () => {
     expect(p.cijfer).toBe(1);
   });
 });
+
+describe("continuing a session", () => {
+  it("restores queue, counters, first grades and mistakes", () => {
+    const p = new Practice(words, { mode: "leren", direction: "front" }, seeded(20));
+    p.answer("fout", "iets");
+    p.answer("goed");
+    p.answer("goed");
+    const snap = JSON.parse(JSON.stringify(p.snapshot()));
+    const r = Practice.restore(words, { mode: "leren", direction: "front" }, snap, seeded(21))!;
+    expect(r.remaining).toBe(p.remaining);
+    expect([r.right, r.wrong, r.done]).toEqual([p.right, p.wrong, p.done]);
+    expect(r.mistakes.map((m) => [m.card.id, m.given])).toEqual(p.mistakes.map((m) => [m.card.id, m.given]));
+    expect(r.current!.card.id).toBe(p.current!.card.id);
+    // Finishing the restored session ends with the same result as finishing the original.
+    const finish = (x: Practice) => {
+      while (x.current) x.answer("goed");
+      return [x.done, x.first.size];
+    };
+    expect(finish(r)).toEqual(finish(p));
+  });
+
+  it("drops words deleted in the meantime and refuses another mode", () => {
+    const p = new Practice(words, { mode: "typen", direction: "front" }, seeded(22));
+    const snap = p.snapshot();
+    const fewer = words.filter((w) => w.id !== p.current!.card.id);
+    const r = Practice.restore(fewer, { mode: "typen", direction: "front" }, snap)!;
+    expect(r.current!.card.id).not.toBe(p.current!.card.id);
+    expect(Practice.restore(words, { mode: "leren", direction: "front" }, snap)).toBeNull();
+    expect(Practice.restore([], { mode: "typen", direction: "front" }, snap)).toBeNull();
+  });
+});
