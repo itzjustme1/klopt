@@ -13,6 +13,7 @@
   import { playRight, playWrong } from "../lib/sounds";
   import { canSpeak, loadVoices, speak, stopSpeaking } from "../lib/speech";
   import type { ContentLang, Grade, Mode } from "../lib/types";
+  import { MODE_COLOR, MODE_ICON } from "../lib/modeStyle";
 
   let { scope, mode, dir, which, count = "all" }: { scope: string; mode: Mode; dir: Direction; which: Which; count?: Count } = $props();
 
@@ -44,6 +45,12 @@
     return e ? { done: e.done, total: e.total, right: e.right, wrong: e.wrong, remaining: e.remaining } : { done: 0, total: 0, right: 0, wrong: 0, remaining: 0 };
   });
   const progress = $derived(stats.total ? (stats.done / stats.total) * 100 : 0);
+  /** The answer on screen counts straight away; it is saved on "Next" ("Toch goed" can still change it). */
+  const tally = $derived.by(() => {
+    if (!feedback) return { right: stats.right, wrong: stats.wrong };
+    const good = feedback.grade === "goed";
+    return { right: stats.right + (good ? 1 : 0), wrong: stats.wrong + (good ? 0 : 1) };
+  });
 
   const sessionKey = $derived(`${scope}/${mode}/${dir}/${which}/${count}`);
   /** The daily review queue changes as it's answered, so only the other modes can be continued. */
@@ -301,8 +308,8 @@
       {:else}
         <span class="counts caption num">
           <span class="c-left">{t("practice.remaining", { n: stats.remaining })}</span>
-          <span class="c-right" aria-label={tp("practice.rightCount", stats.right)}><Icon name="check" size={14} />{stats.right}</span>
-          <span class="c-wrong" aria-label={tp("practice.wrongCount", stats.wrong)}><Icon name="x" size={14} />{stats.wrong}</span>
+          <span class="c-right" aria-label={tp("practice.rightCount", tally.right)}><Icon name="check" size={14} />{tally.right}</span>
+          <span class="c-wrong" aria-label={tp("practice.wrongCount", tally.wrong)}><Icon name="x" size={14} />{tally.wrong}</span>
         </span>
       {/if}
     {/if}
@@ -337,11 +344,14 @@
           class:swipe-left={drag <= -SWIPE / 2}
           style:transform={drag ? `translateX(${drag}px) rotate(${drag / 24}deg)` : undefined}
         >
-          {#if !isTest}
-            <button type="button" class="icon-btn qstar" class:on={starredNow} aria-pressed={starredNow} aria-label={starredNow ? t("practice.unstar") : t("practice.star")} title={starredNow ? t("practice.unstar") : t("practice.star")} onclick={toggleStar}>
-              <Icon name="star" size={22} filled={starredNow} />
-            </button>
-          {/if}
+          <div class="q-head">
+            <span class="mode-tag caption"><span class="ic-round ic-{MODE_COLOR[mode]} mt-ic"><Icon name={MODE_ICON[mode]} size={14} /></span>{t(`mode.${mode}`)}</span>
+            {#if !isTest}
+              <button type="button" class="icon-btn qstar" class:on={starredNow} aria-pressed={starredNow} aria-label={starredNow ? t("practice.unstar") : t("practice.star")} title={starredNow ? t("practice.unstar") : t("practice.star")} onclick={toggleStar}>
+                <Icon name="star" size={22} filled={starredNow} />
+              </button>
+            {/if}
+          </div>
           {#if q.kind === "flash"}
             <!-- It is a button until flipped, then a plain focus target. -->
             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -528,7 +538,7 @@
             <button type="button" class="btn btn-quiet dont" onclick={dontKnow}>{t("practice.dontKnow")}</button>
           {/if}
         {:else if q.kind === "mc"}
-          <p class="small muted center">{t("practice.keysMc")}</p>
+          <p class="small muted center keys-hint">{t("practice.keysMc")}</p>
         {/if}
       </div>
     {/if}
@@ -612,7 +622,7 @@
     justify-items: center;
     gap: 0.5rem;
     text-align: center;
-    padding: 0.75rem 0 0.25rem;
+    padding: 0 0 0.25rem;
   }
   .lang-label {
     color: var(--ink-2);
@@ -707,7 +717,7 @@
     margin-bottom: var(--edge-2);
     transition: border-color var(--t-base) var(--ease), background-color var(--t-base) var(--ease), transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
   }
-  .option:hover:not([disabled]) {
+  .option:hover:not([disabled], .right, .wrong) {
     border-color: var(--accent);
   }
   .option:active:not([disabled]) {
@@ -766,11 +776,23 @@
       display: none;
     }
   }
-  .qstar {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    z-index: 1;
+  /* Mode on the left, star on the right, above the question. */
+  .q-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: var(--tap);
+    margin: -0.75rem -0.5rem -1rem 0;
+  }
+  .mode-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--ink-2);
+  }
+  .mt-ic {
+    width: 24px;
+    height: 24px;
   }
   .qstar.on {
     color: #f5a524;
@@ -939,8 +961,10 @@
     display: grid;
     gap: 0.25rem;
   }
+  /* Keyboard hints mean nothing on a touch screen. */
   @media (hover: none), (pointer: coarse) {
-    .shortcuts {
+    .shortcuts,
+    .keys-hint {
       display: none;
     }
   }

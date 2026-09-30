@@ -1,12 +1,15 @@
 <script lang="ts">
   import { getLang, num, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
-  import ListCard from "../components/ListCard.svelte";
-  import ExamCard from "../components/ExamCard.svelte";
+  import Illustration from "../components/Illustration.svelte";
   import NewOptions from "../components/NewOptions.svelte";
-  import StreakCard from "../components/StreakCard.svelte";
+  import Banners from "../components/Banners.svelte";
+  import ExamCard from "../components/ExamCard.svelte";
+  import ListCard from "../components/ListCard.svelte";
+  import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { formatDay } from "../lib/dates";
+  import { weekDays } from "../lib/history";
   import { demoLists } from "../lib/demo";
   import { href, parseHash } from "../lib/router";
   import { peekSession } from "../lib/resume";
@@ -14,14 +17,19 @@
   const due = $derived(app.dueCount());
   const next = $derived(app.nextDue());
   const hard = $derived(app.hardCount());
+  const s = $derived(app.streak());
+  const left = $derived(Math.max(0, app.settings.dailyGoal - app.answersToday()));
+  const week = $derived(weekDays(app.today));
+  const practiced = $derived(new Set(app.days.filter((d) => d.answers > 0).map((d) => d.day)));
   const hour = new Date().getHours();
   const greeting = $derived(hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening"));
   const exams = $derived(app.upcomingExams().slice(0, 3));
+  const subjects = $derived(app.subjects(t("lists.noSubject")));
+  const recent = $derived(app.byRecent().slice(0, 3));
   // A practice left halfway today, if its list still exists.
   const saved = peekSession();
   const savedRoute = saved ? parseHash(`#/oefenen/${saved.key}`) : null;
   const savedDeck = savedRoute?.name === "practice" && savedRoute.scope !== "alles" ? app.deck(savedRoute.scope) : undefined;
-  const recent = $derived(app.decks.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4));
   let busy = $state(false);
 
   async function loadDemo() {
@@ -41,49 +49,80 @@
 </script>
 
 {#if app.decks.length === 0}
-  <section class="welcome">
-    <h1>{t("home.welcome")}</h1>
-    <p class="lead muted">{t("home.welcomeBody")}</p>
-    <NewOptions />
+  <div class="home-band band">
+    <div class="inner">
+      <h1>{t("home.welcome")}</h1>
+      <p class="sub">{t("home.welcomeBody")}</p>
+    </div>
+    <svg class="band-wave" viewBox="0 0 1440 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 20C240 2 480 0 720 16s480 20 720-4V36H0z" fill="var(--bg)" /></svg>
+  </div>
+  <section class="welcome lift">
+    <div class="card card-pad welcome-card">
+      <Illustration name="stack" size={132} />
+      <NewOptions />
+    </div>
     <div class="row">
-      <button type="button" class="btn btn-quiet demo" disabled={busy} onclick={loadDemo}>{t("home.demo")}</button>
+      <button type="button" class="btn btn-brand" disabled={busy} onclick={loadDemo}>{t("home.demo")}</button>
       <a class="btn btn-quiet" href={href.help()}>{t("help.link")}</a>
     </div>
   </section>
 {:else}
-  <section class="home">
-    <h1>{greeting}</h1>
-
-    <div class="top-grid">
-      <div class="hero">
-        <p class="hero-label caption">{t("home.review")}</p>
-        {#if due > 0}
-          <p class="hero-num num">{num(due)}</p>
-          <p class="hero-text">{tp("home.due", due)}</p>
-          <a class="btn btn-inverse btn-lg start" href={href.review()}>
-            <Icon name="review" size={22} />{t("home.startReview")}
-          </a>
-        {:else}
-          <p class="hero-done">{t("home.nothingDue")}</p>
-          {#if next}<p class="hero-text">{t("home.nextDue", { date: formatDay(next, getLang()) })}</p>{/if}
-        {/if}
+  <div class="home-band band">
+    <div class="inner">
+      <div class="top-row">
+        <h1>{greeting}!</h1>
+        <a class="streak-chip" href={href.progress()} class:lit={s.today} aria-label="{tp('home.streak', s.days)}">
+          <Icon name="flame" size={20} filled />{tp("home.streakChip", s.days)}
+        </a>
       </div>
-      <StreakCard />
+      <p class="sub">{left === 0 ? t("result.goalDone") : tp("result.goalLeft", left)}</p>
+      <ol class="week" aria-label={t("progress.week")}>
+        {#each week as day (day)}
+          {@const did = practiced.has(day)}
+          <li class:did class:today={day === app.today}>
+            <span class="dot" aria-hidden="true">{#if did}<Icon name="check" size={14} />{/if}</span>
+            <span class="wd caption" aria-hidden="true">{formatDay(day, getLang(), { weekday: "narrow" })}</span>
+            <span class="visually-hidden">{formatDay(day, getLang(), { weekday: "long" })}: {did ? t("home.practiced") : t("home.notPracticed")}</span>
+          </li>
+        {/each}
+      </ol>
+    </div>
+    <svg class="band-wave" viewBox="0 0 1440 36" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 20C240 2 480 0 720 16s480 20 720-4V36H0z" fill="var(--bg)" /></svg>
+  </div>
+
+  <section class="home lift">
+    <div class="grid-top">
+      <div class="card hero">
+        <div class="hero-text">
+          <p class="hero-label">{t("home.review")}</p>
+          {#if due > 0}
+            <p class="hero-num num">{num(due)}</p>
+            <p class="hero-sub">{tp("home.due", due)}</p>
+            <a class="btn btn-primary" href={href.review()} aria-label={t("home.startReview")}>{t("home.start")}</a>
+          {:else}
+            <p class="hero-done">{t("home.nothingDue")}</p>
+            {#if next}<p class="hero-sub">{t("home.nextDue", { date: formatDay(next, getLang()) })}</p>{/if}
+          {/if}
+        </div>
+        <Illustration name={due > 0 ? "cards" : "trophy"} size={124} />
+      </div>
+
+      {#if saved && savedRoute?.name === "practice" && savedDeck}
+        <a class="continue card" href={`#/oefenen/${saved.key}`}>
+          <span class="ic-round ic-1 cont-ic"><Icon name="learn" size={24} /></span>
+          <span class="cont-txt">
+            <span class="cont-title">{t("home.continue", { list: savedDeck.name })}</span>
+            <span class="small muted">{tp("home.continueMeta", saved.left, { mode: t(`mode.${savedRoute.mode}`) })}</span>
+          </span>
+          <Icon name="chevron" size={20} />
+        </a>
+      {/if}
     </div>
 
-    {#if saved && savedRoute?.name === "practice" && savedDeck}
-      <a class="continue card" href={`#/oefenen/${saved.key}`}>
-        <span class="cont-ic"><Icon name="learn" size={24} /></span>
-        <span class="cont-txt">
-          <span class="cont-title">{t("home.continue", { list: savedDeck.name })}</span>
-          <span class="small muted">{tp("home.continueMeta", saved.left, { mode: t(`mode.${savedRoute.mode}`) })}</span>
-        </span>
-        <Icon name="chevron" size={20} />
-      </a>
-    {/if}
+    <Banners />
 
     {#if exams.length > 0}
-      <h2 class="lists-head-title">{t("exam.upcoming")}</h2>
+      <h2 class="sect-title">{t("home.exams")}</h2>
       <div class="exams">
         {#each exams as deck (deck.id)}
           <ExamCard {deck} compact />
@@ -93,27 +132,42 @@
 
     {#if hard > 0}
       <a class="hard card" href={href.practice("alles", "leren", "front", "hard")}>
-        <span class="hard-ic"><Icon name="learn" size={24} /></span>
+        <span class="ic-round ic-6 hard-ic"><Icon name="learn" size={22} /></span>
         <span class="hard-txt">
           <span class="hard-title">{t("home.hard")}</span>
           <span class="small muted">{tp("home.hardCount", hard)}</span>
         </span>
-        <span class="btn btn-primary hard-btn" aria-hidden="true">{t("home.practiceHard")}</span>
+        <Icon name="chevron" size={20} />
       </a>
     {/if}
 
-    <div class="lists-head">
-      <h2>{t("home.lists")}</h2>
+    <div class="sect-head">
+      <h2>{t("home.recent")}</h2>
       <a class="btn btn-quiet" href={href.lists()}>{t("home.allLists")}</a>
     </div>
-    <ul class="grid">
+    <ul class="recent">
       {#each recent as deck (deck.id)}
         <li><ListCard {deck} /></li>
       {/each}
+    </ul>
+
+    <h2 class="sect-title">{t("home.subjects")}</h2>
+    <ul class="tiles">
+      {#each subjects as sub (sub.name)}
+        <li>
+          <a class="tile card" href={href.lists(sub.name)}>
+            <SubjectBadge subject={sub.name} />
+            <span class="tile-name">{sub.name}</span>
+            <span class="small muted">{t("home.subjectMeta", { lists: tp("common.decksCount", sub.decks.length), words: tp("common.wordsCount", sub.words) })}</span>
+            <span class="bar known" aria-hidden="true"><span style:width="{sub.known}%"></span></span>
+            <span class="visually-hidden">{t("lists.learned", { p: sub.known })}</span>
+          </a>
+        </li>
+      {/each}
       <li>
-        <a class="new card" href={href.newList()}>
-          <Icon name="plus" size={24} />
-          <span>{t("lists.new")}</span>
+        <a class="tile tile-new" href={href.newList()}>
+          <span class="ic-round new-ic"><Icon name="plus" size={24} /></span>
+          <span class="tile-name">{t("lists.new")}</span>
         </a>
       </li>
     </ul>
@@ -121,138 +175,180 @@
 {/if}
 
 <style>
+  .home-band {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-top: -1.75rem;
+    padding-top: 1rem;
+    padding-bottom: 4.5rem;
+  }
+  .inner {
+    display: grid;
+    gap: 0.5rem;
+    max-width: 1040px;
+    margin-inline: auto;
+    padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
+  }
+  .home-band h1 {
+    font-size: var(--fs-h1);
+  }
+  @media (min-width: 720px) {
+    .home-band h1 {
+      font-size: var(--fs-display);
+    }
+  }
+  .sub {
+    font-weight: 400;
+    color: #ffffff;
+    max-width: 38rem;
+  }
+  .top-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .streak-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: var(--tap);
+    padding: 0 1rem;
+    border-radius: var(--r-pill);
+    background: #ffffff;
+    color: var(--on-light);
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .streak-chip :global(.icon) {
+    color: var(--on-light-2);
+  }
+  .streak-chip.lit :global(.icon) {
+    color: var(--flame);
+  }
+  .week {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .week li {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+  .dot {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.18);
+  }
+  .did .dot {
+    background: #ffffff;
+    color: var(--on-light-accent);
+  }
+  .today .dot {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+  .wd {
+    color: #ffffff;
+    text-transform: capitalize;
+  }
+
   .welcome {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
     max-width: 760px;
   }
-  .welcome h1 {
-    font-size: var(--fs-display);
+  .welcome-card {
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
   }
-  .lead {
-    font-size: var(--fs-lead);
-    max-width: 36rem;
-  }
-  .demo {
-    justify-self: start;
+  .welcome-card :global(.options) {
+    width: 100%;
   }
 
   .home {
     display: grid;
-    gap: 1.25rem;
+    gap: 1rem;
   }
-  .top-grid {
+  .grid-top {
     display: grid;
     gap: 1rem;
   }
   @media (min-width: 820px) {
-    .top-grid {
-      grid-template-columns: 1.15fr 1fr;
+    .grid-top:has(.continue) {
+      grid-template-columns: 1.3fr 1fr;
       align-items: stretch;
     }
   }
-
   .hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+  .hero-text {
     display: grid;
-    align-content: start;
     justify-items: start;
     gap: 0.25rem;
-    padding: 1.5rem;
-    border-radius: var(--r-lg);
-    background: var(--accent);
-    color: var(--on-accent);
-    box-shadow: 0 var(--edge) 0 var(--accent-edge);
-    margin-bottom: var(--edge);
+    min-width: 0;
   }
   .hero-label {
-    font-size: var(--fs-small);
+    font-weight: 800;
+    color: var(--accent-text);
   }
   .hero-num {
     font-size: var(--fs-hero);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
-    margin-top: 0.25rem;
   }
-  .hero-text {
+  .hero-sub {
     font-weight: 700;
-    font-size: var(--fs-lead);
+    color: var(--ink-2);
+    margin-bottom: 0.75rem;
   }
   .hero-done {
     font-size: var(--fs-h2);
     font-weight: 800;
-    margin-top: 0.25rem;
-  }
-  .start {
-    margin-top: 1.25rem;
   }
 
+  .continue,
   .hard {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-    color: inherit;
-    text-decoration: none;
-  }
-  .hard:hover {
-    border-color: var(--line-strong);
-  }
-  .hard-ic {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--r-sm);
-    background: var(--warn-soft);
-    color: var(--warn);
-    flex: none;
-  }
-  .hard-txt {
-    display: grid;
-    flex: 1;
-    min-width: 0;
-  }
-  .hard-title {
-    font-weight: 700;
-  }
-  @media (max-width: 480px) {
-    .hard-btn {
-      display: none;
-    }
-  }
-
-  .continue {
     display: flex;
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.25rem;
     color: var(--ink-2);
     text-decoration: none;
+  }
+  .continue {
     border: 2px solid var(--accent);
   }
-  .cont-ic {
-    display: grid;
-    place-items: center;
+  .cont-ic,
+  .hard-ic {
     width: 48px;
     height: 48px;
-    border-radius: var(--r-sm);
-    background: var(--accent);
-    color: var(--on-accent);
-    flex: none;
   }
-  .cont-txt {
+  .cont-txt,
+  .hard-txt {
     display: grid;
     flex: 1;
     min-width: 0;
   }
-  .cont-title {
+  .cont-title,
+  .hard-title {
     color: var(--ink);
-    font-weight: 700;
+    font-weight: 800;
     overflow-wrap: anywhere;
-  }
-  .lists-head-title {
-    margin-top: 0.75rem;
   }
   .exams {
     display: grid;
@@ -263,13 +359,22 @@
       grid-template-columns: 1fr 1fr;
     }
   }
-  .lists-head {
+
+  .sect-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
   }
-  .grid {
+  .sect-head h2,
+  .sect-title {
+    font-size: var(--fs-h2);
+    font-weight: 800;
+  }
+  .sect-title {
+    margin-top: 0.5rem;
+  }
+  .recent {
     display: grid;
     gap: 0.75rem;
     margin: 0;
@@ -277,26 +382,61 @@
     list-style: none;
   }
   @media (min-width: 720px) {
-    .grid {
-      grid-template-columns: 1fr 1fr;
+    .recent {
+      grid-template-columns: repeat(3, 1fr);
     }
   }
-  .new {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 720px) {
+    .tiles {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .tile {
+    display: grid;
+    align-content: start;
     gap: 0.5rem;
-    min-height: 100%;
-    padding: 1.5rem;
-    border-style: dashed;
-    border-width: 2px;
-    box-shadow: none;
-    background: transparent;
+    height: 100%;
+    padding: 1rem;
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform var(--t-base) var(--ease), border-color var(--t-base) var(--ease);
+  }
+  .tile:hover {
+    border-color: var(--accent);
+  }
+  .tile-name {
+    font-weight: 800;
+    font-size: var(--fs-lead);
+    overflow-wrap: anywhere;
+  }
+  .known > span {
+    background: var(--cta);
+  }
+  .tile-new {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.5rem;
+    min-height: 10rem;
+    border: 2px dashed var(--line-strong);
+    border-radius: var(--r-lg);
     color: var(--accent-text);
-    font-weight: 700;
     text-decoration: none;
   }
-  .new:hover {
+  .tile-new:hover {
     background: var(--accent-soft);
+  }
+  .new-ic {
+    width: 48px;
+    height: 48px;
+    background: var(--accent);
   }
 </style>

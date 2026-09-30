@@ -2,6 +2,9 @@
   import { t } from "../i18n/index.svelte";
   import type { StringKey } from "../i18n/types";
   import Icon, { type IconName } from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
+  import { MODE_COLOR } from "../lib/modeStyle";
+  import { href } from "../lib/router";
   import { DAYS } from "../lib/scheduler";
   import type { Mode } from "../lib/types";
 
@@ -21,8 +24,8 @@
   ];
 </script>
 
+<PageBand title={t("help.title")} back={{ href: href.settings(), label: t("settings.title") }} />
 <article class="help">
-  <h1>{t("help.title")}</h1>
 
   <section class="card card-pad">
     <h2>{t("help.reviewTitle")}</h2>
@@ -42,7 +45,7 @@
     <ul class="modes">
       {#each modes as m (m.mode)}
         <li>
-          <span class="ic"><Icon name={m.icon} size={22} /></span>
+          <span class="ic-round ic-{MODE_COLOR[m.mode]} ic"><Icon name={m.icon} size={22} /></span>
           <span><strong>{t(`mode.${m.mode}`)}</strong> <span class="muted">{t(m.desc)}</span></span>
         </li>
       {/each}
@@ -86,11 +89,11 @@
     background: var(--surface-2);
     border-top: 4px solid;
   }
-  .b1 { border-color: var(--b1); }
-  .b2 { border-color: var(--b2); }
-  .b3 { border-color: var(--b3); }
-  .b4 { border-color: var(--b4); }
-  .b5 { border-color: var(--b5); }
+  .boxes .b1 { border-top-color: var(--b1); }
+  .boxes .b2 { border-top-color: var(--b2); }
+  .boxes .b3 { border-top-color: var(--b3); }
+  .boxes .b4 { border-top-color: var(--b4); }
+  .boxes .b5 { border-top-color: var(--b5); }
   .boxes .num {
     font-weight: 800;
     font-size: var(--fs-h2);
@@ -106,17 +109,11 @@
   .modes li {
     display: flex;
     gap: 0.75rem;
-    align-items: flex-start;
+    align-items: center;
   }
   .ic {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--r-sm);
-    background: var(--accent-soft);
-    color: var(--accent-text);
-    flex: none;
+    width: 44px;
+    height: 44px;
   }
   .points li {
     position: relative;

@@ -3,6 +3,7 @@
   import { LIMITS } from "../config";
   import Flag from "../components/Flag.svelte";
   import Icon from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import { app } from "../lib/app.svelte";
   import { takePendingImport } from "../lib/handoff";
   import { cardKey, parseImport } from "../lib/importText";
@@ -78,9 +79,12 @@
   }
 </script>
 
+<PageBand
+  title={t("import.title")}
+  subtitle={done ? undefined : fromPhoto?.source === "photo" ? t("import.fromPhoto") : fromPhoto?.source === "share" ? t("import.fromShare") : t("import.intro")}
+  back={{ href: href.newList(), label: t("common.back") }}
+/>
 <section class="import">
-  <a class="back small" href={href.newList()}><Icon name="back" size={18} />{t("common.back")}</a>
-  <h1>{t("import.title")}</h1>
 
   {#if done}
     <div class="card card-pad success" role="status">
@@ -92,10 +96,8 @@
       </div>
     </div>
   {:else}
-    <p class="muted intro">{fromPhoto?.source === "photo" ? t("import.fromPhoto") : fromPhoto?.source === "share" ? t("import.fromShare") : t("import.intro")}</p>
-
     <form class="stack" style:--gap="1.25rem" onsubmit={submit} novalidate>
-      <div class="field">
+      <div class="field card card-pad">
         <label for="import-text">{t("import.textLabel")}</label>
         <textarea id="import-text" class="paste" rows="8" bind:value={text} placeholder={t("import.placeholder")} spellcheck="false" autocomplete="off"></textarea>
       </div>
@@ -196,9 +198,6 @@
     display: grid;
     gap: 1rem;
     max-width: 820px;
-  }
-  .intro {
-    max-width: 40rem;
   }
   .paste {
     white-space: pre-wrap;

@@ -4,8 +4,8 @@
   import { t } from "./i18n/index.svelte";
   import type { StringKey } from "./i18n/types";
   import { app } from "./lib/app.svelte";
+  import { applyUpdate, pwa } from "./lib/pwa.svelte";
   import { href } from "./lib/router";
-  import Banners from "./components/Banners.svelte";
   import Icon, { type IconName } from "./components/Icon.svelte";
   import Logo from "./components/Logo.svelte";
   import Today from "./routes/Today.svelte";
@@ -77,7 +77,7 @@
 {#if !focusMode}
   <header class="top">
     <div class="wrap top-inner">
-      <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo /></a>
+      <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo onBand /></a>
       <nav class="nav" aria-label={t("nav.label")}>
         {#each nav as item (item.key)}
           <a href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>
@@ -98,11 +98,12 @@
   {:else if !app.ready}
     <p class="muted" aria-busy="true">{t("common.loading")}</p>
   {:else}
-    {#if !focusMode}<Banners />{/if}
     {#if app.route.name === "today"}
       <Today />
     {:else if app.route.name === "lists"}
-      <Lists />
+      {#key app.route.subject}
+        <Lists subject={app.route.subject} />
+      {/key}
     {:else if app.route.name === "new"}
       <NewList />
     {:else if app.route.name === "editor"}
@@ -148,6 +149,13 @@
   {/if}
 </main>
 
+{#if pwa.needRefresh && !focusMode}
+  <div class="update card" role="status">
+    <p>{t("pwa.update")}</p>
+    <button type="button" class="btn btn-primary" onclick={applyUpdate}>{t("pwa.reload")}</button>
+  </div>
+{/if}
+
 <p class="visually-hidden" aria-live="polite">{app.flash}</p>
 {#if app.flash}
   <div class="toast" class:raised={!focusMode} role="presentation">{app.flash}</div>
@@ -180,8 +188,8 @@
     position: sticky;
     top: 0;
     z-index: 20;
-    background: var(--surface);
-    border-bottom: 1px solid var(--line);
+    background: var(--band);
+    color: var(--on-band);
     padding-top: env(safe-area-inset-top);
   }
   .top-inner {
@@ -198,6 +206,10 @@
     text-decoration: none;
     border-radius: var(--r-sm);
   }
+  .brand:focus-visible,
+  .nav a:focus-visible {
+    outline-color: #ffffff;
+  }
 
   .nav {
     display: flex;
@@ -208,20 +220,20 @@
     align-items: center;
     gap: 0.5rem;
     min-height: var(--tap);
-    padding: 0 0.75rem;
-    border-radius: var(--r-sm);
-    color: var(--ink-2);
+    padding: 0 1rem;
+    border-radius: var(--r-pill);
+    color: #ffffff;
     text-decoration: none;
     font-weight: 700;
     transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
   }
   .nav a:hover {
-    background: var(--surface-2);
-    color: var(--ink);
+    background: rgb(255 255 255 / 0.14);
+    color: #ffffff;
   }
   .nav a[aria-current="page"] {
-    background: var(--accent-soft);
-    color: var(--accent-text);
+    background: #ffffff;
+    color: var(--on-light-accent);
   }
 
   main {
@@ -233,7 +245,7 @@
     padding: 0;
   }
 
-  /* Phones: the nav becomes a bottom tab bar. */
+  /* Phones: the nav becomes a white bottom tab bar. */
   @media (max-width: 719px) {
     .top-inner {
       min-height: 56px;
@@ -257,15 +269,49 @@
       padding: 0.25rem;
       font-size: var(--fs-caption);
       border-radius: var(--r-sm);
+      color: var(--ink-2);
+    }
+    .nav a:hover {
+      background: var(--surface-2);
+      color: var(--ink);
     }
     .nav a[aria-current="page"] {
       background: transparent;
+      color: var(--accent-text);
     }
     .nav a[aria-current="page"] :global(.icon) {
       color: var(--accent);
     }
+    .nav a:focus-visible {
+      outline-color: var(--accent);
+    }
     main.with-tabbar {
       padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    }
+  }
+
+  /* A new version is ready: a card above the tab bar, out of the way of the page. */
+  .update {
+    position: fixed;
+    left: 50%;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    flex-wrap: wrap;
+    width: min(32rem, calc(100vw - 2rem));
+    padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+    font-weight: 700;
+  }
+  .update p {
+    flex: 1;
+    min-width: 10rem;
+  }
+  @media (max-width: 719px) {
+    .update {
+      bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
   }
 

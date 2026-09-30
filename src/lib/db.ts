@@ -22,6 +22,12 @@ export interface Snapshot {
 }
 
 const SETTINGS_KEY = "settings";
+/**
+ * Version 2 of the look (the blue StudyGo-style design) is light by default. Installs from before it
+ * followed the system theme without anyone choosing that, so they move to light once; an explicit
+ * dark stays dark.
+ */
+export const DESIGN_VERSION = 2;
 
 export function detectLang(navLang: string | undefined): Lang {
   return navLang?.toLowerCase().startsWith("en") ? "en" : "nl";
@@ -30,8 +36,9 @@ export function detectLang(navLang: string | undefined): Lang {
 export function defaultSettings(navLang?: string): Settings {
   return {
     uiLang: detectLang(navLang),
-    theme: "system",
+    theme: "light",
     schemaVersion: SCHEMA_VERSION,
+    designVersion: DESIGN_VERSION,
     dailyGoal: 20,
     autoSpeak: false,
     lenientAccents: false,
@@ -135,6 +142,9 @@ export class Store {
 
   async getSettings(navLang?: string): Promise<Settings> {
     const stored = await this.db.get("meta", SETTINGS_KEY);
+    if (stored && (stored.designVersion ?? 1) < DESIGN_VERSION) {
+      return this.saveSettings({ designVersion: DESIGN_VERSION, ...(stored.theme === "system" ? { theme: "light" as const } : {}) }, navLang);
+    }
     return { ...defaultSettings(navLang), ...stored, schemaVersion: SCHEMA_VERSION };
   }
 

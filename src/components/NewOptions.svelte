@@ -4,11 +4,11 @@
   import { href } from "../lib/router";
   import Icon, { type IconName } from "./Icon.svelte";
 
-  const options: { icon: IconName; title: StringKey; desc: StringKey; href: string }[] = [
-    { icon: "type", title: "new.type", desc: "new.typeDesc", href: href.editorNew() },
-    { icon: "camera", title: "new.photo", desc: "new.photoDesc", href: href.photo() },
-    { icon: "paste", title: "new.paste", desc: "new.pasteDesc", href: href.import() },
-    { icon: "file", title: "new.file", desc: "new.fileDesc", href: href.file() },
+  const options: { icon: IconName; title: StringKey; desc: StringKey; href: string; color: number }[] = [
+    { icon: "type", title: "new.type", desc: "new.typeDesc", href: href.editorNew(), color: 1 },
+    { icon: "camera", title: "new.photo", desc: "new.photoDesc", href: href.photo(), color: 2 },
+    { icon: "paste", title: "new.paste", desc: "new.pasteDesc", href: href.import(), color: 4 },
+    { icon: "file", title: "new.file", desc: "new.fileDesc", href: href.file(), color: 5 },
   ];
 </script>
 
@@ -16,7 +16,7 @@
   {#each options as o (o.title)}
     <li>
       <a class="option card" href={o.href}>
-        <span class="ic"><Icon name={o.icon} size={26} /></span>
+        <span class="ic-round ic-{o.color} ic"><Icon name={o.icon} size={24} /></span>
         <span class="txt">
           <span class="title">{t(o.title)}</span>
           <span class="small muted">{t(o.desc)}</span>
@@ -44,7 +44,9 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    height: 100%;
     padding: 1rem 1.25rem;
+    border: 2px solid transparent;
     color: var(--ink-2);
     text-decoration: none;
     transition: border-color var(--t-base) var(--ease);
@@ -53,14 +55,8 @@
     border-color: var(--accent);
   }
   .ic {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--r-sm);
-    background: var(--accent-soft);
-    color: var(--accent-text);
-    flex: none;
+    width: 52px;
+    height: 52px;
   }
   .txt {
     display: grid;
@@ -70,6 +66,7 @@
   }
   .title {
     color: var(--ink);
-    font-weight: 700;
+    font-weight: 800;
+    font-size: var(--fs-lead);
   }
 </style>

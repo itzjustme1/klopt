@@ -2,6 +2,8 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import ConfirmInline from "../components/ConfirmInline.svelte";
+  import Icon from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import Switch from "../components/Switch.svelte";
   import { app } from "../lib/app.svelte";
   import { parseBackup } from "../lib/backup";
@@ -116,10 +118,9 @@
   }
 </script>
 
+<PageBand title={t("settings.title")} lifted />
 <section class="settings">
-  <h1>{t("settings.title")}</h1>
-
-  <div class="card group">
+  <div class="card group lift">
     <fieldset class="fieldset-wrap">
       <legend>{t("settings.lang")}</legend>
       <div class="segmented">
@@ -131,7 +132,7 @@
     <fieldset class="fieldset-wrap">
       <legend>{t("settings.theme")}</legend>
       <div class="segmented">
-        {#each ["system", "light", "dark"] as const as th (th)}
+        {#each ["light", "dark", "system"] as const as th (th)}
           <label><input type="radio" name="theme" value={th} bind:group={theme} onchange={() => app.setTheme(theme)} />{t(`theme.${th}`)}</label>
         {/each}
       </div>
@@ -148,19 +149,19 @@
   </div>
 
   <div class="card group" aria-labelledby="checking-title">
-    <h2 id="checking-title">{t("settings.checking")}</h2>
+    <h2 id="checking-title" class="gh"><span class="ic-round ic-1 gi"><Icon name="check" size={18} /></span>{t("settings.checking")}</h2>
     <Switch bind:checked={lenientAccents} label={t("settings.lenientAccents")} help={t("settings.lenientAccentsHelp")} onchange={(v) => app.saveSettings({ lenientAccents: v })} />
     <Switch bind:checked={lenientTypos} label={t("settings.lenientTypos")} help={t("settings.lenientTyposHelp")} onchange={(v) => app.saveSettings({ lenientTypos: v })} />
   </div>
 
   <div class="card group" aria-labelledby="speech-title">
-    <h2 id="speech-title">{t("settings.speech")}</h2>
+    <h2 id="speech-title" class="gh"><span class="ic-round ic-4 gi"><Icon name="speaker" size={18} /></span>{t("settings.speech")}</h2>
     <Switch bind:checked={sounds} label={t("settings.sounds")} help={t("settings.soundsHelp")} onchange={(v) => app.saveSettings({ sounds: v })} />
     <Switch bind:checked={autoSpeak} label={t("settings.autoSpeak")} help={hasVoices ? t("settings.speechNote") : t("settings.noVoices")} disabled={!hasVoices} onchange={(v) => app.saveSettings({ autoSpeak: v })} />
   </div>
 
   <div class="card group" aria-labelledby="backup-title">
-    <h2 id="backup-title">{t("settings.backup")}</h2>
+    <h2 id="backup-title" class="gh"><span class="ic-round ic-5 gi"><Icon name="file" size={18} /></span>{t("settings.backup")}</h2>
     <p class="muted">{t("settings.backupIntro")}</p>
     <p class="small">{lastExport ? t("settings.lastExport", { date: lastExport }) : t("settings.neverExported")}</p>
     <div class="row">
@@ -204,13 +205,13 @@
 
   {#if persisted !== null}
     <div class="card group" aria-labelledby="storage-title">
-      <h2 id="storage-title">{t("settings.storage")}</h2>
+      <h2 id="storage-title" class="gh"><span class="ic-round ic-7 gi"><Icon name="lists" size={18} /></span>{t("settings.storage")}</h2>
       <p class="muted">{persisted ? t("settings.persisted") : t("settings.notPersisted")}</p>
     </div>
   {/if}
 
   <div class="card group danger-zone" aria-labelledby="reset-title">
-    <h2 id="reset-title">{t("settings.reset")}</h2>
+    <h2 id="reset-title" class="gh"><span class="ic-round gi gi-bad"><Icon name="trash" size={18} /></span>{t("settings.reset")}</h2>
     <p class="muted">{t("settings.resetIntro")}</p>
     <form class="reset" onsubmit={reset}>
       <div class="field">
@@ -222,7 +223,7 @@
   </div>
 
   <div class="card group" aria-labelledby="about-title">
-    <h2 id="about-title">{t("settings.about")}</h2>
+    <h2 id="about-title" class="gh"><span class="ic-round ic-2 gi"><Icon name="hint" size={18} /></span>{t("settings.about")}</h2>
     <a class="btn" href={href.help()}>{t("help.link")}</a>
     <p class="muted">{t("settings.aboutText")}</p>
     <p class="small muted">{t("settings.version", { v: __APP_VERSION__ })}</p>
@@ -278,6 +279,18 @@
   }
   .danger-zone h2 {
     color: var(--bad);
+  }
+  .gh {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .gi {
+    width: 36px;
+    height: 36px;
+  }
+  .gi-bad {
+    background: var(--bad-fill);
   }
 
 </style>

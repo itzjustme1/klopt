@@ -43,10 +43,11 @@
     padding: 1rem 1.25rem;
     color: inherit;
     text-decoration: none;
-    transition: border-color var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+    border: 2px solid transparent;
+    transition: border-color var(--t-base) var(--ease);
   }
   .list-card:hover {
-    border-color: var(--line-strong);
+    border-color: var(--accent);
   }
   .top {
     display: flex;
@@ -61,7 +62,7 @@
     flex: 1;
   }
   .name {
-    font-weight: 700;
+    font-weight: 800;
     font-size: var(--fs-lead);
     line-height: 1.3;
     overflow-wrap: anywhere;
@@ -72,22 +73,21 @@
     gap: 0.5rem;
     color: var(--ink-2);
     flex-wrap: wrap;
+    font-weight: 400;
   }
   .langs {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
   }
-  .to {
-    color: var(--ink-2);
-  }
   .due {
     flex: none;
     align-self: flex-start;
     padding: 0.25rem 0.75rem;
     border-radius: var(--r-pill);
-    background: var(--accent-soft);
-    color: var(--accent-text);
+    background: var(--yellow-soft);
+    border: 2px solid var(--yellow);
+    color: var(--ink);
   }
   .known {
     display: grid;
@@ -96,6 +96,6 @@
     gap: 0.75rem;
   }
   .known .bar > span {
-    background: var(--good-fill);
+    background: var(--cta);
   }
 </style>

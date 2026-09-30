@@ -32,6 +32,7 @@ h3 {
 h1 {
   font-size: var(--fs-h1);
   font-weight: 800;
+  letter-spacing: -0.025em;
   letter-spacing: -0.02em;
 }
 h2 {
@@ -95,11 +96,11 @@ main[tabindex="-1"]:focus {
   float: none !important;
 }
 
-/* Buttons: a solid face on a darker edge that disappears when pressed (StudyGo knob, Duolingo). */
+/* Buttons: pill-shaped faces on a darker edge that disappears when pressed (StudyGo's knob). */
 .btn {
   --face: var(--surface);
   --text: var(--ink);
-  --edge-color: var(--line-strong);
+  --edge-color: var(--grey-btn-edge);
   --edge-size: var(--edge-2);
   position: relative;
   display: inline-flex;
@@ -107,14 +108,14 @@ main[tabindex="-1"]:focus {
   justify-content: center;
   gap: 0.5rem;
   min-height: calc(var(--tap) + 4px);
-  padding: 0.75rem 1.25rem;
-  border: 2px solid var(--line-strong);
-  border-radius: var(--r-sm);
+  padding: 0.625rem 1.5rem;
+  border: 2px solid var(--line);
+  border-radius: var(--r-pill);
   background: var(--face);
   color: var(--text);
   box-shadow: 0 var(--edge-size) 0 var(--edge-color);
   font: inherit;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
@@ -139,27 +140,42 @@ main[tabindex="-1"]:focus {
   opacity: 0.45;
   cursor: not-allowed;
 }
+/* The green "go" button. Large bold text keeps white-on-green above 3:1. */
 .btn-primary {
+  --face: var(--cta);
+  --text: var(--on-cta);
+  --edge-color: var(--cta-edge);
+  --edge-size: var(--edge);
+  border-color: var(--cta);
+  font-size: var(--fs-cta);
+}
+.btn-primary:hover {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+/* Blue brand button, for selecting rather than starting. */
+.btn-brand {
   --face: var(--accent);
   --text: var(--on-accent);
   --edge-color: var(--accent-edge);
   --edge-size: var(--edge);
   border-color: var(--accent);
 }
-.btn-primary:hover {
+.btn-brand:hover {
   background: #0f55f0;
   border-color: #0f55f0;
 }
 .btn-good {
-  --face: var(--good-fill);
-  --text: #07361e;
-  --edge-color: #0d8a50;
+  --face: var(--cta);
+  --text: var(--on-cta);
+  --edge-color: var(--cta-edge);
   --edge-size: var(--edge);
-  border-color: var(--good-fill);
+  border-color: var(--cta);
+  font-size: var(--fs-cta);
 }
 .btn-good:hover {
-  background: #1ec276;
-  border-color: #1ec276;
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
 }
 .btn-bad {
   --face: var(--bad-fill);
@@ -172,17 +188,7 @@ main[tabindex="-1"]:focus {
   background: #b83328;
   border-color: #b83328;
 }
-.btn-inverse {
-  --face: #ffffff;
-  --text: #1052e6;
-  --edge-color: rgb(6 30 96 / 0.45);
-  --edge-size: var(--edge);
-  border-color: #ffffff;
-}
-.btn-inverse:hover {
-  background: #eef3ff;
-  border-color: #eef3ff;
-}
+/* On the blue band: translucent white. */
 .btn-danger {
   --text: var(--bad);
 }
@@ -205,6 +211,9 @@ main[tabindex="-1"]:focus {
 }
 .btn-lg {
   min-height: 3.5rem;
+}
+/* Green buttons keep their own size: white on green (3.3:1) only passes as large bold text. */
+.btn-lg:where(:not(.btn-primary, .btn-good)) {
   font-size: var(--fs-lead);
 }
 .icon-btn {
@@ -247,6 +256,7 @@ main[tabindex="-1"]:focus {
 }
 input[type="text"],
 input[type="search"],
+input[type="date"],
 textarea,
 select {
   width: 100%;
@@ -257,16 +267,19 @@ select {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+  font-weight: 400;
   transition: border-color var(--t-base) var(--ease);
 }
 input[type="text"]:hover,
 input[type="search"]:hover,
+input[type="date"]:hover,
 textarea:hover,
 select:hover {
   border-color: var(--line-strong);
 }
 input[type="text"]:focus-visible,
 input[type="search"]:focus-visible,
+input[type="date"]:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
   outline: none;
@@ -300,7 +313,7 @@ textarea {
   padding: 4px;
   border: 0;
   margin: 0;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-lg);
   background: var(--surface-2);
 }
 .segmented label {
@@ -308,8 +321,8 @@ textarea {
   align-items: center;
   justify-content: center;
   min-height: var(--tap);
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--r-xs);
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-pill);
   font-weight: 700;
   font-size: var(--fs-small);
   color: var(--ink-2);
@@ -318,8 +331,7 @@ textarea {
 }
 .segmented label:has(input:checked) {
   background: var(--surface);
-  color: var(--ink);
-  box-shadow: none;
+  color: var(--accent-text);
 }
 .segmented label:has(input:focus-visible) {
   outline: 3px solid var(--accent);
@@ -430,4 +442,56 @@ main :where(section, form, div, li, article) {
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* The blue band with a wave: the header continues into it on main screens. */
+.band {
+  position: relative;
+  background: var(--band);
+  color: var(--on-band);
+  padding-bottom: 3.5rem;
+}
+/* Low specificity, so a component's own colour (the white streak chip) still wins. */
+.band :where(a:not(.btn)) {
+  color: var(--on-band);
+}
+.band .muted {
+  color: #ffffff;
+}
+.band-wave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 36px;
+  display: block;
+}
+/* Content that pulls up onto the wave. */
+.lift {
+  position: relative;
+  margin-top: -2.5rem;
+}
+/* Round icons (subjects, modes). */
+.ic-round {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: #ffffff;
+  font-weight: 800;
+}
+.ic-1 { background: var(--ic-1); }
+.ic-2 { background: var(--ic-2); }
+.ic-3 { background: var(--ic-3); }
+.ic-4 { background: var(--ic-4); }
+.ic-5 { background: var(--ic-5); }
+.ic-6 { background: var(--ic-6); }
+.ic-7 { background: var(--ic-7); }
+.ic-8 { background: var(--ic-8); }
+/* Yellow callout, for tests and nudges. */
+.callout {
+  background: var(--yellow-soft);
+  border: 2px solid var(--yellow);
+  border-radius: var(--r-lg);
 }

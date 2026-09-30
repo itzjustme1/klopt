@@ -5,6 +5,7 @@
   import AccentBar from "../components/AccentBar.svelte";
   import Flag from "../components/Flag.svelte";
   import Icon from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import { insertAtCaret } from "../lib/accents";
   import { app } from "../lib/app.svelte";
   import { SUBJECTS } from "../lib/subjects";
@@ -147,9 +148,8 @@
   const focusedLang = $derived(focused ? (focused.side === "front" ? langFront : langBack) : null);
 </script>
 
+<PageBand title={existing ? t("editor.editTitle") : t("editor.newTitle")} subtitle={existing?.name} back={{ href: existing ? href.deck(existing.id) : href.newList(), label: t("common.back") }} />
 <form class="editor" onsubmit={save} novalidate>
-  <a class="back small" href={existing ? href.deck(existing.id) : href.newList()}><Icon name="back" size={18} />{t("common.back")}</a>
-  <h1>{existing ? t("editor.editTitle") : t("editor.newTitle")}</h1>
 
   <div class="card card-pad meta">
     <div class="field name">

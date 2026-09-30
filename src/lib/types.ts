@@ -87,6 +87,8 @@ export interface Settings {
   installHintDismissed: boolean;
   /** Day on which the "goal reached" message was last shown. */
   goalCelebratedOn?: string;
+  /** The look these settings were last brought up to date for (see DESIGN_VERSION in db.ts). */
+  designVersion?: number;
 }
 
 export const GRADES: readonly Grade[] = ["fout", "twijfel", "goed"];

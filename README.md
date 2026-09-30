@@ -1,6 +1,6 @@
 # Klopt
 
-A study app for Dutch secondary-school students: vocabulary and key terms, practised the way StudyGo and Quizlet do it, plus a daily spaced-repetition queue and a plan for your next test. It runs entirely in the browser. There are no accounts, no backend, no analytics and no cookies. Everything is stored on the device in IndexedDB, and the app works offline after the first visit and can be installed to the home screen. The interface is Dutch or English.
+A study app for Dutch secondary-school students: vocabulary and key terms, practised the way StudyGo and Quizlet do it, plus a daily spaced-repetition queue and a plan for your next test. It runs entirely in the browser. There are no accounts, no backend, no analytics and no cookies. Everything is stored on the device in IndexedDB, and the app works offline after the first visit and can be installed to the home screen. The interface is Dutch or English. It looks like StudyGo in blue and is light by default; a dark theme is in the settings.
 
 "Klopt" is a working name. It lives only in `src/config.ts` (`APP_NAME`); translations use `{app}`.
 
@@ -187,7 +187,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## How it's tested
 
-**Unit tests (Vitest, 214 tests, run with `TZ=Europe/Amsterdam`)**
+**Unit tests (Vitest, 215 tests, run with `TZ=Europe/Amsterdam`)**
 - **Scheduler:** your four table cases, every box × grade × day of 2026 against the reference implementation, DST, and the first-answer-of-the-day rule.
 - **Dates:** rollover and DST.
 - **Answer checking:** alternatives, brackets, accents, typos including swapped letters, decimal commas, hints, and the lenient options.
@@ -196,14 +196,14 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 - **Test plan and forecast:** the daily target is fixed for the day.
 - **Streak.**
 - **OCR columns.**
-- **Database** (on `fake-indexeddb`): the migration, the day stats, stars, strictly ordered logs, replay, cache rebuilds.
+- **Database** (on `fake-indexeddb`): the migration, the move to the light default, the day stats, stars, strictly ordered logs, replay, cache rebuilds.
 - **Backup:** round trip, more than 25 kinds of malformed input rejected, v1 files.
 - **Share links:** gzip bomb, invalid UTF-8.
 - **Import quoting, the router and i18n parity.**
 
 The unit suite was also run 30 times in a row to rule out flaky tests.
 
-**End-to-end tests (Playwright, 20 tests, production build; the whole set also passed three times in a row)**
+**End-to-end tests (Playwright, 21 tests, production build)**
 - **Learn, review and test by keyboard:** checks the boxes, streak, grade, persistence and offline.
 - **Session size, starred words, lenient accents, swiping flashcards.**
 - **The matching game:** two rounds and a record.
@@ -213,9 +213,13 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Photo:** a real image goes through the on-device OCR.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link, and the backup reminder.**
-- **Accessibility:** axe WCAG 2.2 AA on 21 screen states in light and dark at 360px, with 44px tap targets, no horizontal scroll (also with very long words), and reduced motion.
+- **Accessibility:**
+  - axe WCAG 2.2 AA on 21 screen states in light and dark at 360px, and on five screens at laptop width in both themes
+  - 44px tap targets
+  - no horizontal scroll, also with very long words
+  - reduced motion
 - **Security:** the CSP and HTML-as-text.
 
 The flow tests also fail on any request to another origin, any CSP violation and any console error.
 
-The design was measured against StudyGo, Quizlet and Duolingo and then re-measured on this build; see [DESIGN-RECON.md](DESIGN-RECON.md). A 2000-word list imports in about 0.5 s and opens in about 0.3 s on a laptop.
+The design follows StudyGo's visual language in blue. It was measured against StudyGo, Quizlet and Duolingo and then re-measured on this build; see [DESIGN-RECON.md](DESIGN-RECON.md). Screenshots of every screen, light and dark, are in `docs/screens/` (`node scripts/screens.mjs docs/screens` after a build). A 2000-word list imports in about 0.5 s and opens in about 0.3 s on a laptop.

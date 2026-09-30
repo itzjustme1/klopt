@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getLang, num, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { addDays, formatDay } from "../lib/dates";
@@ -46,10 +47,9 @@
   const maxComing = $derived(Math.max(1, ...coming.map((c) => c.count)));
 </script>
 
+<PageBand title={t("progress.title")} lifted />
 <section class="progress">
-  <h1>{t("progress.title")}</h1>
-
-  <div class="top">
+  <div class="top lift">
     <div class="streak card">
       <span class="flame" class:lit={s.today}><Icon name="flame" size={40} filled /></span>
       <p class="big num">{num(s.days)}</p>
@@ -108,7 +108,7 @@
 
   {#if hard > 0}
     <a class="hard card" href={href.practice("alles", "leren", "front", "hard")}>
-      <span class="hard-ic"><Icon name="learn" size={24} /></span>
+      <span class="ic-round ic-3 hard-ic"><Icon name="learn" size={24} /></span>
       <span class="hard-txt">
         <span class="hard-title">{t("home.hard")}</span>
         <span class="small muted">{tp("home.hardCount", hard)}</span>
@@ -151,8 +151,13 @@
   .week {
     display: grid;
     justify-items: start;
+    align-content: start;
     gap: 0.125rem;
     padding: 1.25rem;
+  }
+  .streak {
+    background: var(--yellow-soft);
+    border: 2px solid var(--yellow);
   }
   .week h2 {
     font-size: var(--fs-small);
@@ -160,7 +165,7 @@
     margin-bottom: 0.25rem;
   }
   .flame {
-    color: var(--line-strong);
+    color: var(--ink-2);
     margin-bottom: 0.25rem;
   }
   .flame.lit {
@@ -264,25 +269,25 @@
     align-items: center;
     gap: 1rem;
     padding: 1rem 1.25rem;
+    border: 2px solid transparent;
     color: var(--ink-2);
     text-decoration: none;
+    transition: border-color var(--t-base) var(--ease);
+  }
+  .hard:hover {
+    border-color: var(--accent);
   }
   .hard-ic {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--r-sm);
-    background: var(--warn-soft);
-    color: var(--warn);
-    flex: none;
+    width: 52px;
+    height: 52px;
   }
   .hard-txt {
     display: grid;
     flex: 1;
   }
   .hard-title {
-    font-weight: 700;
+    font-weight: 800;
+    font-size: var(--fs-lead);
     color: var(--ink);
   }
   .per-list {

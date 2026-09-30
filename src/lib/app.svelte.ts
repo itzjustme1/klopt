@@ -167,6 +167,29 @@ class App {
     });
   }
 
+  /** Recently practised first; lists never practised after them, newest first. */
+  byRecent(decks: readonly Deck[] = this.decks): Deck[] {
+    const last = new Map(decks.map((d) => [d.id, this.lastPracticed(d.id) ?? ""]));
+    return decks.toSorted((a, b) => last.get(b.id)!.localeCompare(last.get(a.id)!) || b.createdAt.localeCompare(a.createdAt));
+  }
+
+  /** Lists grouped by school subject (lists without one go under `other`), busiest first. */
+  subjects(other: string): { name: string; decks: Deck[]; words: number; known: number }[] {
+    // No prototype, so a subject called "__proto__" or "constructor" is just a name.
+    const groups: Record<string, Deck[]> = Object.create(null);
+    for (const d of this.decks) {
+      const key = d.subject?.trim() || other;
+      (groups[key] ??= []).push(d);
+    }
+    return Object.entries(groups)
+      .map(([name, decks]) => {
+        const cards = decks.flatMap((d) => this.cardsIn(d.id));
+        const known = cards.length ? Math.round((cards.filter((c) => difficulty(c.hist) === "goed").length / cards.length) * 100) : 0;
+        return { name, decks, words: cards.length, known };
+      })
+      .sort((a, b) => b.words - a.words || a.name.localeCompare(b.name));
+  }
+
   /** Lists with a test today or later, soonest first. */
   upcomingExams(): Deck[] {
     return this.decks.filter((d) => d.examDate && d.examDate >= this.today).toSorted((a, b) => a.examDate!.localeCompare(b.examDate!));
@@ -330,14 +353,35 @@ class App {
   }
 }
 
-export function applyTheme(theme: Theme): void {
+/** The theme of the last visit, kept in this browser so the first paint is already right. */
+const THEME_KEY = "klopt-theme";
+/** The browser bar takes the colour of the blue header band (--band in light and dark). */
+const BAR_COLOR = { light: "#1660FF", dark: "#1447C9" } as const;
+
+export function applyTheme(theme: Theme, remember = true): void {
   const root = document.documentElement;
   if (theme === "system") delete root.dataset.theme;
   else root.dataset.theme = theme;
   // Two theme-color metas (light, dark). With an explicit theme both get that theme's colour.
   const [light, dark] = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
-  if (light) light.content = theme === "dark" ? "#0F1422" : "#F4F6FB";
-  if (dark) dark.content = theme === "light" ? "#F4F6FB" : "#0F1422";
+  if (light) light.content = theme === "dark" ? BAR_COLOR.dark : BAR_COLOR.light;
+  if (dark) dark.content = theme === "light" ? BAR_COLOR.light : BAR_COLOR.dark;
+  if (!remember) return;
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    // Storage blocked: the page starts light and switches once the settings have loaded.
+  }
+}
+
+/** Applies the theme of the last visit before the settings have loaded from IndexedDB. */
+export function applyCachedTheme(): void {
+  try {
+    const theme = localStorage.getItem(THEME_KEY);
+    if (theme === "system" || theme === "light" || theme === "dark") applyTheme(theme, false);
+  } catch {
+    // Storage blocked: keep the default from index.html.
+  }
 }
 
 const RANK: Record<Difficulty, number> = { vaak: 0, soms: 1, nieuw: 2, goed: 3 };

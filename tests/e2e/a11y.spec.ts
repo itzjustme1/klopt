@@ -38,6 +38,16 @@ for (const scheme of ["light", "dark"] as const) {
 
     await page.goto(base);
     await page.getByRole("heading", { name: "Welkom bij Klopt" }).waitFor();
+    // The app is light by default, also on a dark phone; dark is a choice in the settings.
+    expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("light");
+    if (scheme === "dark") {
+      await page.goto(base + "#/instellingen");
+      await page.getByText("Donker", { exact: true }).click();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      await page.getByRole("link", { name: "Vandaag", exact: true }).click();
+      await page.getByRole("heading", { name: "Welkom bij Klopt" }).waitFor();
+      expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
+    }
     await check("welcome");
     await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
     await page.locator(".hero-num").waitFor();
@@ -109,6 +119,38 @@ for (const scheme of ["light", "dark"] as const) {
     await ctx.close();
   });
 }
+
+// On a laptop the navigation sits in the blue band, so it gets its own pass in both themes.
+test("accessibility on a laptop screen, light and dark", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "nl-NL", timezoneId: "Europe/Amsterdam" });
+  const page = await ctx.newPage();
+  const base = "http://localhost:4173/";
+  await page.goto(base);
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  for (const theme of ["Licht", "Donker"]) {
+    await page.goto(base + "#/instellingen");
+    await page.getByText(theme, { exact: true }).click();
+    const screens: [string, string][] = [
+      ["today", ""],
+      ["lists", "#/lijsten"],
+      ["progress", "#/voortgang"],
+      ["settings", "#/instellingen"],
+    ];
+    for (const [label, hash] of screens) {
+      await page.goto(base + hash);
+      await page.getByRole("heading", { level: 1 }).first().waitFor();
+      await page.waitForTimeout(300);
+      await audit(page, `${theme} 1280 ${label}`);
+    }
+    await page.goto(base + "#/lijsten");
+    await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
+    await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
+    await page.waitForTimeout(300); // let the nav colour transition finish
+    await audit(page, `${theme} 1280 list`);
+  }
+  await ctx.close();
+});
 
 test("reduced motion: the flashcard swaps without rotating", async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 390, height: 800 }, locale: "nl-NL" });

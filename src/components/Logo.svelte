@@ -1,13 +1,13 @@
 <script lang="ts">
   import { APP_NAME } from "../config";
-  let { size = 32 }: { size?: number } = $props();
+  /** On the blue band the mark turns white with a blue check. */
+  let { size = 32, onBand = false }: { size?: number; onBand?: boolean } = $props();
 </script>
 
-<span class="logo">
+<span class="logo" class:on-band={onBand}>
   <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-    <rect width="32" height="32" rx="9" fill="#1660FF" />
-    <rect x="7" y="9" width="18" height="14" rx="3" fill="#fff" />
-    <path d="m11.5 16.2 3 3 6-6.2" fill="none" stroke="#1660FF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+    <rect width="32" height="32" rx="9" fill={onBand ? "#ffffff" : "#1660FF"} />
+    <path d="m9.5 16.4 4.2 4.2 8.8-9.2" fill="none" stroke={onBand ? "#1660FF" : "#ffffff"} stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
   </svg>
   <span class="name">{APP_NAME}</span>
 </span>
@@ -20,8 +20,11 @@
   }
   .name {
     font-weight: 800;
-    font-size: var(--fs-h2);
+    font-size: 1.375rem;
     letter-spacing: -0.03em;
     color: var(--ink);
+  }
+  .on-band .name {
+    color: #ffffff;
   }
 </style>

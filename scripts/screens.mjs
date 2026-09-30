@@ -20,7 +20,14 @@ try {
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 2, colorScheme: scheme, locale: "nl-NL", timezoneId: "Europe/Amsterdam", serviceWorkers: "block" });
     const page = await ctx.newPage();
     const shot = (name, full = false) => page.screenshot({ path: `${out}/${scheme}-${width}-${name}.png`, fullPage: full });
-    await page.goto(base);
+    if (scheme === "dark") {
+      // Light is the default; dark is chosen in the settings.
+      await page.goto(base + "#/instellingen");
+      await page.getByText("Donker", { exact: true }).click();
+      await page.getByRole("link", { name: "Vandaag", exact: true }).click();
+    } else {
+      await page.goto(base);
+    }
     await page.getByRole("heading", { level: 1 }).waitFor();
     await shot("01-welcome", true);
     await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();

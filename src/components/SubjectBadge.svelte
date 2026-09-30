@@ -1,8 +1,23 @@
 <script lang="ts">
+  /** A round, coloured subject icon: a symbol for some subjects, otherwise two letters. */
   let { subject, size = "md" }: { subject?: string; size?: "sm" | "md" | "lg" } = $props();
 
+  const SYMBOLS: Record<string, string> = {
+    economie: "€",
+    bedrijfseconomie: "€",
+    economics: "€",
+    "business economics": "€",
+    wiskunde: "π",
+    mathematics: "π",
+    math: "π",
+    informatica: "</>",
+    "computer science": "</>",
+  };
+
   const label = $derived((subject ?? "").trim());
-  const letters = $derived.by(() => {
+  const text = $derived.by(() => {
+    const key = label.toLowerCase();
+    if (SYMBOLS[key]) return SYMBOLS[key]!;
     const words = label.split(/\s+/).filter(Boolean);
     if (!words.length) return "";
     const a = words[0]!;
@@ -11,44 +26,36 @@
   const hue = $derived.by(() => {
     let h = 0;
     for (const ch of label.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-    return (h % 6) + 1;
+    return (h % 8) + 1;
   });
 </script>
 
-{#if letters}
-  <span class="badge {size} sub-{hue}" aria-hidden="true">{letters}</span>
+{#if text}
+  <span class="ic-round ic-{hue} {size}" class:sym={text.length > 2} aria-hidden="true">{text}</span>
 {/if}
 
 <style>
-  .badge {
-    display: inline-grid;
-    place-items: center;
-    flex: none;
-    border-radius: var(--r-sm);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
   .sm {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     font-size: var(--fs-caption);
-    border-radius: var(--r-xs);
   }
   .md {
-    width: 44px;
-    height: 44px;
-    font-size: var(--fs-body);
+    width: 48px;
+    height: 48px;
+    font-size: var(--fs-cta);
   }
   .lg {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     font-size: var(--fs-h2);
-    border-radius: var(--r-sm);
   }
-  .sub-1 { background: var(--sub-1-bg); color: var(--sub-1-fg); }
-  .sub-2 { background: var(--sub-2-bg); color: var(--sub-2-fg); }
-  .sub-3 { background: var(--sub-3-bg); color: var(--sub-3-fg); }
-  .sub-4 { background: var(--sub-4-bg); color: var(--sub-4-fg); }
-  .sub-5 { background: var(--sub-5-bg); color: var(--sub-5-fg); }
-  .sub-6 { background: var(--sub-6-bg); color: var(--sub-6-fg); }
+  /* Three-character symbols (</>) sit a size smaller and tighter; the small badge is already caption size. */
+  .sym {
+    letter-spacing: -0.04em;
+  }
+  .sym.md,
+  .sym.lg {
+    font-size: var(--fs-small);
+  }
 </style>

@@ -73,7 +73,7 @@ export default defineConfig({
         start_url: "./",
         scope: "./",
         display: "standalone",
-        background_color: "#F4F6FB",
+        background_color: "#F3F6FC",
         theme_color: "#1660FF",
         share_target: {
           action: "./",

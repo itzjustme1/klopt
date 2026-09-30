@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
-  import Icon from "../components/Icon.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import SharedPreview from "../components/SharedPreview.svelte";
   import { parseShared, type SharedDeck } from "../lib/backup";
   import { readTextFile } from "../lib/files";
@@ -30,12 +30,10 @@
   }
 </script>
 
+<PageBand title={t("new.file")} subtitle={t("new.fileDesc")} back={{ href: href.newList(), label: t("common.back") }} />
 <section class="open">
-  <a class="back small" href={href.newList()}><Icon name="back" size={18} />{t("common.back")}</a>
-  <h1>{t("new.file")}</h1>
-  <p class="muted">{t("new.fileDesc")}</p>
   {#if !shared}
-    <div class="field">
+    <div class="field card card-pad">
       <label for="receive-file">{t("receive.choose")}</label>
       <input id="receive-file" type="file" accept="application/json,.json" bind:this={input} onchange={choose} />
     </div>

@@ -3,6 +3,7 @@
   import { app } from "../lib/app.svelte";
   import type { Practice } from "../lib/practice";
   import Icon from "./Icon.svelte";
+  import Illustration from "./Illustration.svelte";
 
   let {
     engine,
@@ -32,7 +33,7 @@
       <p class="cijfer num" class:pass class:fail={!pass}>{cijfer}</p>
       <p class="muted">{t("result.firstTry", { right: firstRight, total: engine.total })}</p>
     {:else}
-      <span class="done-ic" aria-hidden="true"><Icon name="check" size={36} /></span>
+      <Illustration name="trophy" size={128} />
       <h2 tabindex="-1" bind:this={heading}>{t("result.title")}</h2>
       <p class="muted">{engine.mistakes.length === 0 ? t("result.perfect") : t("result.firstTry", { right: firstRight, total: engine.total })}</p>
     {/if}
@@ -85,15 +86,6 @@
     font-size: var(--fs-h1);
     font-weight: 800;
   }
-  .done-ic {
-    display: grid;
-    place-items: center;
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: var(--good-fill);
-    color: #ffffff;
-  }
   .cijfer {
     font-size: var(--fs-hero);
     font-weight: 800;
@@ -114,8 +106,11 @@
     margin-top: 0.5rem;
   }
   .streak {
-    color: var(--warn);
-    background: var(--warn-soft);
+    background: var(--yellow-soft);
+    box-shadow: inset 0 0 0 2px var(--yellow);
+  }
+  .streak :global(.icon) {
+    color: var(--flame);
   }
   .mistakes {
     display: grid;

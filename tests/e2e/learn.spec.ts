@@ -50,13 +50,13 @@ test("make a list, learn it with the keyboard, persist, work offline", async ({ 
 
   // Home shows the streak and the answers for today.
   await page.getByRole("link", { name: "Vandaag", exact: true }).click();
-  await expect(page.getByText("1 dag op rij")).toBeVisible();
+  await expect(page.getByRole("link", { name: "1 dag op rij" })).toBeVisible();
   await expect(page.getByText("Alles herhaald voor vandaag.")).toBeVisible();
   await expect(page.getByText(`Je volgende kaarten komen op ${dayLabel(1)}.`)).toBeVisible();
 
   // Reload: everything persisted in IndexedDB.
   await page.reload();
-  await expect(page.getByText("1 dag op rij")).toBeVisible();
+  await expect(page.getByRole("link", { name: "1 dag op rij" })).toBeVisible();
 
   // Offline: the service worker serves the app.
   await page.evaluate(async () => {

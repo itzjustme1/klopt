@@ -8,11 +8,14 @@
   import Icon, { type IconName } from "../components/Icon.svelte";
   import SharePanel from "../components/SharePanel.svelte";
   import ExamCard from "../components/ExamCard.svelte";
+  import Illustration from "../components/Illustration.svelte";
+  import PageBand from "../components/PageBand.svelte";
   import SpeakButton from "../components/SpeakButton.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { LIMITS } from "../config";
   import { app } from "../lib/app.svelte";
   import { difficulty } from "../lib/history";
+  import { MODE_COLOR } from "../lib/modeStyle";
   import { normalize } from "../lib/answer";
   import type { Direction } from "../lib/practice";
   import { href, type Count, type Which } from "../lib/router";
@@ -105,37 +108,28 @@
 </script>
 
 {#if !deck}
-  <section class="stack">
-    <h1>{t("deck.notFound")}</h1>
-    <a class="btn" href={href.lists()}>{t("deck.back")}</a>
-  </section>
+  <PageBand title={t("deck.notFound")} back={{ href: href.lists(), label: t("deck.back") }} />
 {:else}
   <section class="deck">
-    <a class="back small" href={href.lists()}><Icon name="back" size={18} />{t("deck.back")}</a>
-
-    <header class="head">
-      <SubjectBadge subject={deck.subject || deck.name} size="lg" />
-      <div class="titles">
-        <h1>{deck.name}</h1>
-        <ul class="meta">
-          {#if deck.subject}<li class="chip">{deck.subject}</li>{/if}
-          <li class="chip">{tp("common.wordsCount", cards.length)}</li>
-          {#if !sameLang}
-            <li class="chip">
-              <Flag lang={deck.langFront} size={18} /><span class="visually-hidden">{t("lists.langs", { a: t(`lang.${deck.langFront}`), b: t(`lang.${deck.langBack}`) })}</span><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={18} />
-            </li>
-          {/if}
-        </ul>
+    <PageBand title={deck.name} back={{ href: href.lists(), label: t("deck.back") }}>
+      {#snippet lead()}<span class="lead-badge"><SubjectBadge subject={deck.subject || deck.name} size="lg" /></span>{/snippet}
+      <ul class="meta">
+        {#if deck.subject}<li class="bchip">{deck.subject}</li>{/if}
+        <li class="bchip">{tp("common.wordsCount", cards.length)}</li>
+        {#if !sameLang}
+          <li class="bchip">
+            <Flag lang={deck.langFront} size={18} /><span class="visually-hidden">{t("lists.langs", { a: t(`lang.${deck.langFront}`), b: t(`lang.${deck.langBack}`) })}</span><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={18} />
+          </li>
+        {/if}
+      </ul>
+      <div class="tools">
+        <a class="tool" href={href.edit(id)}><Icon name="edit" size={22} /><span>{t("common.edit")}</span></a>
+        {#if cards.length > 0}
+          <a class="tool" href={share ? href.deck(id) : href.shareDeck(id)} aria-current={share ? "true" : undefined}><Icon name="share" size={22} /><span>{t("deck.share")}</span></a>
+          <button type="button" class="tool" disabled={copying} onclick={duplicate}><Icon name="cards" size={22} /><span>{t("deck.copy")}</span></button>
+        {/if}
       </div>
-    </header>
-
-    <div class="tools">
-      <a class="tool" href={href.edit(id)}><Icon name="edit" size={22} /><span>{t("common.edit")}</span></a>
-      {#if cards.length > 0}
-        <a class="tool" href={share ? href.deck(id) : href.shareDeck(id)} aria-current={share ? "true" : undefined}><Icon name="share" size={22} /><span>{t("deck.share")}</span></a>
-        <button type="button" class="tool" disabled={copying} onclick={duplicate}><Icon name="cards" size={22} /><span>{t("deck.copy")}</span></button>
-      {/if}
-    </div>
+    </PageBand>
 
     {#if share}
       <SharePanel {deck} {cards} onclose={() => (location.hash = href.deck(id))} />
@@ -143,8 +137,6 @@
 
     {#if deck.examDate}
       <ExamCard {deck} />
-    {:else if cards.length > 0}
-      <a class="set-exam small" href={href.edit(id)}><Icon name="test" size={18} />{t("exam.set")}</a>
     {/if}
 
     {#if cards.length === 0}
@@ -158,10 +150,23 @@
       </div>
     {:else}
       {#if due > 0}
-        <div class="due-strip">
-          <p><strong>{tp("deck.dueHero", due)}</strong></p>
-          <a class="btn btn-inverse" href={href.review(id)}><Icon name="review" size={20} />{t("home.startReview")}</a>
+        <div class="due card">
+          <Illustration name="cards" size={80} />
+          <div class="due-txt">
+            <p class="due-title">{tp("deck.dueHero", due)}</p>
+            <a class="btn btn-primary" href={href.review(id)}>{t("home.startReview")}</a>
+          </div>
         </div>
+      {/if}
+      {#if !deck.examDate}
+        <a class="set-exam callout" href={href.edit(id)}>
+          <span class="ic-round exam-ic"><Icon name="test" size={20} /></span>
+          <span class="set-exam-txt">
+            <span class="set-exam-title">{t("exam.set")}</span>
+            <span class="small muted">{t("exam.setHelp")}</span>
+          </span>
+          <Icon name="chevron" size={20} />
+        </a>
       {/if}
 
       <h2 class="section-title">{t("deck.practice")}</h2>
@@ -205,7 +210,7 @@
           <li class:featured={m.mode === "leren"}>
             {#if disabled}
               <div class="mode card disabled" aria-disabled="true">
-                <span class="mode-ic"><Icon name={m.icon} size={24} /></span>
+                <span class="ic-round ic-{MODE_COLOR[m.mode]} mode-ic"><Icon name={m.icon} size={24} /></span>
                 <span class="mode-txt">
                   <span class="mode-name">{t(`mode.${m.mode}`)}</span>
                   <span class="small muted">{t("modeDesc.noVoice", { lang: t(`lang.${deck.langFront === "nl" ? deck.langBack : deck.langFront}`) })}</span>
@@ -213,9 +218,9 @@
               </div>
             {:else}
               <a class="mode card" href={href.practice(id, m.mode, dir, which, countValue)}>
-                <span class="mode-ic"><Icon name={m.icon} size={24} /></span>
+                <span class="ic-round ic-{MODE_COLOR[m.mode]} mode-ic"><Icon name={m.icon} size={24} /></span>
                 <span class="mode-txt">
-                  <span class="mode-name">{t(`mode.${m.mode}`)}</span>
+                  <span class="mode-name">{t(`mode.${m.mode}`)}{#if m.mode === "leren"}<span class="rec caption">{t("deck.recommended")}</span>{/if}</span>
                   <span class="small muted">{t(m.desc)}</span>
                 </span>
                 <Icon name="chevron" size={20} />
@@ -304,29 +309,27 @@
     display: grid;
     gap: 1rem;
   }
-  .head {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  .titles {
-    display: grid;
-    gap: 0.25rem;
-    min-width: 0;
-  }
-  .titles h1 {
-    overflow-wrap: anywhere;
+  .lead-badge :global(.ic-round) {
+    box-shadow: 0 0 0 4px rgb(255 255 255 / 0.35);
   }
   .meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin: 0.25rem 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
-  .meta .chip {
-    color: var(--ink-2);
+  .bchip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--r-pill);
+    background: var(--band-2);
+    font-size: var(--fs-caption);
+    font-weight: 700;
   }
   .tools {
     display: grid;
@@ -341,28 +344,30 @@
     gap: 0.25rem;
     min-height: 64px;
     padding: 0.5rem;
-    border: 2px solid var(--line);
+    border: 0;
     border-radius: var(--r-sm);
-    background: var(--surface);
-    color: var(--ink);
+    background: var(--band-2);
+    color: #ffffff;
     font: inherit;
     font-size: var(--fs-caption);
-    font-weight: 700;
+    font-weight: 800;
     text-decoration: none;
     cursor: pointer;
-    transition: border-color var(--t-base) var(--ease), background-color var(--t-base) var(--ease);
+    transition: background-color var(--t-base) var(--ease);
   }
   .tool:hover {
-    border-color: var(--accent);
+    background: var(--band-3);
   }
   .tool[aria-current] {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-    color: var(--accent-text);
+    background: #ffffff;
+    color: var(--on-light-accent);
   }
   .tool[disabled] {
     opacity: 0.5;
     cursor: progress;
+  }
+  .tool:focus-visible {
+    outline-color: #ffffff;
   }
   .flags {
     gap: 0.375rem;
@@ -371,16 +376,21 @@
     display: grid;
     gap: 1rem;
   }
-  .due-strip {
+  .due {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
-    flex-wrap: wrap;
     padding: 1rem 1.25rem;
-    border-radius: var(--r-lg);
-    background: var(--accent);
-    color: var(--on-accent);
+  }
+  .due-txt {
+    display: grid;
+    justify-items: start;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+  .due-title {
+    font-weight: 800;
+    font-size: var(--fs-lead);
   }
   .options {
     display: flex;
@@ -413,6 +423,7 @@
     gap: 1rem;
     height: 100%;
     padding: 1rem 1.25rem;
+    border: 2px solid transparent;
     color: var(--ink-2);
     text-decoration: none;
     transition: border-color var(--t-base) var(--ease);
@@ -424,26 +435,25 @@
     opacity: 0.6;
   }
   .mode-ic {
-    display: grid;
-    place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: var(--r-sm);
-    background: var(--accent-soft);
-    color: var(--accent-text);
-    flex: none;
+    width: 52px;
+    height: 52px;
   }
   .featured .mode {
-    border: 2px solid var(--accent);
+    border-color: var(--accent);
   }
   @media (min-width: 720px) {
     .featured {
       grid-column: 1 / -1;
     }
   }
-  .featured .mode-ic {
-    background: var(--accent);
-    color: var(--on-accent);
+  .rec {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--r-pill);
+    background: var(--yellow);
+    color: var(--on-light);
+    vertical-align: 0.15em;
   }
   .mode-txt {
     display: grid;
@@ -518,7 +528,7 @@
 
   /* Printing a list: just the title and the words, in two columns, ink on paper. */
   @media print {
-    .deck > :global(*:not(.head):not(.words):not(.words-head)),
+    .deck > :global(*:not(.page-band):not(.words):not(.words-head)),
     .no-print,
     .tools,
     .dot,
@@ -545,13 +555,31 @@
     }
   }
   .set-exam {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.375rem;
-    justify-self: start;
-    min-height: var(--tap);
-    font-weight: 700;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--ink-2);
     text-decoration: none;
+    transition: border-color var(--t-base) var(--ease);
+  }
+  .set-exam:hover {
+    border-color: var(--warn);
+  }
+  .exam-ic {
+    width: 40px;
+    height: 40px;
+    background: var(--yellow);
+    color: var(--on-light);
+  }
+  .set-exam-txt {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+  .set-exam-title {
+    color: var(--ink);
+    font-weight: 800;
   }
   .del {
     color: var(--bad);

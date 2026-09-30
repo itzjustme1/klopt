@@ -6,7 +6,6 @@
   import { href } from "../lib/router";
   import type { Deck } from "../lib/types";
   import Icon from "./Icon.svelte";
-  import SubjectBadge from "./SubjectBadge.svelte";
 
   /** `compact` shows the list name (home screen); the full version sits on the list page. */
   let { deck, compact = false }: { deck: Deck; compact?: boolean } = $props();
@@ -21,17 +20,17 @@
 </script>
 
 {#if deck.examDate && !plan}
-  <div class="exam card past">
+  <div class="exam callout past">
     <p class="small">{t("exam.past", { date })}</p>
     <button type="button" class="btn btn-quiet" onclick={() => app.updateDeck(deck.id, { examDate: "" })}>{t("exam.clear")}</button>
   </div>
 {:else if plan}
-  <div class="exam card" class:soon={plan.daysLeft <= 2}>
+  <div class="exam callout" class:soon={plan.daysLeft <= 2}>
     <div class="top">
-      {#if compact}<SubjectBadge subject={deck.subject || deck.name} size="sm" />{/if}
+      <span class="ic-round exam-ic"><Icon name="test" size={22} /></span>
       <div class="titles">
         {#if compact}<a class="name" href={href.deck(deck.id)}>{deck.name}</a>{/if}
-        <p class="when"><Icon name="test" size={18} /><strong>{when}</strong><span class="muted">{t("exam.on", { date })}</span></p>
+        <p class="when"><strong>{when}</strong><span class="muted">{t("exam.on", { date })}</span></p>
       </div>
     </div>
     {#if plan.target === 0}
@@ -52,10 +51,21 @@
     display: grid;
     gap: 0.75rem;
     padding: 1rem 1.25rem;
-    border: 2px solid var(--line);
   }
   .exam.soon {
     border-color: var(--warn);
+  }
+  .exam-ic {
+    width: 44px;
+    height: 44px;
+    background: var(--yellow);
+    color: var(--on-light);
+  }
+  .bar {
+    background: var(--surface);
+  }
+  .bar > span {
+    background: var(--good-fill);
   }
   .past {
     display: flex;
@@ -76,7 +86,7 @@
   }
   .name {
     color: var(--ink);
-    font-weight: 700;
+    font-weight: 800;
     text-decoration: none;
     overflow-wrap: anywhere;
   }
@@ -89,7 +99,6 @@
     align-items: center;
     gap: 0.5rem;
   }
-  .soon .when :global(.icon),
   .soon .when strong {
     color: var(--warn);
   }

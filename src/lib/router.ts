@@ -10,7 +10,7 @@ export type Scope = string;
 
 export type Route =
   | { name: "today" }
-  | { name: "lists" }
+  | { name: "lists"; subject?: string }
   | { name: "new" }
   | { name: "editor"; id?: string }
   | { name: "deck"; id: string; share?: boolean }
@@ -48,8 +48,11 @@ export function parseHash(hash: string): Route {
   switch (head) {
     case "":
       return n <= 1 ? { name: "today" } : notFound;
-    case "lijsten":
-      return n === 1 ? { name: "lists" } : notFound;
+    case "lijsten": {
+      if (n === 1) return { name: "lists" };
+      const subject = seg(a);
+      return n === 2 && subject ? { name: "lists", subject } : notFound;
+    }
     case "nieuw":
       return n === 1 ? { name: "new" } : notFound;
     case "lijst": {
@@ -99,7 +102,7 @@ const enc = encodeURIComponent;
 
 export const href = {
   today: () => "#/",
-  lists: () => "#/lijsten",
+  lists: (subject?: string) => (subject ? `#/lijsten/${enc(subject)}` : "#/lijsten"),
   newList: () => "#/nieuw",
   editorNew: () => "#/lijst/nieuw",
   deck: (id: string) => `#/lijst/${enc(id)}`,

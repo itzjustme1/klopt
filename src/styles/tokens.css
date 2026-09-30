@@ -1,15 +1,29 @@
 /* Design tokens. Values and their sources: DESIGN-RECON.md. Components use these, never raw values. */
 :root {
   color-scheme: light;
-  --bg: #f4f6fb;
+  --bg: #f3f6fc;
   --surface: #ffffff;
-  --surface-2: #edf1f8;
-  --line: #e1e6f0;
-  --line-strong: #cfd6e4;
-  --ink: #151a2d;
-  --ink-2: #545d78;
+  --surface-2: #edf1f9;
+  --line: #e3e8f2;
+  --line-strong: #d3dae8;
+  --ink: #131a2e;
+  --ink-2: #56607a;
   --accent: #1660ff;
   --accent-edge: #0a46d1;
+  /* The brand band behind the header and page titles. */
+  --band: #1660ff;
+  --band-2: #0f52e6;
+  --band-3: #0b44c4;
+  --on-band: #ffffff;
+  /* Primary "go" buttons, like StudyGo's green knob. White text at 19px bold passes AA (3.3:1, large text). */
+  --cta: #16a34a;
+  --cta-hover: #138f41;
+  --cta-edge: #0f7a35;
+  --on-cta: #ffffff;
+  --yellow: #ffd43b;
+  --yellow-soft: #fff6d1;
+  --grey-btn: #e9edf6;
+  --grey-btn-edge: #cfd6e4;
   --accent-text: #1052e6;
   --accent-soft: #e6eeff;
   --on-accent: #ffffff;
@@ -38,16 +52,17 @@
   --fs-h1: 1.75rem;
   --fs-h2: 1.25rem;
   --fs-lead: 1.0625rem;
+  --fs-cta: 1.1875rem;
   --fs-body: 1rem;
   --fs-small: 0.875rem;
   --fs-caption: 0.8125rem;
 
-  --r-xs: 8px;
-  --r-sm: 12px;
-  --r-lg: 20px;
+  --r-xs: 10px;
+  --r-sm: 14px;
+  --r-lg: 24px;
   --r-pill: 999px;
 
-  --shadow-card: 0 1px 2px rgb(21 26 45 / 0.06), 0 6px 20px rgb(21 26 45 / 0.06);
+  --shadow-card: 0 2px 0 rgb(19 26 46 / 0.05), 0 10px 28px rgb(19 26 46 / 0.08);
   --edge: 4px;
   --edge-2: 3px;
 
@@ -94,6 +109,13 @@
     --heat-2: #2f5fd6;
     --heat-3: #7fa6ff;
     --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    --band: #1447c9;
+    --band-2: #103aa6;
+    --band-3: #0c2d85;
+    --grey-btn: #263050;
+    --grey-btn-edge: #1a2240;
+    --yellow-soft: #3a3312;
+    --yellow: #caa52a;
   }
 }
 
@@ -125,50 +147,27 @@
   --heat-2: #2f5fd6;
   --heat-3: #7fa6ff;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+    --band: #1447c9;
+    --band-2: #103aa6;
+    --band-3: #0c2d85;
+    --grey-btn: #263050;
+    --grey-btn-edge: #1a2240;
+    --yellow-soft: #3a3312;
+    --yellow: #caa52a;
 }
 
-/* Subject badges: soft background, strong text. Six hues, assigned by a hash of the subject name. */
+/* Round icons for subjects and practice modes: all pass AA with white text. */
 :root {
-  --sub-1-bg: #e6eeff;
-  --sub-1-fg: #1043c4;
-  --sub-2-bg: #e2f6ea;
-  --sub-2-fg: #0b6b3b;
-  --sub-3-bg: #fef0e1;
-  --sub-3-fg: #9a3d06;
-  --sub-4-bg: #fde8f1;
-  --sub-4-fg: #a3175a;
-  --sub-5-bg: #dff5f5;
-  --sub-5-fg: #0b6566;
-  --sub-6-bg: #efe9ff;
-  --sub-6-fg: #5b2fc0;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --sub-1-bg: #1a2a52;
-    --sub-1-fg: #a9c2ff;
-    --sub-2-bg: #12301f;
-    --sub-2-fg: #7fe2ae;
-    --sub-3-bg: #3a2a12;
-    --sub-3-fg: #f8bf80;
-    --sub-4-bg: #3a1628;
-    --sub-4-fg: #f7a3c8;
-    --sub-5-bg: #0f3233;
-    --sub-5-fg: #7fdada;
-    --sub-6-bg: #291f4a;
-    --sub-6-fg: #c4b1ff;
-  }
-}
-:root[data-theme="dark"] {
-  --sub-1-bg: #1a2a52;
-  --sub-1-fg: #a9c2ff;
-  --sub-2-bg: #12301f;
-  --sub-2-fg: #7fe2ae;
-  --sub-3-bg: #3a2a12;
-  --sub-3-fg: #f8bf80;
-  --sub-4-bg: #3a1628;
-  --sub-4-fg: #f7a3c8;
-  --sub-5-bg: #0f3233;
-  --sub-5-fg: #7fdada;
-  --sub-6-bg: #291f4a;
-  --sub-6-fg: #c4b1ff;
+  --ic-1: #2563eb;
+  --ic-2: #db2777;
+  --ic-3: #b45309;
+  --ic-4: #0f766e;
+  --ic-5: #7c3aed;
+  --ic-6: #c2410c;
+  --ic-7: #0369a1;
+  --ic-8: #15803d;
+  /* Text on surfaces that stay light in both themes (yellow icons, the white streak chip). */
+  --on-light: #131a2e;
+  --on-light-2: #56607a;
+  --on-light-accent: #1052e6;
 }
