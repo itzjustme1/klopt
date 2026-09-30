@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { openDB } from "idb";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Store, defaultSettings, detectLang, type DeckInput } from "../../src/lib/db";
+import { Store, defaultSettings, detectLang, uuidFromRandom, type DeckInput } from "../../src/lib/db";
 import { review as schedule } from "../../src/lib/scheduler";
 import type { Box, Review } from "../../src/lib/types";
 
@@ -240,5 +240,13 @@ describe("migration from schema 1", () => {
       { day: "2026-09-02", answers: 1, correct: 1 },
     ]);
     s.close();
+  });
+});
+
+describe("ids", () => {
+  it("falls back to a valid random UUID v4 where crypto.randomUUID is missing (plain http)", () => {
+    const ids = new Set(Array.from({ length: 1000 }, () => uuidFromRandom()));
+    expect(ids.size).toBe(1000);
+    for (const id of ids) expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 });
