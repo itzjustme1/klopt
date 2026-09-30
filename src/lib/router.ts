@@ -20,6 +20,7 @@ export type Route =
   | { name: "file" }
   | { name: "progress" }
   | { name: "settings" }
+  | { name: "help" }
   | { name: "share"; payload: string }
   | { name: "notfound" };
 
@@ -85,6 +86,8 @@ export function parseHash(hash: string): Route {
       return n === 1 ? { name: "progress" } : notFound;
     case "instellingen":
       return n === 1 ? { name: "settings" } : notFound;
+    case "uitleg":
+      return n === 1 ? { name: "help" } : notFound;
     case "deel":
       return a ? { name: "share", payload: parts.slice(1).join("/") } : notFound;
     default:
@@ -110,5 +113,6 @@ export const href = {
   file: () => "#/bestand",
   progress: () => "#/voortgang",
   settings: () => "#/instellingen",
+  help: () => "#/uitleg",
   share: (payload: string) => `#/deel/${payload}`,
 };

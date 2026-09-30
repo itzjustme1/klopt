@@ -20,13 +20,14 @@
   import OpenFile from "./routes/OpenFile.svelte";
   import Progress from "./routes/Progress.svelte";
   import Settings from "./routes/Settings.svelte";
+  import Help from "./routes/Help.svelte";
   import ShareReceive from "./routes/ShareReceive.svelte";
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
     { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
     { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
-    { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings"] },
+    { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help"] },
   ];
 
   const titles: Record<string, StringKey> = {
@@ -41,6 +42,7 @@
     file: "new.file",
     progress: "nav.progress",
     settings: "nav.settings",
+    help: "help.title",
     share: "receive.title",
   };
 
@@ -134,6 +136,8 @@
       <Progress />
     {:else if app.route.name === "settings"}
       <Settings />
+    {:else if app.route.name === "help"}
+      <Help />
     {:else if app.route.name === "share"}
       {#key app.route.payload}
         <ShareReceive payload={app.route.payload} />

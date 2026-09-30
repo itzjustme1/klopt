@@ -45,7 +45,10 @@
     <h1>{t("home.welcome")}</h1>
     <p class="lead muted">{t("home.welcomeBody")}</p>
     <NewOptions />
-    <button type="button" class="btn btn-quiet demo" disabled={busy} onclick={loadDemo}>{t("home.demo")}</button>
+    <div class="row">
+      <button type="button" class="btn btn-quiet demo" disabled={busy} onclick={loadDemo}>{t("home.demo")}</button>
+      <a class="btn btn-quiet" href={href.help()}>{t("help.link")}</a>
+    </div>
   </section>
 {:else}
   <section class="home">

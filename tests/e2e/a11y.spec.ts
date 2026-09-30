@@ -46,6 +46,12 @@ for (const scheme of ["light", "dark"] as const) {
     await check("lists");
     await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
+    // Test date and a starred word, so the plan and stars are audited too.
+    await page.getByRole("link", { name: "Toetsdatum instellen" }).click();
+    await page.getByLabel("Toetsdatum (optioneel)").fill(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(new Date(Date.now() + 3 * 86_400_000)));
+    await page.getByRole("button", { name: "Lijst opslaan" }).click();
+    await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
+    await page.getByRole("button", { name: "la maison markeren" }).click();
     await check("list");
     await page.getByRole("link", { name: /^Leren/ }).click();
     await page.locator(".options").waitFor();
@@ -61,9 +67,25 @@ for (const scheme of ["light", "dark"] as const) {
     await page.keyboard.press("Enter");
     await page.locator(".sheet").waitFor();
     await check("type: wrong");
+    // Confirm the answer so the session is saved for the resume prompt below.
+    await page.keyboard.press("Enter");
+    await page.locator(".sheet").waitFor({ state: "detached" });
     await page.goto(`${base}#/oefenen/${deckHash}/flashcards/front/all`);
     await page.locator(".flip").waitFor();
     await check("flashcards");
+    await page.goto(`${base}#/oefenen/${deckHash}/typen/front/all`);
+    await page.getByRole("heading", { name: "Verder waar je was?" }).waitFor();
+    await check("resume prompt");
+    await page.goto(`${base}#/oefenen/${deckHash}/koppelen/front/all`);
+    await page.locator(".tile").first().waitFor();
+    await page.locator(".tile").first().click();
+    await check("match");
+    await page.goto(base);
+    await page.locator(".continue").waitFor();
+    await check("today with plan and continue card");
+    await page.goto(base + "#/uitleg");
+    await page.getByRole("heading", { name: "Hoe werkt Klopt?" }).waitFor();
+    await check("help");
     await page.goto(`${base}#/lijst/${deckHash}/bewerken`);
     await page.getByRole("heading", { name: "Lijst bewerken" }).waitFor();
     await check("editor");

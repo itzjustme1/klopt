@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { t, tp } from "../i18n/index.svelte";
+  import { num, t, tp } from "../i18n/index.svelte";
   import type { StringKey } from "../i18n/types";
   import BoxBar from "../components/BoxBar.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
@@ -33,6 +33,10 @@
   let count = $state<string>(untrack(() => (app.cardsIn(id).length > 20 ? "20" : "all")));
   const countValue = $derived<Count>(count === "10" ? 10 : count === "20" ? 20 : "all");
   let deleting = $state(false);
+  /** Long lists show the first words; the rest on request (keeps big lists quick on phones). */
+  const PAGE = 100;
+  let showAll = $state(false);
+  const shownCards = $derived(showAll ? cards : cards.slice(0, PAGE));
   let voice = $state(false);
 
   $effect(() => {
@@ -230,7 +234,7 @@
         <a class="btn btn-quiet" href={href.edit(id)}><Icon name="edit" size={18} />{t("common.edit")}</a>
       </div>
       <ol class="words card">
-        {#each cards as card (card.id)}
+        {#each shownCards as card (card.id)}
           {@const d = difficulty(card.hist)}
           <li class="word">
             <span class="dot d-{d}" title={t(`diff.${d}`)}></span>
@@ -256,6 +260,9 @@
           </li>
         {/each}
       </ol>
+      {#if cards.length > shownCards.length}
+        <button type="button" class="btn show-all" onclick={() => (showAll = true)}>{t("deck.showAll", { n: num(cards.length) })}</button>
+      {/if}
     {/if}
 
     <div class="danger">
@@ -405,6 +412,11 @@
   .featured .mode {
     border: 2px solid var(--accent);
   }
+  @media (min-width: 720px) {
+    .featured {
+      grid-column: 1 / -1;
+    }
+  }
   .featured .mode-ic {
     background: var(--accent);
     color: var(--on-accent);
@@ -460,6 +472,9 @@
 
   .danger {
     margin-top: 1.5rem;
+  }
+  .show-all {
+    justify-self: start;
   }
   .set-exam {
     display: inline-flex;

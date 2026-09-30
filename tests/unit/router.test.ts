@@ -25,6 +25,7 @@ describe("router", () => {
     ["#/bestand", { name: "file" }],
     ["#/voortgang", { name: "progress" }],
     ["#/instellingen", { name: "settings" }],
+    ["#/uitleg", { name: "help" }],
     ["#/deel/H4sIAAA_-x", { name: "share", payload: "H4sIAAA_-x" }],
     ["#/nope", { name: "notfound" }],
     ["#/lijst/a/b", { name: "notfound" }],
