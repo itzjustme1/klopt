@@ -63,7 +63,7 @@ export default defineConfig({
       manifest: {
         name: APP_NAME,
         short_name: APP_NAME,
-        description: "Flashcards for Dutch exam subjects, using the Leitner box method.",
+        description: "Flashcards voor je examenvakken, met het vakjessysteem. Werkt offline, zonder account.",
         lang: "nl",
         start_url: "./",
         scope: "./",

@@ -1,6 +1,6 @@
 # Klopt: build plan
 
-Status: building. The questions in section 7 were not answered; the recommended defaults were used (see "Answers used").
+Status: v1 built (checkpoints 1 to 5). The questions in section 7 were not answered; the recommended defaults were used (see "Answers used").
 
 ## 1. Approach
 

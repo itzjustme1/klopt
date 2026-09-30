@@ -50,6 +50,13 @@ a {
   text-decoration-thickness: 1px;
 }
 
+/* Headings and regions that receive focus from script on navigation are not controls. */
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus,
+main[tabindex="-1"]:focus {
+  outline: none;
+}
+
 [hidden] {
   display: none !important;
 }

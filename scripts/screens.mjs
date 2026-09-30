@@ -30,6 +30,7 @@ try {
     await page.keyboard.press("Space");
     await page.waitForTimeout(450);
     await page.keyboard.press("1");
+    await page.waitForTimeout(300);
     await page.keyboard.press("Space");
     await page.waitForTimeout(450);
     await page.keyboard.press("2");
