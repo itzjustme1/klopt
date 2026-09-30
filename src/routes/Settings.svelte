@@ -2,6 +2,7 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import ConfirmInline from "../components/ConfirmInline.svelte";
+  import Switch from "../components/Switch.svelte";
   import { app } from "../lib/app.svelte";
   import { parseBackup } from "../lib/backup";
   import { formatDay, localDay } from "../lib/dates";
@@ -19,6 +20,9 @@
   let theme = $state<Theme>(app.settings.theme);
   let goal = $state(String(app.settings.dailyGoal));
   let autoSpeak = $state(app.settings.autoSpeak);
+  let lenientAccents = $state(app.settings.lenientAccents);
+  let lenientTypos = $state(app.settings.lenientTypos);
+  let sounds = $state(app.settings.sounds);
 
   let restoreError = $state("");
   // Raw, not deep state: IndexedDB cannot store Svelte proxies.
@@ -101,6 +105,9 @@
       theme = app.settings.theme;
       goal = String(app.settings.dailyGoal);
       autoSpeak = app.settings.autoSpeak;
+      lenientAccents = app.settings.lenientAccents;
+      lenientTypos = app.settings.lenientTypos;
+      sounds = app.settings.sounds;
       app.showFlash(t("settings.resetDone"));
       location.hash = href.today();
     } catch {
@@ -140,14 +147,16 @@
     </fieldset>
   </div>
 
+  <div class="card group" aria-labelledby="checking-title">
+    <h2 id="checking-title">{t("settings.checking")}</h2>
+    <Switch bind:checked={lenientAccents} label={t("settings.lenientAccents")} help={t("settings.lenientAccentsHelp")} onchange={(v) => app.saveSettings({ lenientAccents: v })} />
+    <Switch bind:checked={lenientTypos} label={t("settings.lenientTypos")} help={t("settings.lenientTyposHelp")} onchange={(v) => app.saveSettings({ lenientTypos: v })} />
+  </div>
+
   <div class="card group" aria-labelledby="speech-title">
     <h2 id="speech-title">{t("settings.speech")}</h2>
-    <label class="switch">
-      <input type="checkbox" role="switch" bind:checked={autoSpeak} onchange={() => app.saveSettings({ autoSpeak })} disabled={!hasVoices} />
-      <span class="track" aria-hidden="true"><span class="thumb"></span></span>
-      <span>{t("settings.autoSpeak")}</span>
-    </label>
-    <p class="small muted">{hasVoices ? t("settings.speechNote") : t("settings.noVoices")}</p>
+    <Switch bind:checked={sounds} label={t("settings.sounds")} help={t("settings.soundsHelp")} onchange={(v) => app.saveSettings({ sounds: v })} />
+    <Switch bind:checked={autoSpeak} label={t("settings.autoSpeak")} help={hasVoices ? t("settings.speechNote") : t("settings.noVoices")} disabled={!hasVoices} onchange={(v) => app.saveSettings({ autoSpeak: v })} />
   </div>
 
   <div class="card group" aria-labelledby="backup-title">
@@ -269,51 +278,4 @@
     color: var(--bad);
   }
 
-  .switch {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: var(--tap);
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .switch input {
-    position: absolute;
-    opacity: 0;
-    width: 1px;
-    height: 1px;
-  }
-  .track {
-    position: relative;
-    width: 52px;
-    height: 32px;
-    border-radius: var(--r-pill);
-    background: var(--line-strong);
-    transition: background-color var(--t-base) var(--ease);
-    flex: none;
-  }
-  .thumb {
-    position: absolute;
-    top: 4px;
-    left: 4px;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #ffffff;
-    box-shadow: none;
-    transition: transform var(--t-base) var(--ease);
-  }
-  .switch input:checked + .track {
-    background: var(--accent);
-  }
-  .switch input:checked + .track .thumb {
-    transform: translateX(20px);
-  }
-  .switch input:focus-visible + .track {
-    outline: 3px solid var(--accent);
-    outline-offset: 2px;
-  }
-  .switch input:disabled + .track {
-    opacity: 0.5;
-  }
 </style>

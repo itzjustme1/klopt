@@ -2,7 +2,9 @@ import type { Mode } from "./types";
 import { MODES } from "./types";
 import type { Direction } from "./practice";
 
-export type Which = "all" | "hard" | "due";
+export type Which = "all" | "hard" | "due" | "starred";
+/** How many words a session holds: a number, or every word. */
+export type Count = 10 | 20 | "all";
 /** A deck id, or "alles" for every list. */
 export type Scope = string;
 
@@ -12,7 +14,7 @@ export type Route =
   | { name: "new" }
   | { name: "editor"; id?: string }
   | { name: "deck"; id: string; share?: boolean }
-  | { name: "practice"; scope: Scope; mode: Mode; dir: Direction; which: Which }
+  | { name: "practice"; scope: Scope; mode: Mode; dir: Direction; which: Which; count: Count }
   | { name: "import"; deckId?: string }
   | { name: "photo"; deckId?: string }
   | { name: "file" }
@@ -31,13 +33,14 @@ function seg(s: string | undefined): string | undefined {
 }
 
 const DIRS: readonly Direction[] = ["front", "back", "mixed"];
-const WHICH: readonly Which[] = ["all", "hard", "due"];
+const WHICH: readonly Which[] = ["all", "hard", "due", "starred"];
+const COUNTS: Record<string, Count> = { "10": 10, "20": 20, all: "all" };
 
 /** Pure hash parser. Slugs are fixed Dutch words so shared links work in any UI language. */
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#/, "").replace(/^\/?/, "/").replace(/\/+$/, "");
   const parts = path.split("/").slice(1);
-  const [head = "", a, b, c, d] = parts;
+  const [head = "", a, b, c, d, e] = parts;
   const n = parts.length;
   const notFound: Route = { name: "notfound" };
 
@@ -62,8 +65,9 @@ export function parseHash(hash: string): Route {
       const mode = b as Mode;
       const dir = (c ?? "front") as Direction;
       const which = (d ?? "all") as Which;
-      if (!scope || !MODES.includes(mode) || !DIRS.includes(dir) || !WHICH.includes(which) || n > 5) return notFound;
-      return { name: "practice", scope, mode, dir, which };
+      const count = COUNTS[e ?? "all"];
+      if (!scope || !MODES.includes(mode) || !DIRS.includes(dir) || !WHICH.includes(which) || !count || n > 6) return notFound;
+      return { name: "practice", scope, mode, dir, which, count };
     }
     case "importeren": {
       const deckId = seg(a);
@@ -98,7 +102,8 @@ export const href = {
   deck: (id: string) => `#/lijst/${enc(id)}`,
   edit: (id: string) => `#/lijst/${enc(id)}/bewerken`,
   shareDeck: (id: string) => `#/lijst/${enc(id)}/delen`,
-  practice: (scope: Scope, mode: Mode, dir: Direction = "front", which: Which = "all") => `#/oefenen/${enc(scope)}/${mode}/${dir}/${which}`,
+  practice: (scope: Scope, mode: Mode, dir: Direction = "front", which: Which = "all", count: Count = "all") =>
+    `#/oefenen/${enc(scope)}/${mode}/${dir}/${which}${count === "all" ? "" : `/${count}`}`,
   review: (deckId?: string) => `#/oefenen/${enc(deckId ?? "alles")}/herhalen/front/due`,
   import: (deckId?: string) => (deckId ? `#/importeren/${enc(deckId)}` : "#/importeren"),
   photo: (deckId?: string) => (deckId ? `#/foto/${enc(deckId)}` : "#/foto"),

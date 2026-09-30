@@ -12,9 +12,12 @@ describe("router", () => {
     ["#/lijst/abc", { name: "deck", id: "abc" }],
     ["#/lijst/abc/bewerken", { name: "editor", id: "abc" }],
     ["#/lijst/abc/delen", { name: "deck", id: "abc", share: true }],
-    ["#/oefenen/abc/leren/front/all", { name: "practice", scope: "abc", mode: "leren", dir: "front", which: "all" }],
-    ["#/oefenen/alles/herhalen/front/due", { name: "practice", scope: "alles", mode: "herhalen", dir: "front", which: "due" }],
-    ["#/oefenen/abc/toets", { name: "practice", scope: "abc", mode: "toets", dir: "front", which: "all" }],
+    ["#/oefenen/abc/leren/front/all", { name: "practice", scope: "abc", mode: "leren", dir: "front", which: "all", count: "all" }],
+    ["#/oefenen/alles/herhalen/front/due", { name: "practice", scope: "alles", mode: "herhalen", dir: "front", which: "due", count: "all" }],
+    ["#/oefenen/abc/toets", { name: "practice", scope: "abc", mode: "toets", dir: "front", which: "all", count: "all" }],
+    ["#/oefenen/abc/leren/back/starred/10", { name: "practice", scope: "abc", mode: "leren", dir: "back", which: "starred", count: 10 }],
+    ["#/oefenen/abc/leren/back/all/20", { name: "practice", scope: "abc", mode: "leren", dir: "back", which: "all", count: 20 }],
+    ["#/oefenen/abc/leren/back/all/7", { name: "notfound" }],
     ["#/importeren", { name: "import" }],
     ["#/importeren/abc", { name: "import", deckId: "abc" }],
     ["#/foto", { name: "photo" }],
@@ -35,8 +38,9 @@ describe("router", () => {
 
   it("round-trips ids through href", () => {
     expect(parseHash(href.deck("a b/c"))).toEqual({ name: "deck", id: "a b/c" });
-    expect(parseHash(href.practice("x y", "dictee", "mixed", "hard"))).toEqual({ name: "practice", scope: "x y", mode: "dictee", dir: "mixed", which: "hard" });
-    expect(parseHash(href.review())).toEqual({ name: "practice", scope: "alles", mode: "herhalen", dir: "front", which: "due" });
+    expect(parseHash(href.practice("x y", "dictee", "mixed", "hard"))).toEqual({ name: "practice", scope: "x y", mode: "dictee", dir: "mixed", which: "hard", count: "all" });
+    expect(parseHash(href.practice("x", "typen", "front", "all", 10))).toEqual({ name: "practice", scope: "x", mode: "typen", dir: "front", which: "all", count: 10 });
+    expect(parseHash(href.review())).toEqual({ name: "practice", scope: "alles", mode: "herhalen", dir: "front", which: "due", count: "all" });
   });
 
   it("does not crash on malformed escapes", () => {

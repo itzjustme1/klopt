@@ -83,3 +83,17 @@ describe("helpers", () => {
     expect(hintText("house / home", 1)).toBe("h····");
   });
 });
+
+describe("lenient checking", () => {
+  it("can count accent-only differences as right", () => {
+    expect(checkAnswer("l'ecole", "l'école", { lenientAccents: true })).toEqual({ verdict: "correct", note: "accents" });
+    expect(checkAnswer("l'ecole", "l'école", { lenientTypos: true }).verdict).toBe("close");
+  });
+  it("can count a small typo as right", () => {
+    expect(checkAnswer("hosue", "house", { lenientTypos: true })).toEqual({ verdict: "correct", note: "typo" });
+    expect(checkAnswer("hosue", "house", { lenientAccents: true }).verdict).toBe("close");
+  });
+  it("never makes a really wrong answer right", () => {
+    expect(checkAnswer("dog", "house", { lenientAccents: true, lenientTypos: true }).verdict).toBe("wrong");
+  });
+});

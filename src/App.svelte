@@ -112,8 +112,8 @@
       {/key}
     {:else if app.route.name === "practice"}
       {@const r = app.route}
-      {#key `${r.scope}/${r.mode}/${r.dir}/${r.which}`}
-        <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} />
+      {#key `${r.scope}/${r.mode}/${r.dir}/${r.which}/${r.count}`}
+        <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} count={r.count} />
       {/key}
     {:else if app.route.name === "import"}
       {#key app.route.deckId}

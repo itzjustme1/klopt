@@ -8,11 +8,12 @@
   import { checkAnswer, hintText, type Verdict } from "../lib/answer";
   import { app } from "../lib/app.svelte";
   import { Practice, type Direction, type PracticeCard } from "../lib/practice";
-  import { href, type Which } from "../lib/router";
+  import { href, type Count, type Which } from "../lib/router";
+  import { playRight, playWrong } from "../lib/sounds";
   import { canSpeak, loadVoices, speak, stopSpeaking } from "../lib/speech";
   import type { ContentLang, Grade, Mode } from "../lib/types";
 
-  let { scope, mode, dir, which }: { scope: string; mode: Mode; dir: Direction; which: Which } = $props();
+  let { scope, mode, dir, which, count = "all" }: { scope: string; mode: Mode; dir: Direction; which: Which; count?: Count } = $props();
 
   type Feedback = { verdict: Verdict; grade: Grade; note?: "accents" | "typo"; given?: string; chosen?: number };
 
@@ -54,7 +55,7 @@
     untrack(() => {
       void loadVoices().then(() => {
         voices = true;
-        start(app.practiceCards(scope, which));
+        start(app.practiceCards(scope, which, count));
       });
     });
     return () => stopSpeaking();
@@ -75,10 +76,17 @@
     else optionsEl?.querySelector<HTMLButtonElement>("button")?.focus();
   }
 
+  function sound(right: boolean) {
+    if (!app.settings.sounds || isTest) return;
+    if (right) playRight();
+    else playWrong();
+  }
+
   /** Saves the answer and moves to the next question. */
   async function commit(grade: Grade, typed?: string) {
     const cur = engine?.current;
     if (!engine || !cur) return;
+    drag = 0;
     engine.answer(grade, typed);
     version++;
     app.grade(cur.card.id, grade, mode).catch(() => app.showFlash(t("common.saveFailed")));
@@ -87,6 +95,7 @@
 
   async function showFeedback(f: Feedback) {
     feedback = f;
+    sound(f.verdict === "correct");
     const cur = q;
     if (cur && app.settings.autoSpeak && cur.answerLang !== "xx" && f.verdict !== "correct") speak(cur.answer, cur.answerLang);
     await tick();
@@ -107,7 +116,7 @@
       inputEl?.focus();
       return;
     }
-    const res = checkAnswer(typed, cur.answer);
+    const res = checkAnswer(typed, cur.answer, { lenientAccents: app.settings.lenientAccents, lenientTypos: app.settings.lenientTypos });
     let grade: Grade = res.verdict === "correct" ? "goed" : res.verdict === "close" ? "twijfel" : "fout";
     if (grade === "goed" && hint > 0) grade = "twijfel";
     if (isTest) {
@@ -148,6 +157,11 @@
     void commit("goed", feedback.given);
   }
 
+  function selfGrade(grade: Grade) {
+    if (grade !== "twijfel") sound(grade === "goed");
+    void commit(grade);
+  }
+
   function flip() {
     if (!q || q.kind !== "flash" || flipped) return;
     flipped = true;
@@ -182,7 +196,7 @@
         const idx = Number(e.key) - 1;
         if (idx >= 0 && idx < grades.length) {
           e.preventDefault();
-          void commit(grades[idx]!);
+          selfGrade(grades[idx]!);
         }
       }
     } else if (q.kind === "mc" && !feedback) {
@@ -199,7 +213,41 @@
   }
 
   function restartAll() {
-    start(app.practiceCards(scope, which));
+    start(app.practiceCards(scope, which, count));
+  }
+
+  // Marking the current word.
+  const starredNow = $derived(q ? !!app.cards.find((c) => c.id === q.card.id)?.starred : false);
+  function toggleStar() {
+    if (q) void app.setStarred(q.card.id, !starredNow);
+  }
+
+  // Swiping a flipped flashcard: right = knew it, left = didn't.
+  const SWIPE = 90;
+  let drag = $state(0);
+  let dragging = false;
+  let startX = 0;
+  function onpointerdown(e: PointerEvent) {
+    if (!flipped || e.pointerType === "mouse") return;
+    dragging = true;
+    startX = e.clientX;
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Pointer already released; the swipe still works without capture.
+    }
+  }
+  function onpointermove(e: PointerEvent) {
+    if (dragging) drag = e.clientX - startX;
+  }
+  function onpointerup() {
+    if (!dragging) return;
+    dragging = false;
+    if (Math.abs(drag) >= SWIPE) {
+      const knew = drag > 0;
+      sound(knew);
+      void commit(knew ? "goed" : "fout");
+    } else drag = 0;
   }
 
   function restartMistakes() {
@@ -241,7 +289,18 @@
       <Results {engine} {exitHref} {exitLabel} onagain={restartAll} onmistakes={restartMistakes} />
     {:else}
       {#key q.key}
-        <div class="qcard card" class:has-feedback={!!feedback}>
+        <div
+          class="qcard card"
+          class:has-feedback={!!feedback}
+          class:swipe-right={drag >= SWIPE / 2}
+          class:swipe-left={drag <= -SWIPE / 2}
+          style:transform={drag ? `translateX(${drag}px) rotate(${drag / 24}deg)` : undefined}
+        >
+          {#if !isTest}
+            <button type="button" class="icon-btn qstar" class:on={starredNow} aria-pressed={starredNow} aria-label={starredNow ? t("practice.unstar") : t("practice.star")} title={starredNow ? t("practice.unstar") : t("practice.star")} onclick={toggleStar}>
+              <Icon name="star" size={22} filled={starredNow} />
+            </button>
+          {/if}
           {#if q.kind === "flash"}
             <!-- It is a button until flipped, then a plain focus target. -->
             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -252,6 +311,13 @@
               tabindex={flipped ? -1 : 0}
               aria-label={flipped ? undefined : `${q.prompt}. ${t("practice.show")}`}
               bind:this={cardBtn}
+              {onpointerdown}
+              {onpointermove}
+              {onpointerup}
+              onpointercancel={() => {
+                dragging = false;
+                drag = 0;
+              }}
               onclick={flip}
               onkeydown={(e) => {
                 if (!flipped && (e.key === "Enter" || e.key === " ")) {
@@ -272,6 +338,7 @@
               </div>
             </div>
             <p class="visually-hidden" aria-live="polite">{#if flipped}{q.answer}{/if}</p>
+            {#if flipped}<p class="swipe-hint small muted">{t("practice.swipeHint")}</p>{/if}
           {:else}
             <div class="ask">
               {#if q.kind === "dictee"}
@@ -373,14 +440,14 @@
             <button type="button" class="btn btn-primary btn-lg btn-block" onclick={flip}>{t("practice.show")}</button>
           {:else if mode === "herhalen"}
             <div class="grades three">
-              <button type="button" class="btn btn-lg g-bad" onclick={() => commit("fout")}><kbd>1</kbd>{t("grade.fout")}</button>
-              <button type="button" class="btn btn-lg" onclick={() => commit("twijfel")}><kbd>2</kbd>{t("grade.twijfel")}</button>
-              <button type="button" class="btn btn-lg btn-good" onclick={() => commit("goed")}><kbd>3</kbd>{t("grade.goed")}</button>
+              <button type="button" class="btn btn-lg g-bad" onclick={() => selfGrade("fout")}><kbd>1</kbd>{t("grade.fout")}</button>
+              <button type="button" class="btn btn-lg" onclick={() => selfGrade("twijfel")}><kbd>2</kbd>{t("grade.twijfel")}</button>
+              <button type="button" class="btn btn-lg btn-good" onclick={() => selfGrade("goed")}><kbd>3</kbd>{t("grade.goed")}</button>
             </div>
           {:else}
             <div class="grades two">
-              <button type="button" class="btn btn-lg g-bad" onclick={() => commit("fout")}><kbd>1</kbd>{t("practice.didntKnow")}</button>
-              <button type="button" class="btn btn-lg btn-good" onclick={() => commit("goed")}><kbd>2</kbd>{t("practice.knewIt")}</button>
+              <button type="button" class="btn btn-lg g-bad" onclick={() => selfGrade("fout")}><kbd>1</kbd>{t("practice.didntKnow")}</button>
+              <button type="button" class="btn btn-lg btn-good" onclick={() => selfGrade("goed")}><kbd>2</kbd>{t("practice.knewIt")}</button>
             </div>
           {/if}
         {:else if feedback}
@@ -481,6 +548,8 @@
 
   .qcard {
     position: relative;
+    border-width: 2px;
+    transition: border-color var(--t-base) var(--ease);
     display: grid;
     gap: 1.25rem;
     padding: 1.5rem 1.25rem;
@@ -629,6 +698,30 @@
     perspective: 1400px;
     cursor: pointer;
     border-radius: var(--r-lg);
+    touch-action: pan-y;
+  }
+  .qcard.swipe-right {
+    border-color: var(--good-fill);
+  }
+  .qcard.swipe-left {
+    border-color: var(--bad-fill);
+  }
+  .swipe-hint {
+    text-align: center;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .swipe-hint {
+      display: none;
+    }
+  }
+  .qstar {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 1;
+  }
+  .qstar.on {
+    color: #f5a524;
   }
   .flip.flipped {
     cursor: default;

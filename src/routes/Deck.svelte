@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { t, tp } from "../i18n/index.svelte";
   import type { StringKey } from "../i18n/types";
   import BoxBar from "../components/BoxBar.svelte";
@@ -12,7 +13,7 @@
   import { app } from "../lib/app.svelte";
   import { difficulty } from "../lib/history";
   import type { Direction } from "../lib/practice";
-  import { href, type Which } from "../lib/router";
+  import { href, type Count, type Which } from "../lib/router";
   import { canSpeak, loadVoices } from "../lib/speech";
   import type { Mode } from "../lib/types";
 
@@ -24,8 +25,12 @@
   const hard = $derived(app.hardCount(id));
   const diff = $derived(app.diffCounts(id));
 
+  const starred = $derived(app.starredCount(id));
   let dir = $state<Direction>("front");
   let which = $state<Which>("all");
+  // Big lists start with a round of 20; small ones with everything.
+  let count = $state<string>(untrack(() => (app.cardsIn(id).length > 20 ? "20" : "all")));
+  const countValue = $derived<Count>(count === "10" ? 10 : count === "20" ? 20 : "all");
   let deleting = $state(false);
   let voice = $state(false);
 
@@ -35,7 +40,7 @@
     void loadVoices().then(() => (voice = (d.langFront !== "xx" && canSpeak(d.langFront)) || (d.langBack !== "xx" && canSpeak(d.langBack))));
   });
   $effect(() => {
-    if (hard === 0 && which === "hard") which = "all";
+    if ((hard === 0 && which === "hard") || (starred === 0 && which === "starred")) which = "all";
   });
 
   const sameLang = $derived(!deck || deck.langFront === deck.langBack || deck.langFront === "xx" || deck.langBack === "xx");
@@ -151,8 +156,19 @@
           <div class="segmented">
             <label><input type="radio" name="which" value="all" bind:group={which} />{t("deck.allWords", { n: cards.length })}</label>
             <label class:disabled={hard === 0}><input type="radio" name="which" value="hard" bind:group={which} disabled={hard === 0} />{t("deck.hardWords", { n: hard })}</label>
+            <label class:disabled={starred === 0}><input type="radio" name="which" value="starred" bind:group={which} disabled={starred === 0} />{t("deck.starredWords", { n: starred })}</label>
           </div>
         </fieldset>
+        {#if cards.length > 10}
+          <fieldset class="fieldset-wrap">
+            <legend>{t("deck.count")}</legend>
+            <div class="segmented">
+              <label><input type="radio" name="count" value="10" bind:group={count} />10</label>
+              {#if cards.length > 20}<label><input type="radio" name="count" value="20" bind:group={count} />20</label>{/if}
+              <label><input type="radio" name="count" value="all" bind:group={count} />{t("deck.countAll")}</label>
+            </div>
+          </fieldset>
+        {/if}
       </div>
 
       <ul class="modes">
@@ -168,7 +184,7 @@
                 </span>
               </div>
             {:else}
-              <a class="mode card" href={href.practice(id, m.mode, dir, which)}>
+              <a class="mode card" href={href.practice(id, m.mode, dir, which, countValue)}>
                 <span class="mode-ic"><Icon name={m.icon} size={24} /></span>
                 <span class="mode-txt">
                   <span class="mode-name">{t(`mode.${m.mode}`)}</span>
@@ -208,14 +224,24 @@
           <li class="word">
             <span class="dot d-{d}" title={t(`diff.${d}`)}></span>
             <span class="visually-hidden">{t("deck.statusLabel", { status: t(`diff.${d}`) })}</span>
-            <span class="side">
+            <span class="side s-front">
               <span class="w-front" lang={deck.langFront === "xx" ? undefined : deck.langFront}>{card.front}</span>
               <SpeakButton text={card.front} lang={deck.langFront} size={18} />
             </span>
-            <span class="side">
+            <span class="side s-back">
               <span class="w-back" lang={deck.langBack === "xx" ? undefined : deck.langBack}>{card.back}</span>
               <SpeakButton text={card.back} lang={deck.langBack} size={18} />
             </span>
+            <button
+              type="button"
+              class="icon-btn star"
+              class:on={card.starred}
+              aria-pressed={!!card.starred}
+              aria-label={card.starred ? t("deck.unstar", { word: card.front }) : t("deck.star", { word: card.front })}
+              onclick={() => app.setStarred(card.id, !card.starred)}
+            >
+              <Icon name="star" size={20} filled={!!card.starred} />
+            </button>
           </li>
         {/each}
       </ol>
@@ -408,8 +434,9 @@
     list-style: none;
   }
   .word {
+    position: relative;
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto 1fr auto;
     gap: 0.125rem 0.75rem;
     align-items: center;
     padding: 0.75rem 1rem;
@@ -420,18 +447,44 @@
   }
   @media (min-width: 720px) {
     .word {
-      grid-template-columns: auto 1fr 1fr;
+      grid-template-columns: auto 1fr 1fr auto;
     }
+  }
+  .s-front {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .s-back {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .star {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  @media (min-width: 720px) {
+    .s-back {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    .star {
+      grid-column: 4;
+      grid-row: 1;
+    }
+  }
+  .star.on {
+    color: #f5a524;
   }
   .dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    grid-row: span 2;
+    grid-column: 1;
+    grid-row: 1 / span 2;
   }
   @media (min-width: 720px) {
     .dot {
-      grid-row: auto;
+      grid-row: 1;
     }
   }
   .dot.d-vaak { background: var(--bad-fill); }

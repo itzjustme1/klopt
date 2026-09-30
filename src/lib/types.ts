@@ -33,6 +33,8 @@ export interface Card {
   hist?: string;
   /** Cache, rebuilt from the review log: local day of the last answer. */
   lastDay?: string;
+  /** Marked by the student to practise on purpose. */
+  starred?: boolean;
 }
 
 /** Append-only. Never edited. */
@@ -69,6 +71,12 @@ export interface Settings {
   dailyGoal: number;
   /** Read words aloud automatically when a question appears (only with an on-device voice). */
   autoSpeak: boolean;
+  /** Count an answer that only misses accents as right. */
+  lenientAccents: boolean;
+  /** Count a single small typo in a longer word as right. */
+  lenientTypos: boolean;
+  /** Short sounds for right and wrong, and a vibration on wrong where supported. */
+  sounds: boolean;
   /** Local bookkeeping, not part of backups. */
   changesSinceExport: number;
   reminderSnoozedAt: number;

@@ -93,6 +93,22 @@ describe("decks and cards", () => {
   });
 });
 
+describe("starring", () => {
+  it("marks and unmarks a card and keeps it in backups but not in shares", async () => {
+    const deck = await store.createDeck(fr);
+    const [card] = await store.addCards(deck.id, [{ front: "Q", back: "A" }]);
+    const starred = await store.setStarred(card!.id, true);
+    expect(starred.starred).toBe(true);
+    const { makeBackup, makeShareFile, parseBackup } = await import("../../src/lib/backup");
+    const snap = await store.snapshot();
+    const parsed = parseBackup(JSON.stringify(makeBackup(snap)));
+    expect(parsed.ok && parsed.data.cards[0]!.starred).toBe(true);
+    expect(makeShareFile(deck, snap.cards).cards[0]).not.toHaveProperty("starred");
+    const unstarred = await store.setStarred(card!.id, false);
+    expect(unstarred).not.toHaveProperty("starred");
+  });
+});
+
 describe("grading", () => {
   it("updates the card, appends a review with the local day and mode, and counts the day", async () => {
     const deck = await store.createDeck(fr);

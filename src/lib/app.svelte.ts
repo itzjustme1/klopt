@@ -7,7 +7,7 @@ import { downloadText } from "./files";
 import { difficulty, isHard, streak, type Difficulty } from "./history";
 import { requestPersist } from "./persist";
 import type { PracticeCard } from "./practice";
-import { parseHash, type Route } from "./router";
+import { parseHash, type Count, type Route, type Which } from "./router";
 import { buildSession } from "./session";
 import type { Box, Card, DayStat, Deck, Grade, Lang, Mode, Settings, Theme } from "./types";
 
@@ -135,13 +135,24 @@ class App {
     return min;
   }
 
-  /** Cards for a practice session, with the languages of their list. */
-  practiceCards(scope: string, which: "all" | "hard" | "due"): PracticeCard[] {
+  starredCount(deckId?: string): number {
+    let n = 0;
+    for (const c of this.cardsIn(deckId)) if (c.starred) n++;
+    return n;
+  }
+
+  /**
+   * Cards for a practice session, with the languages of their list. With a count, the words that need
+   * practice most are picked first: often wrong, sometimes wrong, never practised, then the rest.
+   */
+  practiceCards(scope: string, which: Which, count: Count = "all"): PracticeCard[] {
     const pool = scope === "alles" ? this.cards : this.cardsIn(scope);
     let chosen: Card[];
     if (which === "due") chosen = buildSession(pool, this.today);
     else if (which === "hard") chosen = pool.filter((c) => isHard(c.hist));
+    else if (which === "starred") chosen = pool.filter((c) => c.starred);
     else chosen = scope === "alles" ? pool : this.sortedCards(scope);
+    if (count !== "all" && which !== "due" && chosen.length > count) chosen = pickForPractice(chosen, count);
     const langs = new Map(this.decks.map((d) => [d.id, d]));
     return chosen.flatMap((c) => {
       const d = langs.get(c.deckId);
@@ -239,6 +250,11 @@ class App {
     this.settings = await this.db.getSettings(navigator.language);
   }
 
+  async setStarred(id: string, starred: boolean): Promise<void> {
+    const card = await this.db.setStarred(id, starred);
+    this.cards = this.cards.map((c) => (c.id === id ? card : c));
+  }
+
   async deleteCard(id: string): Promise<void> {
     await this.db.deleteCard(id);
     this.cards = this.cards.filter((c) => c.id !== id);
@@ -310,6 +326,15 @@ export function applyTheme(theme: Theme): void {
   const [light, dark] = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
   if (light) light.content = theme === "dark" ? "#0F1422" : "#F4F6FB";
   if (dark) dark.content = theme === "light" ? "#F4F6FB" : "#0F1422";
+}
+
+const RANK: Record<Difficulty, number> = { vaak: 0, soms: 1, nieuw: 2, goed: 3 };
+
+/** The `count` cards that need practice most, shuffled within each difficulty group. */
+export function pickForPractice<T extends Pick<Card, "hist" | "box">>(cards: readonly T[], count: number, rng: () => number = Math.random): T[] {
+  const keyed = cards.map((c) => ({ c, k: RANK[difficulty(c.hist)] * 10 + c.box + rng() * 0.5 }));
+  keyed.sort((a, b) => a.k - b.k);
+  return keyed.slice(0, count).map((x) => x.c);
 }
 
 export const app = new App();

@@ -33,6 +33,7 @@ export function makeShareFile(deck: Deck, cards: readonly Card[], now: Date = ne
         const out: Card = { ...c, box: 1, due: today };
         delete out.hist;
         delete out.lastDay;
+        delete out.starred;
         return out;
       }),
       reviews: [],
@@ -148,7 +149,7 @@ function validate(raw: unknown, version: number): Snapshot {
   });
 
   const cardBoxes = new Map<string, Box>();
-  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay"])];
+  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay", "starred"])];
   const cards: Card[] = arr(root.cards, "cards", LIMITS.backupCards).map((c, i) => {
     const w = `cards[${i}]`;
     const o = obj(c, w, cardKeys, ["id", "deckId", "front", "back", "box", "due", "createdAt", "updatedAt"]);
@@ -167,6 +168,9 @@ function validate(raw: unknown, version: number): Snapshot {
     // Caches are validated but not trusted: they are rebuilt from the review log on import.
     if (o.hist !== undefined && (typeof o.hist !== "string" || !/^[gtf]{0,8}$/.test(o.hist))) throw new Invalid(`${w}.hist`);
     if (o.lastDay !== undefined) day(o.lastDay, `${w}.lastDay`);
+    if (o.starred !== undefined) {
+      if (bool(o.starred, `${w}.starred`)) card.starred = true;
+    }
     if (!deckIds.has(card.deckId)) throw new Invalid(`${w}.deckId`);
     if (cardBoxes.has(card.id)) throw new Invalid(`${w}.id`);
     cardBoxes.set(card.id, card.box);

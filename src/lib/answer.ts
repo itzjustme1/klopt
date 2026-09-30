@@ -69,16 +69,23 @@ export function levenshtein(a: string, b: string): number {
   return d[a.length]![b.length]!;
 }
 
-export function checkAnswer(given: string, expected: string): CheckResult {
+export interface CheckOptions {
+  /** A missing or wrong accent counts as right (with a note). */
+  lenientAccents?: boolean;
+  /** A small typo counts as right (with a note). */
+  lenientTypos?: boolean;
+}
+
+export function checkAnswer(given: string, expected: string, opts: CheckOptions = {}): CheckResult {
   const g = normalize(given);
   if (!g) return { verdict: "wrong" };
   const forms = alternatives(expected);
   if (forms.includes(g)) return { verdict: "correct" };
   const gBare = stripAccents(g);
-  if (forms.some((f) => stripAccents(f) === gBare)) return { verdict: "close", note: "accents" };
+  if (forms.some((f) => stripAccents(f) === gBare)) return { verdict: opts.lenientAccents ? "correct" : "close", note: "accents" };
   for (const f of forms) {
     const allowed = f.length >= 10 ? 2 : f.length >= 5 ? 1 : 0;
-    if (allowed > 0 && levenshtein(stripAccents(f), gBare) <= allowed) return { verdict: "close", note: "typo" };
+    if (allowed > 0 && levenshtein(stripAccents(f), gBare) <= allowed) return { verdict: opts.lenientTypos ? "correct" : "close", note: "typo" };
   }
   return { verdict: "wrong" };
 }

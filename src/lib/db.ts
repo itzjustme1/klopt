@@ -34,6 +34,9 @@ export function defaultSettings(navLang?: string): Settings {
     schemaVersion: SCHEMA_VERSION,
     dailyGoal: 20,
     autoSpeak: false,
+    lenientAccents: false,
+    lenientTypos: false,
+    sounds: true,
     changesSinceExport: 0,
     reminderSnoozedAt: 0,
     persistRequested: false,
@@ -275,6 +278,19 @@ export class Store {
     await tx.done;
     await this.countChanges(added + updated);
     return { added, updated, removed };
+  }
+
+  /** Marks or unmarks a card. Counts as an edit (so a merge keeps the newest), not as a new word for the backup reminder. */
+  async setStarred(id: string, starred: boolean, now: Date = new Date()): Promise<Card> {
+    const tx = this.db.transaction("cards", "readwrite");
+    const card = await tx.store.get(id);
+    if (!card) throw new Error("Card not found");
+    const next: Card = { ...card, updatedAt: now.toISOString() };
+    if (starred) next.starred = true;
+    else delete next.starred;
+    await tx.store.put(next);
+    await tx.done;
+    return next;
   }
 
   /** Deletes the card and its reviews. */
