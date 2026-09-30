@@ -5,7 +5,7 @@ export type ContentLang = "nl" | "en" | "fr" | "de" | "es" | "it" | "la" | "xx";
 export type Grade = "fout" | "twijfel" | "goed";
 export type Box = 1 | 2 | 3 | 4 | 5;
 export type Theme = "system" | "light" | "dark";
-export type Mode = "herhalen" | "leren" | "flashcards" | "meerkeuze" | "typen" | "dictee" | "toets";
+export type Mode = "herhalen" | "leren" | "flashcards" | "meerkeuze" | "typen" | "dictee" | "toets" | "koppelen";
 
 export interface Deck {
   id: string;
@@ -90,4 +90,4 @@ export interface Settings {
 export const GRADES: readonly Grade[] = ["fout", "twijfel", "goed"];
 export const BOXES: readonly Box[] = [1, 2, 3, 4, 5];
 export const CONTENT_LANGS: readonly ContentLang[] = ["nl", "en", "fr", "de", "es", "it", "la", "xx"];
-export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets"];
+export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets", "koppelen"];

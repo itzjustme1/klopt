@@ -59,6 +59,7 @@
     { mode: "typen", icon: "type", desc: "modeDesc.typen" },
     { mode: "dictee", icon: "listen", desc: "modeDesc.dictee" },
     { mode: "toets", icon: "test", desc: "modeDesc.toets" },
+    { mode: "koppelen", icon: "match", desc: "modeDesc.koppelen" },
   ];
 
   const DIFF_ORDER = ["vaak", "soms", "goed", "nieuw"] as const;
@@ -110,13 +111,11 @@
       </div>
     </header>
 
-    <div class="actions row">
-      <a class="btn" href={href.edit(id)}><Icon name="edit" size={20} />{t("common.edit")}</a>
-      {#if cards.length > 0 && !share}
-        <a class="btn" href={href.shareDeck(id)}><Icon name="share" size={20} />{t("deck.share")}</a>
-      {/if}
+    <div class="tools">
+      <a class="tool" href={href.edit(id)}><Icon name="edit" size={22} /><span>{t("common.edit")}</span></a>
       {#if cards.length > 0}
-        <button type="button" class="btn" disabled={copying} onclick={duplicate}><Icon name="cards" size={20} />{t("deck.copy")}</button>
+        <a class="tool" href={share ? href.deck(id) : href.shareDeck(id)} aria-current={share ? "true" : undefined}><Icon name="share" size={22} /><span>{t("deck.share")}</span></a>
+        <button type="button" class="tool" disabled={copying} onclick={duplicate}><Icon name="cards" size={22} /><span>{t("deck.copy")}</span></button>
       {/if}
     </div>
 
@@ -146,8 +145,13 @@
         <fieldset class="fieldset-wrap">
           <legend>{t("deck.direction")}</legend>
           <div class="segmented">
-            <label><input type="radio" name="dir" value="front" bind:group={dir} />{dirLabels.front}</label>
-            <label><input type="radio" name="dir" value="back" bind:group={dir} />{dirLabels.back}</label>
+            {#if sameLang}
+              <label><input type="radio" name="dir" value="front" bind:group={dir} />{dirLabels.front}</label>
+              <label><input type="radio" name="dir" value="back" bind:group={dir} />{dirLabels.back}</label>
+            {:else}
+              <label class="flags" title={dirLabels.front}><input type="radio" name="dir" value="front" bind:group={dir} /><Flag lang={deck.langFront} size={20} /><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={20} /><span class="visually-hidden">{dirLabels.front}</span></label>
+              <label class="flags" title={dirLabels.back}><input type="radio" name="dir" value="back" bind:group={dir} /><Flag lang={deck.langBack} size={20} /><span aria-hidden="true">›</span><Flag lang={deck.langFront} size={20} /><span class="visually-hidden">{dirLabels.back}</span></label>
+            {/if}
             <label><input type="radio" name="dir" value="mixed" bind:group={dir} />{t("deck.mixed")}</label>
           </div>
         </fieldset>
@@ -286,8 +290,44 @@
   .meta .chip {
     color: var(--ink-2);
   }
-  .actions {
+  .tools {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
+    max-width: 420px;
+  }
+  .tool {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 0.25rem;
+    min-height: 64px;
+    padding: 0.5rem;
+    border: 2px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-caption);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color var(--t-base) var(--ease), background-color var(--t-base) var(--ease);
+  }
+  .tool:hover {
+    border-color: var(--accent);
+  }
+  .tool[aria-current] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .tool[disabled] {
+    opacity: 0.5;
+    cursor: progress;
+  }
+  .flags {
+    gap: 0.375rem;
   }
   .empty {
     display: grid;

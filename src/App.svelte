@@ -14,6 +14,7 @@
   import DeckView from "./routes/Deck.svelte";
   import Editor from "./routes/Editor.svelte";
   import Practice from "./routes/Practice.svelte";
+  import Match from "./routes/Match.svelte";
   import Import from "./routes/Import.svelte";
   import Photo from "./routes/Photo.svelte";
   import OpenFile from "./routes/OpenFile.svelte";
@@ -113,7 +114,11 @@
     {:else if app.route.name === "practice"}
       {@const r = app.route}
       {#key `${r.scope}/${r.mode}/${r.dir}/${r.which}/${r.count}`}
-        <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} count={r.count} />
+        {#if r.mode === "koppelen"}
+          <Match scope={r.scope} which={r.which} count={r.count} />
+        {:else}
+          <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} count={r.count} />
+        {/if}
       {/key}
     {:else if app.route.name === "import"}
       {#key app.route.deckId}

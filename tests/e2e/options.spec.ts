@@ -38,7 +38,8 @@ test("ignore accents when that setting is on", async ({ page }) => {
   await page.getByText("Accenten niet meetellen").click();
   await page.getByRole("link", { name: "Lijsten", exact: true }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
-  await page.getByText("Nederlands naar Frans").click();
+  await page.locator("label", { hasText: "Nederlands naar Frans" }).click();
+  await expect(page.getByLabel("Nederlands naar Frans")).toBeChecked();
   await page.getByRole("link", { name: /^Typen/ }).click();
   const french: Record<string, string> = { "het huis": "la maison", "de hond": "le chien", "de school": "l'ecole", "het boek": "le livre", "het raam": "la fenetre", "de jongen": "le garcon", "de appel": "la pomme", zijn: "etre" };
   for (let i = 0; i < 8; i++) {
