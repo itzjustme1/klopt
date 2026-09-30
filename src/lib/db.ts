@@ -45,7 +45,7 @@ export function defaultSettings(navLang?: string): Settings {
 }
 
 export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic">>;
-export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject">>;
+export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate">>;
 
 /**
  * Random UUID v4. crypto.randomUUID only exists in secure contexts (https or localhost), so opening
@@ -167,6 +167,7 @@ export class Store {
   async createDeck(input: DeckInput, now: Date = new Date()): Promise<Deck> {
     const deck: Deck = { id: newId(), name: input.name, langFront: input.langFront, langBack: input.langBack, createdAt: now.toISOString() };
     if (input.subject) deck.subject = input.subject;
+    if (input.examDate) deck.examDate = input.examDate;
     await this.db.add("decks", deck);
     return deck;
   }
@@ -177,6 +178,7 @@ export class Store {
     if (!deck) throw new Error("Deck not found");
     const next: Deck = { ...deck, ...patch };
     if (!next.subject) delete next.subject;
+    if (!next.examDate) delete next.examDate;
     await tx.store.put(next);
     await tx.done;
     return next;

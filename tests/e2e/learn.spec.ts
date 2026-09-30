@@ -122,7 +122,7 @@ test("review the daily queue by keyboard, typing short answers and self-checking
 test("a test gives a Dutch grade", async ({ page }) => {
   const check = await guard(page);
   await createFrenchList(page, "Toetslijst");
-  await page.getByRole("link", { name: /^Toets/ }).click();
+  await page.getByRole("link", { name: /^Toets / }).click();
   for (let i = 0; i < 4; i++) {
     await expect(page.getByText(`Vraag ${i + 1} van 4`)).toBeVisible();
     await expect(page.locator(".answer-input")).toBeFocused();

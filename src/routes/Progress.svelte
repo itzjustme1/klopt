@@ -5,6 +5,7 @@
   import { app } from "../lib/app.svelte";
   import { addDays, formatDay } from "../lib/dates";
   import { weekDays } from "../lib/history";
+  import { forecast } from "../lib/plan";
   import { href } from "../lib/router";
 
   const s = $derived(app.streak());
@@ -41,6 +42,8 @@
     return { answers, pct: answers ? Math.round((correct / answers) * 100) : 0 };
   });
   const hard = $derived(app.hardCount());
+  const coming = $derived(forecast(app.cards, app.today));
+  const maxComing = $derived(Math.max(1, ...coming.map((c) => c.count)));
 </script>
 
 <section class="progress">
@@ -86,6 +89,21 @@
       <span class="cell l0"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span>
       <span>{t("progress.more")}</span>
     </div>
+  </div>
+
+  <div class="card card-pad fc">
+    <h2>{t("forecast.title")}</h2>
+    <p class="small muted">{t("forecast.help")}</p>
+    <ol class="fc-bars">
+      {#each coming as c (c.day)}
+        <li>
+          <span class="fc-num caption num">{c.count}</span>
+          <span class="fc-bar" aria-hidden="true"><span style:height="{Math.round((c.count / maxComing) * 100)}%"></span></span>
+          <span class="fc-day caption" aria-hidden="true">{formatDay(c.day, getLang(), { weekday: "short" })}</span>
+          <span class="visually-hidden">{t("forecast.day", { day: formatDay(c.day, getLang(), { weekday: "long", day: "numeric", month: "long" }), count: tp("common.cardsCount", c.count) })}</span>
+        </li>
+      {/each}
+    </ol>
   </div>
 
   {#if hard > 0}
@@ -202,6 +220,44 @@
   }
   .legend .cell {
     width: 14px;
+  }
+  .fc {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .fc-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+    max-width: 520px;
+  }
+  .fc-bars li {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+  .fc-bar {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    height: 96px;
+    border-radius: var(--r-xs);
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .fc-bar > span {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    background: var(--accent);
+    border-radius: var(--r-xs) var(--r-xs) 0 0;
+  }
+  .fc-day {
+    color: var(--ink-2);
+    text-transform: capitalize;
   }
   .hard {
     display: flex;

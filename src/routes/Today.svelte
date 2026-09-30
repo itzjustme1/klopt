@@ -2,6 +2,7 @@
   import { getLang, num, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
   import ListCard from "../components/ListCard.svelte";
+  import ExamCard from "../components/ExamCard.svelte";
   import NewOptions from "../components/NewOptions.svelte";
   import StreakCard from "../components/StreakCard.svelte";
   import { app } from "../lib/app.svelte";
@@ -14,6 +15,7 @@
   const hard = $derived(app.hardCount());
   const hour = new Date().getHours();
   const greeting = $derived(hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening"));
+  const exams = $derived(app.upcomingExams().slice(0, 3));
   const recent = $derived(app.decks.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4));
   let busy = $state(false);
 
@@ -60,6 +62,15 @@
       </div>
       <StreakCard />
     </div>
+
+    {#if exams.length > 0}
+      <h2 class="lists-head-title">{t("exam.upcoming")}</h2>
+      <div class="exams">
+        {#each exams as deck (deck.id)}
+          <ExamCard {deck} compact />
+        {/each}
+      </div>
+    {/if}
 
     {#if hard > 0}
       <a class="hard card" href={href.practice("alles", "leren", "front", "hard")}>
@@ -192,6 +203,18 @@
     }
   }
 
+  .lists-head-title {
+    margin-top: 0.75rem;
+  }
+  .exams {
+    display: grid;
+    gap: 0.75rem;
+  }
+  @media (min-width: 720px) {
+    .exams {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
   .lists-head {
     display: flex;
     align-items: center;

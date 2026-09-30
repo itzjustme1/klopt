@@ -8,6 +8,7 @@
   import { insertAtCaret } from "../lib/accents";
   import { app } from "../lib/app.svelte";
   import { SUBJECTS } from "../lib/subjects";
+  import { isValidDay } from "../lib/dates";
   import { href } from "../lib/router";
   import { CONTENT_LANGS, type ContentLang } from "../lib/types";
 
@@ -21,6 +22,7 @@
 
   let name = $state(existing?.name ?? "");
   let subject = $state(existing?.subject ?? "");
+  let examDate = $state(existing?.examDate ?? "");
   let langFront = $state<ContentLang>(existing?.langFront ?? "en");
   let langBack = $state<ContentLang>(existing?.langBack ?? getLang());
   let rows = $state<Row[]>(
@@ -112,6 +114,7 @@
     const problems: string[] = [];
     const n = name.trim();
     if (!n) problems.push(t("editor.nameRequired"));
+    if (examDate && (!isValidDay(examDate) || examDate < app.today) && examDate !== existing?.examDate) problems.push(t("editor.examPast"));
     else if (n.length > LIMITS.deckNameChars) problems.push(t("editor.nameTooLong", { n: LIMITS.deckNameChars }));
     const clean: { id?: string; front: string; back: string }[] = [];
     rows.forEach((r, i) => {
@@ -127,7 +130,7 @@
     if (problems.length) return;
     busy = true;
     try {
-      const deckInput = { name: n, langFront, langBack, subject: subject.trim().slice(0, LIMITS.labelChars) };
+      const deckInput = { name: n, langFront, langBack, subject: subject.trim().slice(0, LIMITS.labelChars), examDate: isValidDay(examDate) ? examDate : "" };
       let deckId = existing?.id;
       if (deckId) await app.updateDeck(deckId, deckInput);
       else deckId = (await app.createDeck(deckInput)).id;
@@ -159,6 +162,11 @@
       <datalist id="subject-list">
         {#each SUBJECTS[getLang()] as s (s)}<option value={s}></option>{/each}
       </datalist>
+    </div>
+    <div class="field">
+      <label for="list-exam">{t("editor.examDate")}</label>
+      <input id="list-exam" type="date" bind:value={examDate} min={app.today} aria-describedby="exam-help" />
+      <span id="exam-help" class="small muted">{t("editor.examHelp")}</span>
     </div>
     <div class="langs">
       <div class="field">

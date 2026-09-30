@@ -61,3 +61,9 @@ export function answerFor(prompt: string): string {
   if (!pair) throw new Error(`Unknown prompt ${prompt}`);
   return pair[0] === prompt ? pair[1] : pair[0];
 }
+
+/** Local calendar date (YYYY-MM-DD) in Amsterdam, `offsetDays` from now. */
+export function dayISO(offsetDays: number): string {
+  const d = new Date(Date.now() + offsetDays * 86_400_000);
+  return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Amsterdam" }).format(d);
+}

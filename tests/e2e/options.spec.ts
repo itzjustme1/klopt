@@ -13,7 +13,7 @@ test("choose how many words, star words, practise only starred ones", async ({ p
   const counts = page.getByRole("group", { name: "Aantal woorden" });
   await expect(counts.getByLabel("20")).toBeChecked();
   await counts.getByText("10", { exact: true }).click();
-  await page.getByRole("link", { name: /^Toets/ }).click();
+  await page.getByRole("link", { name: /^Toets / }).click();
   await expect(page.getByText("Vraag 1 van 10")).toBeVisible();
   await page.getByRole("link", { name: "Stoppen" }).click();
 

@@ -15,6 +15,8 @@ export interface Deck {
   langFront: ContentLang;
   /** Language of the back (answer) side. */
   langBack: ContentLang;
+  /** Date of the test this list is for (YYYY-MM-DD), to plan practice. */
+  examDate?: string;
   createdAt: string;
 }
 

@@ -160,6 +160,11 @@ class App {
     });
   }
 
+  /** Lists with a test today or later, soonest first. */
+  upcomingExams(): Deck[] {
+    return this.decks.filter((d) => d.examDate && d.examDate >= this.today).toSorted((a, b) => a.examDate!.localeCompare(b.examDate!));
+  }
+
   // Streak and daily goal
 
   answersToday(): number {

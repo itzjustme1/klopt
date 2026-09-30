@@ -7,6 +7,7 @@
   import Flag from "../components/Flag.svelte";
   import Icon, { type IconName } from "../components/Icon.svelte";
   import SharePanel from "../components/SharePanel.svelte";
+  import ExamCard from "../components/ExamCard.svelte";
   import SpeakButton from "../components/SpeakButton.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { LIMITS } from "../config";
@@ -121,6 +122,12 @@
 
     {#if share}
       <SharePanel {deck} {cards} onclose={() => (location.hash = href.deck(id))} />
+    {/if}
+
+    {#if deck.examDate}
+      <ExamCard {deck} />
+    {:else if cards.length > 0}
+      <a class="set-exam small" href={href.edit(id)}><Icon name="test" size={18} />{t("exam.set")}</a>
     {/if}
 
     {#if cards.length === 0}
@@ -453,6 +460,15 @@
 
   .danger {
     margin-top: 1.5rem;
+  }
+  .set-exam {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    justify-self: start;
+    min-height: var(--tap);
+    font-weight: 700;
+    text-decoration: none;
   }
   .del {
     color: var(--bad);
