@@ -7,20 +7,24 @@ import { demoCards } from "../../src/lib/demo";
 
 async function seeded(name: string) {
   const store = await Store.open(name);
-  const deck = await store.createDeck({ name: "Economie", lang: "nl", subject: "Economie" });
+  const deck = await store.createDeck({ name: "Economie", langFront: "nl", langBack: "nl", subject: "Economie" });
   const cards = await store.addCards(deck.id, demoCards("nl"));
   await store.updateCard(cards[0]!.id, { topic: "Elasticiteit" });
   await store.grade(cards[0]!.id, "goed");
+  await store.grade(cards[0]!.id, "fout", "leren");
   await store.grade(cards[1]!.id, "fout");
-  const en = await store.createDeck({ name: "English <b>", lang: "en" });
+  const en = await store.createDeck({ name: "English <b>", langFront: "en", langBack: "nl" });
   await store.addCards(en.id, demoCards("en"));
   return store;
 }
 
 const good = () => JSON.parse(JSON.stringify(makeBackup({
-  decks: [{ id: "11111111-1111-4111-8111-111111111111", name: "D", lang: "nl", createdAt: "2026-10-01T10:00:00.000Z" }],
+  decks: [{ id: "11111111-1111-4111-8111-111111111111", name: "D", langFront: "fr", langBack: "nl", createdAt: "2026-10-01T10:00:00.000Z" }],
   cards: [{ id: "22222222-2222-4222-8222-222222222222", deckId: "11111111-1111-4111-8111-111111111111", front: "f", back: "b", box: 2, due: "2026-10-04", createdAt: "2026-10-01T10:00:00.000Z", updatedAt: "2026-10-01T10:00:00.000Z" }],
-  reviews: [{ id: "33333333-3333-4333-8333-333333333333", cardId: "22222222-2222-4222-8222-222222222222", at: "2026-10-01T10:00:00.000Z", day: "2026-10-01", grade: "goed", fromBox: 1, toBox: 2 }],
+  reviews: [
+    { id: "33333333-3333-4333-8333-333333333333", cardId: "22222222-2222-4222-8222-222222222222", at: "2026-10-01T10:00:00.000Z", day: "2026-10-01", grade: "goed", fromBox: 1, toBox: 2, mode: "leren", counts: true },
+    { id: "55555555-5555-4555-8555-555555555555", cardId: "22222222-2222-4222-8222-222222222222", at: "2026-10-01T10:01:00.000Z", day: "2026-10-01", grade: "fout", fromBox: 2, toBox: 2, mode: "leren", counts: false },
+  ],
 })));
 
 describe("backup round trip", () => {
@@ -39,7 +43,8 @@ describe("backup round trip", () => {
     expect(sort(snapB.decks)).toEqual(sort(snap.decks));
     expect(sort(snapB.cards)).toEqual(sort(snap.cards));
     expect(sort(snapB.reviews)).toEqual(sort(snap.reviews));
-    expect(snap.reviews).toHaveLength(2);
+    expect(snap.reviews).toHaveLength(3);
+    expect(snap.reviews.filter((r) => !r.counts)).toHaveLength(1);
     a.close();
     b.close();
   });
@@ -98,7 +103,12 @@ describe("parseBackup rejects bad input", () => {
     ["missing deck name", (b) => delete (b.decks[0] as Partial<(typeof b.decks)[0]>).name, "decks[0].name"],
     ["empty deck name", (b) => (b.decks[0]!.name = ""), "decks[0].name"],
     ["deck name too long", (b) => (b.decks[0]!.name = "x".repeat(LIMITS.deckNameChars + 1)), "decks[0].name"],
-    ["bad language", (b) => (b.decks[0]!.lang = "de" as "nl"), "decks[0].lang"],
+    ["bad language", (b) => (b.decks[0]!.langFront = "klingon" as "nl"), "decks[0].langFront"],
+    ["missing back language", (b) => delete (b.decks[0] as Partial<(typeof b.decks)[0]>).langBack, "decks[0].langBack"],
+    ["bad mode", (b) => (b.reviews[0]!.mode = "cheat" as "leren"), "reviews[0].mode"],
+    ["counts not a boolean", (b) => (b.reviews[0]!.counts = "yes" as unknown as boolean), "reviews[0].counts"],
+    ["non-counting review that moves the box", (b) => (b.reviews[1]!.toBox = 1), "reviews[1].toBox"],
+    ["bad history cache", (b) => ((b.cards[0] as unknown as Record<string, unknown>).hist = "<script>"), "cards[0].hist"],
     ["bad id", (b) => (b.decks[0]!.id = "1; DROP TABLE"), "decks[0].id"],
     ["box out of range", (b) => (b.cards[0]!.box = 6 as 5), "cards[0].box"],
     ["box as string", (b) => (b.cards[0]!.box = "2" as unknown as 2), "cards[0].box"],
@@ -137,12 +147,12 @@ describe("shared deck files", () => {
     const cards = await store.listCards(deck!.id);
     const file = makeShareFile(deck!, cards);
     expect(file.reviews).toEqual([]);
-    expect(file.cards.every((c) => c.box === 1)).toBe(true);
+    expect(file.cards.every((c) => c.box === 1 && c.hist === undefined && c.lastDay === undefined)).toBe(true);
 
     const r = parseShared(JSON.stringify(file));
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(r.data.deck).toEqual({ name: "Economie", lang: "nl", subject: "Economie" });
+      expect(r.data.deck).toEqual({ name: "Economie", langFront: "nl", langBack: "nl", subject: "Economie" });
       expect(r.data.cards).toHaveLength(3);
       expect(r.data.cards[0]).not.toHaveProperty("box");
     }
@@ -152,5 +162,31 @@ describe("shared deck files", () => {
     expect(parseShared(JSON.stringify({ ...file, cards: [] }))).toEqual({ ok: false, error: { code: "invalid", where: "cards" } });
     expect(FILE_FORMAT).toBe("klopt-backup");
     store.close();
+  });
+});
+
+describe("version 1 files", () => {
+  const v1 = {
+    format: "klopt-backup",
+    version: 1,
+    exportedAt: "2026-09-30T10:00:00.000Z",
+    decks: [{ id: "11111111-1111-4111-8111-111111111111", name: "Oud", lang: "en", createdAt: "2026-09-01T10:00:00.000Z" }],
+    cards: [{ id: "22222222-2222-4222-8222-222222222222", deckId: "11111111-1111-4111-8111-111111111111", front: "f", back: "b", box: 2, due: "2026-10-04", createdAt: "2026-09-01T10:00:00.000Z", updatedAt: "2026-09-01T10:00:00.000Z" }],
+    reviews: [{ id: "33333333-3333-4333-8333-333333333333", cardId: "22222222-2222-4222-8222-222222222222", at: "2026-10-01T10:00:00.000Z", day: "2026-10-01", grade: "goed", fromBox: 1, toBox: 2 }],
+  };
+
+  it("are still accepted and converted", () => {
+    const r = parseBackup(JSON.stringify(v1));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.data.decks[0]).toMatchObject({ langFront: "en", langBack: "en" });
+    expect(r.data.reviews[0]).toMatchObject({ mode: "herhalen", counts: true });
+  });
+
+  it("reject v2 fields and v1 languages that never existed", () => {
+    const withMode = { ...v1, reviews: [{ ...v1.reviews[0], mode: "leren" }] };
+    expect(parseBackup(JSON.stringify(withMode))).toEqual({ ok: false, error: { code: "invalid", where: "reviews[0].mode" } });
+    const french = { ...v1, decks: [{ ...v1.decks[0], lang: "fr" }] };
+    expect(parseBackup(JSON.stringify(french))).toEqual({ ok: false, error: { code: "invalid", where: "decks[0].lang" } });
   });
 });

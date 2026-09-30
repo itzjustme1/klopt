@@ -45,7 +45,7 @@
   }
 </script>
 
-<section class="panel share" aria-labelledby="share-title">
+<section class="card card-pad share" aria-labelledby="share-title">
   <h2 id="share-title" tabindex="-1" bind:this={heading}>{t("share.title")}</h2>
   {#if cards.length === 0}
     <p class="muted">{t("share.noCards")}</p>
@@ -74,14 +74,13 @@
   .share {
     display: grid;
     gap: 0.75rem;
-    border-top: 2px solid var(--ink);
+    border: 2px solid var(--accent);
   }
   .share h2 {
     outline: none;
   }
   input[readonly] {
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: var(--fs-caption);
     color: var(--ink-2);
   }
 </style>

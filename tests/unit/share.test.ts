@@ -4,7 +4,7 @@ import { decodeShare, encodeShare } from "../../src/lib/share";
 import type { Card, Deck } from "../../src/lib/types";
 import { demoCards } from "../../src/lib/demo";
 
-const deck: Deck = { id: "11111111-1111-4111-8111-111111111111", name: "Economie <i>", lang: "nl", subject: "Economie", createdAt: "2026-10-01T10:00:00.000Z" };
+const deck: Deck = { id: "11111111-1111-4111-8111-111111111111", name: "Economie <i>", langFront: "nl", langBack: "nl", subject: "Economie", createdAt: "2026-10-01T10:00:00.000Z" };
 const cards = (n: number, text = (i: number) => demoCards("nl")[i % 3]!): Card[] =>
   Array.from({ length: n }, (_, i) => ({
     id: crypto.randomUUID(),

@@ -2,7 +2,7 @@ import { FILE_FORMAT, FILE_VERSION, LIMITS } from "../config";
 import { isValidDay, localDay } from "./dates";
 import type { Snapshot } from "./db";
 import { nextBox } from "./scheduler";
-import type { Box, Card, Deck, Grade, Lang, Review } from "./types";
+import { CONTENT_LANGS, MODES, type Box, type Card, type ContentLang, type Deck, type Grade, type Mode, type Review } from "./types";
 
 export interface BackupFile extends Snapshot {
   format: typeof FILE_FORMAT;
@@ -31,6 +31,8 @@ export function makeShareFile(deck: Deck, cards: readonly Card[], now: Date = ne
       decks: [deck],
       cards: cards.map((c) => {
         const out: Card = { ...c, box: 1, due: today };
+        delete out.hist;
+        delete out.lastDay;
         return out;
       }),
       reviews: [],
@@ -98,8 +100,18 @@ function box(v: unknown, where: string): Box {
   return v;
 }
 
-function lang(v: unknown, where: string): Lang {
-  if (v !== "nl" && v !== "en") throw new Invalid(where);
+function lang(v: unknown, where: string): ContentLang {
+  if (typeof v !== "string" || !(CONTENT_LANGS as readonly string[]).includes(v)) throw new Invalid(where);
+  return v as ContentLang;
+}
+
+function mode(v: unknown, where: string): Mode {
+  if (typeof v !== "string" || !(MODES as readonly string[]).includes(v)) throw new Invalid(where);
+  return v as Mode;
+}
+
+function bool(v: unknown, where: string): boolean {
+  if (typeof v !== "boolean") throw new Invalid(where);
   return v;
 }
 
@@ -113,15 +125,21 @@ function arr(v: unknown, where: string, max: number): unknown[] {
   return v;
 }
 
-function validate(raw: unknown): Snapshot {
+function validate(raw: unknown, version: number): Snapshot {
   const root = obj(raw, "root", ["format", "version", "exportedAt", "decks", "cards", "reviews"], ["format", "version", "decks", "cards", "reviews"]);
   if (root.exportedAt !== undefined) iso(root.exportedAt, "exportedAt");
+  const v1 = version === 1;
 
   const deckIds = new Set<string>();
   const decks: Deck[] = arr(root.decks, "decks", LIMITS.backupDecks).map((d, i) => {
     const w = `decks[${i}]`;
-    const o = obj(d, w, ["id", "name", "lang", "subject", "createdAt"], ["id", "name", "lang", "createdAt"]);
-    const deck: Deck = { id: uuid(o.id, `${w}.id`), name: str(o.name, `${w}.name`, LIMITS.deckNameChars), lang: lang(o.lang, `${w}.lang`), createdAt: iso(o.createdAt, `${w}.createdAt`) };
+    const o = v1
+      ? obj(d, w, ["id", "name", "lang", "subject", "createdAt"], ["id", "name", "lang", "createdAt"])
+      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
+    const langFront = lang(v1 ? o.lang : o.langFront, v1 ? `${w}.lang` : `${w}.langFront`);
+    const langBack = v1 ? langFront : lang(o.langBack, `${w}.langBack`);
+    if (v1 && langFront !== "nl" && langFront !== "en") throw new Invalid(`${w}.lang`);
+    const deck: Deck = { id: uuid(o.id, `${w}.id`), name: str(o.name, `${w}.name`, LIMITS.deckNameChars), langFront, langBack, createdAt: iso(o.createdAt, `${w}.createdAt`) };
     const subject = optStr(o.subject, `${w}.subject`, LIMITS.labelChars);
     if (subject) deck.subject = subject;
     if (deckIds.has(deck.id)) throw new Invalid(`${w}.id`);
@@ -130,9 +148,10 @@ function validate(raw: unknown): Snapshot {
   });
 
   const cardBoxes = new Map<string, Box>();
+  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay"])];
   const cards: Card[] = arr(root.cards, "cards", LIMITS.backupCards).map((c, i) => {
     const w = `cards[${i}]`;
-    const o = obj(c, w, ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt"], ["id", "deckId", "front", "back", "box", "due", "createdAt", "updatedAt"]);
+    const o = obj(c, w, cardKeys, ["id", "deckId", "front", "back", "box", "due", "createdAt", "updatedAt"]);
     const card: Card = {
       id: uuid(o.id, `${w}.id`),
       deckId: uuid(o.deckId, `${w}.deckId`),
@@ -145,6 +164,9 @@ function validate(raw: unknown): Snapshot {
     };
     const topic = optStr(o.topic, `${w}.topic`, LIMITS.labelChars);
     if (topic) card.topic = topic;
+    // Caches are validated but not trusted: they are rebuilt from the review log on import.
+    if (o.hist !== undefined && (typeof o.hist !== "string" || !/^[gtf]{0,8}$/.test(o.hist))) throw new Invalid(`${w}.hist`);
+    if (o.lastDay !== undefined) day(o.lastDay, `${w}.lastDay`);
     if (!deckIds.has(card.deckId)) throw new Invalid(`${w}.deckId`);
     if (cardBoxes.has(card.id)) throw new Invalid(`${w}.id`);
     cardBoxes.set(card.id, card.box);
@@ -152,9 +174,10 @@ function validate(raw: unknown): Snapshot {
   });
 
   const reviewIds = new Set<string>();
+  const reviewKeys = ["id", "cardId", "at", "day", "grade", "fromBox", "toBox", ...(v1 ? [] : ["mode", "counts"])];
   const reviews: Review[] = arr(root.reviews, "reviews", LIMITS.backupReviews).map((r, i) => {
     const w = `reviews[${i}]`;
-    const o = obj(r, w, ["id", "cardId", "at", "day", "grade", "fromBox", "toBox"], ["id", "cardId", "at", "day", "grade", "fromBox", "toBox"]);
+    const o = obj(r, w, reviewKeys, reviewKeys);
     const review: Review = {
       id: uuid(o.id, `${w}.id`),
       cardId: uuid(o.cardId, `${w}.cardId`),
@@ -163,9 +186,12 @@ function validate(raw: unknown): Snapshot {
       grade: grade(o.grade, `${w}.grade`),
       fromBox: box(o.fromBox, `${w}.fromBox`),
       toBox: box(o.toBox, `${w}.toBox`),
+      mode: v1 ? "herhalen" : mode(o.mode, `${w}.mode`),
+      counts: v1 ? true : bool(o.counts, `${w}.counts`),
     };
     if (!cardBoxes.has(review.cardId)) throw new Invalid(`${w}.cardId`);
-    if (nextBox(review.fromBox, review.grade) !== review.toBox) throw new Invalid(`${w}.toBox`);
+    const expected = review.counts ? nextBox(review.fromBox, review.grade) : review.fromBox;
+    if (expected !== review.toBox) throw new Invalid(`${w}.toBox`);
     if (reviewIds.has(review.id)) throw new Invalid(`${w}.id`);
     reviewIds.add(review.id);
     return review;
@@ -189,7 +215,7 @@ export function parseBackup(text: string): Parsed<Snapshot> {
   if (typeof head.version !== "number" || !Number.isInteger(head.version) || head.version < 1) return { ok: false, error: { code: "invalid", where: "version" } };
   if (head.version > FILE_VERSION) return { ok: false, error: { code: "version" } };
   try {
-    return { ok: true, data: validate(raw) };
+    return { ok: true, data: validate(raw, head.version) };
   } catch (e) {
     if (e instanceof Invalid) return { ok: false, error: { code: "invalid", where: e.where } };
     return { ok: false, error: { code: "invalid", where: "root" } };
@@ -197,7 +223,7 @@ export function parseBackup(text: string): Parsed<Snapshot> {
 }
 
 export interface SharedDeck {
-  deck: Pick<Deck, "name" | "lang" | "subject">;
+  deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject">;
   cards: { front: string; back: string; topic?: string }[];
 }
 
@@ -209,7 +235,7 @@ export function parseShared(text: string): Parsed<SharedDeck> {
   if (decks.length !== 1) return { ok: false, error: { code: "invalid", where: "decks" } };
   if (cards.length === 0) return { ok: false, error: { code: "invalid", where: "cards" } };
   const d = decks[0]!;
-  const deck: SharedDeck["deck"] = { name: d.name, lang: d.lang };
+  const deck: SharedDeck["deck"] = { name: d.name, langFront: d.langFront, langBack: d.langBack };
   if (d.subject) deck.subject = d.subject;
   return {
     ok: true,

@@ -1,13 +1,20 @@
+/** Interface language. */
 export type Lang = "nl" | "en";
+/** Language of card content. "xx" means other / not a language (e.g. economics terms). */
+export type ContentLang = "nl" | "en" | "fr" | "de" | "es" | "it" | "la" | "xx";
 export type Grade = "fout" | "twijfel" | "goed";
 export type Box = 1 | 2 | 3 | 4 | 5;
 export type Theme = "system" | "light" | "dark";
+export type Mode = "herhalen" | "leren" | "flashcards" | "meerkeuze" | "typen" | "dictee" | "toets";
 
 export interface Deck {
   id: string;
   name: string;
-  lang: Lang;
   subject?: string;
+  /** Language of the front (question) side. */
+  langFront: ContentLang;
+  /** Language of the back (answer) side. */
+  langBack: ContentLang;
   createdAt: string;
 }
 
@@ -22,6 +29,10 @@ export interface Card {
   due: string;
   createdAt: string;
   updatedAt: string;
+  /** Cache, rebuilt from the review log: last results, oldest first, one char per answer (g, t, f). */
+  hist?: string;
+  /** Cache, rebuilt from the review log: local day of the last answer. */
+  lastDay?: string;
 }
 
 /** Append-only. Never edited. */
@@ -30,24 +41,45 @@ export interface Review {
   cardId: string;
   /** ISO timestamp. */
   at: string;
-  /** YYYY-MM-DD local calendar date the review happened on; needed to replay scheduling. */
+  /** YYYY-MM-DD local calendar date the answer was given on; needed to replay scheduling. */
   day: string;
   grade: Grade;
   fromBox: Box;
   toBox: Box;
+  mode: Mode;
+  /**
+   * Only the first answer to a card on a given day moves it between boxes.
+   * Later answers that day (practice, repeats) are logged with counts = false and fromBox === toBox.
+   */
+  counts: boolean;
+}
+
+/** Cache, rebuilt from the review log: answers per local day, for the streak and daily goal. */
+export interface DayStat {
+  day: string;
+  answers: number;
+  correct: number;
 }
 
 export interface Settings {
   uiLang: Lang;
   theme: Theme;
   schemaVersion: number;
+  /** Answers per day. */
+  dailyGoal: number;
+  /** Read words aloud automatically when a question appears (only with an on-device voice). */
+  autoSpeak: boolean;
   /** Local bookkeeping, not part of backups. */
   changesSinceExport: number;
   reminderSnoozedAt: number;
   lastExportAt?: string;
   persistRequested: boolean;
   installHintDismissed: boolean;
+  /** Day on which the "goal reached" message was last shown. */
+  goalCelebratedOn?: string;
 }
 
 export const GRADES: readonly Grade[] = ["fout", "twijfel", "goed"];
 export const BOXES: readonly Box[] = [1, 2, 3, 4, 5];
+export const CONTENT_LANGS: readonly ContentLang[] = ["nl", "en", "fr", "de", "es", "it", "la", "xx"];
+export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets"];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DAYS, nextBox, review } from "../../src/lib/scheduler";
+import { DAYS, answerCard, nextBox, review } from "../../src/lib/scheduler";
 import type { Box, Grade } from "../../src/lib/types";
 
 const card = (box: Box) => ({ id: "c", box, due: "2026-09-01" });
@@ -82,5 +82,16 @@ describe("scheduler", () => {
       }
       day = refAdd(day, 1);
     }
+  });
+});
+
+describe("answerCard", () => {
+  it("counts only the first answer of the day", () => {
+    const first = answerCard({ box: 2 as Box, due: "2026-10-01" }, "goed", "2026-10-01");
+    expect(first).toMatchObject({ counts: true, fromBox: 2, toBox: 3, card: { box: 3, due: "2026-10-08", lastDay: "2026-10-01" } });
+    const second = answerCard(first.card, "fout", "2026-10-01");
+    expect(second).toMatchObject({ counts: false, fromBox: 3, toBox: 3, card: { box: 3, due: "2026-10-08" } });
+    const nextDay = answerCard(second.card, "fout", "2026-10-02");
+    expect(nextDay).toMatchObject({ counts: true, toBox: 1, card: { due: "2026-10-03", lastDay: "2026-10-02" } });
   });
 });

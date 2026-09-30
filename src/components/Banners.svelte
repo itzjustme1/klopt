@@ -6,7 +6,7 @@
   import { applyUpdate, promptInstall, pwa } from "../lib/pwa.svelte";
 
   const onHome = $derived(app.route.name === "today");
-  const inReview = $derived(app.route.name === "review");
+  const inReview = $derived(app.route.name === "practice");
 
   const standalone = isStandalone();
   const ios = isIosSafari();
@@ -58,11 +58,10 @@
     display: grid;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
-    padding: 0.875rem 1rem;
-    background: var(--surface);
+    padding: 1rem 1.25rem;
+    background: var(--accent-soft);
     border: 1px solid var(--line);
-    border-top: 2px solid var(--ink);
-    border-radius: var(--radius);
+    border-radius: var(--r-lg);
   }
   .banner p {
     max-width: 36rem;

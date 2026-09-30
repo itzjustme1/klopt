@@ -6,27 +6,39 @@
   import { app } from "./lib/app.svelte";
   import { href } from "./lib/router";
   import Banners from "./components/Banners.svelte";
+  import Icon, { type IconName } from "./components/Icon.svelte";
+  import Logo from "./components/Logo.svelte";
   import Today from "./routes/Today.svelte";
-  import Review from "./routes/Review.svelte";
-  import Decks from "./routes/Decks.svelte";
+  import Lists from "./routes/Lists.svelte";
+  import NewList from "./routes/NewList.svelte";
   import DeckView from "./routes/Deck.svelte";
+  import Editor from "./routes/Editor.svelte";
+  import Practice from "./routes/Practice.svelte";
   import Import from "./routes/Import.svelte";
+  import Photo from "./routes/Photo.svelte";
+  import OpenFile from "./routes/OpenFile.svelte";
+  import Progress from "./routes/Progress.svelte";
   import Settings from "./routes/Settings.svelte";
   import ShareReceive from "./routes/ShareReceive.svelte";
 
-  const nav: { key: StringKey; href: string; match: string[] }[] = [
-    { key: "nav.today", href: href.today(), match: ["today", "review"] },
-    { key: "nav.decks", href: href.decks(), match: ["decks", "deck"] },
-    { key: "nav.import", href: href.import(), match: ["import"] },
-    { key: "nav.settings", href: href.settings(), match: ["settings"] },
+  const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
+    { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
+    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file"] },
+    { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
+    { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings"] },
   ];
 
   const titles: Record<string, StringKey> = {
     today: "nav.today",
-    review: "review.title",
-    decks: "nav.decks",
-    deck: "nav.decks",
-    import: "nav.import",
+    lists: "nav.lists",
+    new: "new.title",
+    editor: "editor.editTitle",
+    deck: "nav.lists",
+    practice: "deck.practice",
+    import: "import.title",
+    photo: "photo.title",
+    file: "new.file",
+    progress: "nav.progress",
     settings: "nav.settings",
     share: "receive.title",
   };
@@ -36,8 +48,8 @@
 
   // On every route change: update the title, scroll up and move focus to the page heading.
   $effect(() => {
-    const name = app.route.name;
-    const key = titles[name];
+    const route = app.route;
+    const key = titles[route.name];
     document.title = key ? `${t(key)} · ${APP_NAME}` : APP_NAME;
     if (!app.ready) return;
     if (first) {
@@ -54,49 +66,67 @@
     });
   });
 
-  const focusMode = $derived(app.route.name === "review");
+  const focusMode = $derived(app.route.name === "practice");
 </script>
 
 <a class="skip" href="#main" onclick={(e) => { e.preventDefault(); main?.focus(); }}>{t("skip")}</a>
 
-<header class="top" class:focus-mode={focusMode}>
-  <div class="wrap top-inner">
-    <a class="brand" href={href.today()}>{APP_NAME}</a>
-    {#if !focusMode}
+{#if !focusMode}
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo /></a>
       <nav class="nav" aria-label={t("nav.label")}>
         {#each nav as item (item.key)}
-          <a href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>{t(item.key)}</a>
+          <a href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>
+            <Icon name={item.icon} size={22} />
+            <span>{t(item.key)}</span>
+          </a>
         {/each}
       </nav>
-    {/if}
-  </div>
-</header>
+    </div>
+  </header>
+{/if}
 
-<main id="main" class="wrap" class:with-tabbar={!focusMode} tabindex="-1" bind:this={main}>
+<main id="main" class:wrap={!focusMode} class:with-tabbar={!focusMode} class:focus-mode={focusMode} tabindex="-1" bind:this={main}>
   {#if app.failed}
-    <div class="panel">
+    <div class="card card-pad">
       <p class="error">{t("common.saveFailed")}</p>
     </div>
   {:else if !app.ready}
     <p class="muted" aria-busy="true">{t("common.loading")}</p>
   {:else}
-    <Banners />
+    {#if !focusMode}<Banners />{/if}
     {#if app.route.name === "today"}
       <Today />
-    {:else if app.route.name === "review"}
-      {#key app.route.deckId}
-        <Review deckId={app.route.deckId} />
+    {:else if app.route.name === "lists"}
+      <Lists />
+    {:else if app.route.name === "new"}
+      <NewList />
+    {:else if app.route.name === "editor"}
+      {#key app.route.id}
+        <Editor id={app.route.id} />
       {/key}
-    {:else if app.route.name === "decks"}
-      <Decks create={app.route.create ?? false} />
     {:else if app.route.name === "deck"}
       {#key app.route.id}
         <DeckView id={app.route.id} share={app.route.share ?? false} />
+      {/key}
+    {:else if app.route.name === "practice"}
+      {@const r = app.route}
+      {#key `${r.scope}/${r.mode}/${r.dir}/${r.which}`}
+        <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} />
       {/key}
     {:else if app.route.name === "import"}
       {#key app.route.deckId}
         <Import deckId={app.route.deckId} />
       {/key}
+    {:else if app.route.name === "photo"}
+      {#key app.route.deckId}
+        <Photo deckId={app.route.deckId} />
+      {/key}
+    {:else if app.route.name === "file"}
+      <OpenFile />
+    {:else if app.route.name === "progress"}
+      <Progress />
     {:else if app.route.name === "settings"}
       <Settings />
     {:else if app.route.name === "share"}
@@ -111,13 +141,13 @@
 
 <p class="visually-hidden" aria-live="polite">{app.flash}</p>
 {#if app.flash}
-  <div class="toast" role="presentation">{app.flash}</div>
+  <div class="toast" class:raised={!focusMode} role="presentation">{app.flash}</div>
 {/if}
 
 <style>
   :global(.wrap) {
     width: 100%;
-    max-width: 44rem;
+    max-width: 1040px;
     margin-inline: auto;
     padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
   }
@@ -126,36 +156,38 @@
     position: absolute;
     left: 0.5rem;
     top: -4rem;
-    z-index: 20;
+    z-index: 50;
     padding: 0.75rem 1rem;
-    background: var(--ink);
-    color: var(--surface);
-    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: var(--r-sm);
+    font-weight: 700;
   }
   .skip:focus {
     top: 0.5rem;
   }
 
   .top {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--surface);
     border-bottom: 1px solid var(--line);
-    background: var(--bg);
     padding-top: env(safe-area-inset-top);
   }
   .top-inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 3.5rem;
+    min-height: 64px;
     gap: 1rem;
   }
   .brand {
-    font-weight: 700;
-    font-size: 1.25rem;
-    letter-spacing: -0.02em;
-    text-decoration: none;
-    min-height: var(--tap);
     display: inline-flex;
     align-items: center;
+    min-height: var(--tap);
+    text-decoration: none;
+    border-radius: var(--r-sm);
   }
 
   .nav {
@@ -165,79 +197,93 @@
   .nav a {
     display: inline-flex;
     align-items: center;
+    gap: 0.5rem;
     min-height: var(--tap);
-    padding: 0 0.75rem;
+    padding: 0 0.875rem;
+    border-radius: var(--r-sm);
     color: var(--ink-2);
     text-decoration: none;
-    font-weight: 600;
-    border-bottom: 2px solid transparent;
+    font-weight: 700;
+    transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
   }
   .nav a:hover {
+    background: var(--surface-2);
     color: var(--ink);
   }
   .nav a[aria-current="page"] {
-    color: var(--ink);
-    border-bottom-color: var(--ink);
+    background: var(--accent-soft);
+    color: var(--accent-text);
   }
 
   main {
-    padding-top: 1.5rem;
-    padding-bottom: 3rem;
+    padding-top: 1.75rem;
+    padding-bottom: 4rem;
     outline: none;
+  }
+  main.focus-mode {
+    padding: 0;
   }
 
   /* Phones: the nav becomes a bottom tab bar. */
-  @media (max-width: 639px) {
+  @media (max-width: 719px) {
+    .top-inner {
+      min-height: 56px;
+    }
     .nav {
       position: fixed;
       inset: auto 0 0 0;
-      z-index: 10;
+      z-index: 20;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 0;
       background: var(--surface);
       border-top: 1px solid var(--line);
-      padding-bottom: env(safe-area-inset-bottom);
+      padding: 0.25rem 0.25rem env(safe-area-inset-bottom);
     }
     .nav a {
+      flex-direction: column;
       justify-content: center;
-      min-height: 3.25rem;
-      padding: 0 0.25rem;
-      font-size: 0.8125rem;
-      border-bottom: 0;
-      border-top: 2px solid transparent;
+      gap: 0.125rem;
+      min-height: 3.5rem;
+      padding: 0.25rem;
+      font-size: var(--fs-caption);
+      border-radius: var(--r-sm);
     }
     .nav a[aria-current="page"] {
-      border-top-color: var(--ink);
+      background: transparent;
+    }
+    .nav a[aria-current="page"] :global(.icon) {
+      color: var(--accent);
     }
     main.with-tabbar {
-      padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+      padding-bottom: calc(6rem + env(safe-area-inset-bottom));
     }
   }
 
   .toast {
     position: fixed;
     left: 50%;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    bottom: calc(1.5rem + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    z-index: 30;
+    z-index: 60;
     max-width: calc(100vw - 2rem);
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1.25rem;
     background: var(--ink);
-    color: var(--surface);
-    border-radius: var(--radius);
-    font-weight: 600;
-    animation: toast-in 180ms var(--ease);
+    color: var(--bg);
+    border-radius: var(--r-sm);
+    font-weight: 700;
+    box-shadow: var(--shadow-card);
+    animation: toast-in var(--t-base) var(--ease);
   }
-  @media (min-width: 640px) {
-    .toast {
-      bottom: 1.5rem;
+  @media (max-width: 719px) {
+    .toast.raised {
+      bottom: calc(5.5rem + env(safe-area-inset-bottom));
     }
   }
   @keyframes toast-in {
     from {
       opacity: 0;
-      transform: translate(-50%, 6px);
+      transform: translate(-50%, 8px);
     }
   }
 </style>

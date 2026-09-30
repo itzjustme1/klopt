@@ -14,10 +14,11 @@ body {
   min-height: 100dvh;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-ui);
-  font-size: 1rem;
+  font-family: var(--font);
+  font-size: var(--fs-body);
   line-height: 1.5;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -25,36 +26,31 @@ h1,
 h2,
 h3 {
   margin: 0;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  line-height: 1.2;
   text-wrap: balance;
 }
 h1 {
-  font-size: 1.75rem;
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 h2 {
-  font-size: 1.25rem;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
 }
 h3 {
-  font-size: 1.0625rem;
+  font-size: var(--fs-body);
+  font-weight: 700;
 }
 p {
   margin: 0;
   text-wrap: pretty;
 }
-
 a {
-  color: inherit;
+  color: var(--accent-text);
   text-underline-offset: 0.2em;
-  text-decoration-thickness: 1px;
-}
-
-/* Headings and regions that receive focus from script on navigation are not controls. */
-h1[tabindex="-1"]:focus,
-h2[tabindex="-1"]:focus,
-main[tabindex="-1"]:focus {
-  outline: none;
 }
 
 [hidden] {
@@ -62,105 +58,181 @@ main[tabindex="-1"]:focus {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 3px;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Headings and regions that receive focus from script on navigation are not controls. */
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus,
+main[tabindex="-1"]:focus {
+  outline: none;
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
 .muted {
   color: var(--ink-2);
 }
 .small {
-  font-size: 0.875rem;
+  font-size: var(--fs-small);
 }
-.hand {
-  font-family: var(--font-hand);
-  color: var(--accent);
-  font-size: 1.75rem;
-  line-height: 1;
+.caption {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+.num {
+  font-variant-numeric: tabular-nums;
 }
 
 .visually-hidden {
   position: absolute !important;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  float: none !important;
 }
 
-/* Buttons */
+/* Buttons: a solid face on a darker edge that disappears when pressed (StudyGo knob, Duolingo). */
 .btn {
+  --face: var(--surface);
+  --text: var(--ink);
+  --edge-color: var(--line-strong);
+  --edge-size: var(--edge-2);
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: var(--tap);
-  padding: 0.5rem 1.125rem;
-  border: 1px solid var(--ink);
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
+  min-height: calc(var(--tap) + 4px);
+  padding: 0.625rem 1.25rem;
+  border: 2px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--face);
+  color: var(--text);
+  box-shadow: 0 var(--edge-size) 0 var(--edge-color);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   text-decoration: none;
   cursor: pointer;
   touch-action: manipulation;
   transition:
-    background-color 120ms var(--ease),
-    transform 120ms var(--ease);
+    transform var(--t-press) var(--ease),
+    box-shadow var(--t-press) var(--ease),
+    background-color var(--t-base) var(--ease),
+    border-color var(--t-base) var(--ease);
+  margin-bottom: var(--edge-size);
 }
 .btn:hover {
   background: var(--surface-2);
 }
-.btn:active {
-  transform: translateY(1px);
+.btn:active:not([disabled]) {
+  transform: translateY(var(--edge-size));
+  box-shadow: 0 0 0 var(--edge-color);
 }
 .btn[disabled],
 .btn[aria-disabled="true"] {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
 }
 .btn-primary {
-  background: var(--ink);
-  color: var(--surface);
+  --face: var(--accent);
+  --text: var(--on-accent);
+  --edge-color: var(--accent-edge);
+  --edge-size: var(--edge);
+  border-color: var(--accent);
 }
 .btn-primary:hover {
-  background: var(--ink-2);
-  border-color: var(--ink-2);
+  background: #0f55f0;
+  border-color: #0f55f0;
+}
+.btn-good {
+  --face: var(--good-fill);
+  --text: #07361e;
+  --edge-color: #0d8a50;
+  --edge-size: var(--edge);
+  border-color: var(--good-fill);
+}
+.btn-good:hover {
+  background: #1ec276;
+  border-color: #1ec276;
+}
+.btn-bad {
+  --face: var(--bad-fill);
+  --text: #ffffff;
+  --edge-color: #a8271c;
+  --edge-size: var(--edge);
+  border-color: var(--bad-fill);
+}
+.btn-bad:hover {
+  background: #b83328;
+  border-color: #b83328;
+}
+.btn-inverse {
+  --face: #ffffff;
+  --text: #1052e6;
+  --edge-color: rgb(6 30 96 / 0.45);
+  --edge-size: var(--edge);
+  border-color: #ffffff;
+}
+.btn-inverse:hover {
+  background: #eef3ff;
+  border-color: #eef3ff;
 }
 .btn-danger {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.btn-danger:hover {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.btn-danger.solid {
-  background: var(--accent);
-  color: var(--on-accent);
+  --text: var(--bad);
 }
 .btn-quiet {
   border-color: transparent;
   background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  font-weight: 500;
-  padding-inline: 0.5rem;
+  box-shadow: none;
+  margin-bottom: 0;
+  color: var(--accent-text);
+  padding-inline: 0.75rem;
 }
 .btn-quiet:hover {
-  background: var(--surface-2);
+  background: var(--accent-soft);
+}
+.btn-quiet:active:not([disabled]) {
+  transform: none;
 }
 .btn-block {
   width: 100%;
+}
+.btn-lg {
+  min-height: 3.5rem;
+  font-size: 1.0625rem;
+}
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
+}
+.icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+.card-pad {
+  padding: 1.25rem;
 }
 
 /* Forms */
@@ -170,82 +242,128 @@ main[tabindex="-1"]:focus {
 }
 .field > label,
 .label {
-  font-weight: 600;
-  font-size: 0.9375rem;
+  font-weight: 700;
+  font-size: var(--fs-small);
 }
 input[type="text"],
 input[type="search"],
 textarea,
 select {
   width: 100%;
-  min-height: var(--tap);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  min-height: calc(var(--tap) + 4px);
+  padding: 0.625rem 0.875rem;
+  border: 2px solid var(--line);
+  border-radius: var(--r-sm);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
+  transition: border-color var(--t-base) var(--ease);
+}
+input[type="text"]:hover,
+input[type="search"]:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--line-strong);
 }
 input[type="text"]:focus-visible,
+input[type="search"]:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 0;
-  border-color: var(--ink);
+  outline: none;
+  border-color: var(--accent);
 }
 textarea {
   resize: vertical;
-  line-height: 1.5;
 }
 input[type="file"] {
   font: inherit;
+  width: 100%;
   max-width: 100%;
 }
+input,
+select,
+textarea {
+  min-width: 0;
+}
 .error {
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--bad);
+  font-weight: 700;
 }
 
-/* Segmented choice (radio group) */
-.choice {
-  display: flex;
+/* Segmented control (radio group) */
+.segmented {
+  display: inline-flex;
   flex-wrap: wrap;
+  gap: 4px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px;
+  border: 0;
+  margin: 0;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.segmented label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 0.375rem 0.875rem;
+  border-radius: 9px;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
+}
+.segmented label:has(input:checked) {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgb(21 26 45 / 0.12);
+}
+.segmented label:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+/* Fieldsets default to min-width: min-content; reset it so their options can wrap. */
+.fieldset-wrap {
+  display: grid;
   gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
   border: 0;
   padding: 0;
   margin: 0;
 }
-.choice legend {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+.fieldset-wrap > legend {
   padding: 0;
-}
-.choice label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: var(--tap);
-  padding: 0.5rem 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  cursor: pointer;
-}
-.choice label:has(input:checked) {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
-}
-.choice input {
-  accent-color: var(--ink);
-  margin: 0;
+  font-weight: 700;
+  font-size: var(--fs-small);
+  margin-bottom: 0.5rem;
 }
 
-/* Plain panel for secondary content */
-.panel {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1rem;
+/* Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+
+/* Grid and flex children may shrink below their content, so one long word can never widen the page. */
+main :where(section, form, div, li, article) {
+  min-width: 0;
 }
 
 .stack > * + * {
@@ -254,8 +372,34 @@ input[type="file"] {
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.5rem 0.75rem;
   align-items: center;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.section-title {
+  margin: 2rem 0 0.75rem;
+}
+
+/* A thin pill-shaped progress bar. */
+.bar {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--t-signature) var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -29,17 +29,17 @@
   <p>{message}</p>
   <div class="row">
     <button type="button" class="btn" onclick={oncancel}>{t("common.cancel")}</button>
-    <button type="button" class="btn btn-danger solid" disabled={busy} onclick={confirm}>{confirmLabel}</button>
+    <button type="button" class="btn btn-bad" disabled={busy} onclick={confirm}>{confirmLabel}</button>
   </div>
 </div>
 
 <style>
   .confirm {
     display: grid;
-    gap: 0.75rem;
-    padding: 1rem;
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    background: var(--surface);
+    gap: 1rem;
+    padding: 1.125rem;
+    border: 2px solid var(--bad);
+    border-radius: var(--r-lg);
+    background: var(--bad-soft);
   }
 </style>

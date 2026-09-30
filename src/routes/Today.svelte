@@ -1,22 +1,30 @@
 <script lang="ts">
   import { getLang, num, t, tp } from "../i18n/index.svelte";
-  import BoxBar from "../components/BoxBar.svelte";
+  import Icon from "../components/Icon.svelte";
+  import ListCard from "../components/ListCard.svelte";
+  import NewOptions from "../components/NewOptions.svelte";
+  import StreakCard from "../components/StreakCard.svelte";
   import { app } from "../lib/app.svelte";
   import { formatDay } from "../lib/dates";
-  import { demoCards } from "../lib/demo";
+  import { demoLists } from "../lib/demo";
   import { href } from "../lib/router";
 
   const due = $derived(app.dueCount());
   const next = $derived(app.nextDue());
-  const dateLine = $derived(formatDay(app.today, getLang(), { weekday: "long", day: "numeric", month: "long" }));
+  const hard = $derived(app.hardCount());
+  const hour = new Date().getHours();
+  const greeting = $derived(hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening"));
+  const recent = $derived(app.decks.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4));
   let busy = $state(false);
 
   async function loadDemo() {
     busy = true;
     try {
       const lang = getLang();
-      const deck = await app.createDeck({ name: t("demo.name"), lang });
-      await app.addCards(deck.id, demoCards(lang));
+      for (const { deck, cards } of demoLists(lang, { french: t("demo.french"), economics: t("demo.economics") })) {
+        const d = await app.createDeck(deck);
+        await app.addCards(d.id, cards);
+      }
     } catch {
       app.showFlash(t("common.saveFailed"));
     } finally {
@@ -25,179 +33,199 @@
   }
 </script>
 
-<section class="today">
-  <p class="date mono">{dateLine}</p>
-  <h1 class="visually-hidden">{t("today.title")}</h1>
+{#if app.decks.length === 0}
+  <section class="welcome">
+    <h1>{t("home.welcome")}</h1>
+    <p class="lead muted">{t("home.welcomeBody")}</p>
+    <NewOptions />
+    <button type="button" class="btn btn-quiet demo" disabled={busy} onclick={loadDemo}>{t("home.demo")}</button>
+  </section>
+{:else}
+  <section class="home">
+    <h1>{greeting}</h1>
 
-  {#if app.cards.length === 0}
-    <div class="empty">
-      <h2>{t("empty.title")}</h2>
-      <p>{t("empty.body")}</p>
-      <div class="row actions">
-        <a class="btn btn-primary" href={href.newDeck()}>{t("empty.create")}</a>
-        <a class="btn" href={href.import()}>{t("empty.import")}</a>
+    <div class="top-grid">
+      <div class="hero">
+        <p class="hero-label caption">{t("home.review")}</p>
+        {#if due > 0}
+          <p class="hero-num num">{num(due)}</p>
+          <p class="hero-text">{tp("home.due", due)}</p>
+          <a class="btn btn-inverse btn-lg start" href={href.review()}>
+            <Icon name="review" size={22} />{t("home.startReview")}
+          </a>
+        {:else}
+          <p class="hero-done">{t("home.nothingDue")}</p>
+          {#if next}<p class="hero-text">{t("home.nextDue", { date: formatDay(next, getLang()) })}</p>{/if}
+        {/if}
       </div>
-      <button type="button" class="btn btn-quiet" disabled={busy} onclick={loadDemo}>{t("empty.demo")}</button>
-
-      <article class="index-card how">
-        <div class="head"><span>{t("empty.howTitle")}</span></div>
-        <p class="body">{t("empty.how")}</p>
-      </article>
+      <StreakCard />
     </div>
-  {:else}
-    <div class="hero">
-      <p class="count mono" aria-hidden="true">{num(due)}</p>
-      <p class="count-label"><span class="visually-hidden">{num(due)} </span>{tp("today.due", due)}</p>
-      {#if due > 0}
-        <a class="btn btn-primary start" href={href.review()}>{t("today.start")}</a>
-      {:else}
-        <p class="done">
-          <span>{t("today.nothingDue")}</span>
-          {#if next}<span>{t("today.nextDue", { date: formatDay(next, getLang()) })}</span>{/if}
-        </p>
-      {/if}
-    </div>
-  {/if}
 
-  {#if app.decks.length > 0}
-    <h2 class="decks-title">{t("today.decks")}</h2>
-    <ul class="decks">
-      {#each app.decks as deck (deck.id)}
-        {@const deckDue = app.dueCount(deck.id)}
-        {@const total = app.cardsIn(deck.id).length}
-        <li class="deck">
-          <div class="deck-head">
-            <a class="deck-name" href={href.deck(deck.id)} lang={deck.lang}>{deck.name}</a>
-            <span class="deck-due mono" class:zero={deckDue === 0}>{tp("today.deckDue", deckDue)}</span>
-          </div>
-          <p class="deck-meta small muted">
-            {#if deck.subject}<span lang={deck.lang}>{deck.subject}</span> · {/if}{tp("common.cardsCount", total)}
-          </p>
-          <BoxBar counts={app.boxCounts(deck.id)} />
-          {#if deckDue > 0 && deckDue < due}
-            <a class="btn btn-quiet deck-review" href={href.review(deck.id)}>{t("today.reviewDeck")}</a>
-          {/if}
-        </li>
+    {#if hard > 0}
+      <a class="hard card" href={href.practice("alles", "leren", "front", "hard")}>
+        <span class="hard-ic"><Icon name="learn" size={24} /></span>
+        <span class="hard-txt">
+          <span class="hard-title">{t("home.hard")}</span>
+          <span class="small muted">{tp("home.hardCount", hard)}</span>
+        </span>
+        <span class="btn btn-primary hard-btn" aria-hidden="true">{t("home.practiceHard")}</span>
+      </a>
+    {/if}
+
+    <div class="lists-head">
+      <h2>{t("home.lists")}</h2>
+      <a class="btn btn-quiet" href={href.lists()}>{t("home.allLists")}</a>
+    </div>
+    <ul class="grid">
+      {#each recent as deck (deck.id)}
+        <li><ListCard {deck} /></li>
       {/each}
+      <li>
+        <a class="new card" href={href.newList()}>
+          <Icon name="plus" size={24} />
+          <span>{t("lists.new")}</span>
+        </a>
+      </li>
     </ul>
-  {/if}
-</section>
+  </section>
+{/if}
 
 <style>
-  .date {
-    font-size: 0.8125rem;
-    color: var(--ink-2);
-    margin-bottom: 1.25rem;
+  .welcome {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 760px;
   }
-  .date::first-letter {
-    text-transform: uppercase;
+  .welcome h1 {
+    font-size: 2rem;
+  }
+  .lead {
+    font-size: 1.0625rem;
+    max-width: 36rem;
+  }
+  .demo {
+    justify-self: start;
+  }
+
+  .home {
+    display: grid;
+    gap: 1.25rem;
+  }
+  .top-grid {
+    display: grid;
+    gap: 1rem;
+  }
+  @media (min-width: 820px) {
+    .top-grid {
+      grid-template-columns: 1.15fr 1fr;
+      align-items: stretch;
+    }
   }
 
   .hero {
     display: grid;
+    align-content: start;
     justify-items: start;
-    padding-bottom: 2rem;
-    border-bottom: 1px solid var(--line);
-  }
-  .count {
-    font-size: clamp(5rem, 24vw, 8rem);
-    font-weight: 500;
-    line-height: 0.9;
-    letter-spacing: -0.04em;
-  }
-  .count-label {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-top: 0.5rem;
-  }
-  .start {
-    margin-top: 1.5rem;
-    min-width: min(100%, 16rem);
-    min-height: 3.25rem;
-    font-size: 1.0625rem;
-  }
-  .done {
-    display: grid;
     gap: 0.25rem;
-    margin-top: 0.75rem;
-    color: var(--ink-2);
-    max-width: 32rem;
+    padding: 1.5rem;
+    border-radius: var(--r-lg);
+    background: var(--accent);
+    color: var(--on-accent);
+    box-shadow: 0 var(--edge) 0 var(--accent-edge);
+    margin-bottom: var(--edge);
   }
-
-  .empty {
-    display: grid;
-    justify-items: start;
-    gap: 1rem;
+  .hero-label {
+    font-size: var(--fs-small);
   }
-  .empty h2 {
-    font-size: 1.75rem;
-  }
-  .empty > p {
-    max-width: 34rem;
-    color: var(--ink-2);
-  }
-  .actions {
+  .hero-num {
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
     margin-top: 0.25rem;
   }
-  .how {
-    margin-top: 1.5rem;
-    width: 100%;
-    max-width: 34rem;
-  }
-  .how .body {
+  .hero-text {
+    font-weight: 700;
     font-size: 1.0625rem;
-    padding-top: 0;
+  }
+  .hero-done {
+    font-size: var(--fs-h2);
+    font-weight: 800;
+    margin-top: 0.25rem;
+  }
+  .start {
+    margin-top: 1.25rem;
   }
 
-  .decks-title {
-    margin-top: 2rem;
-    margin-bottom: 0.75rem;
+  .hard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.125rem;
+    color: inherit;
+    text-decoration: none;
   }
-  .decks {
+  .hard:hover {
+    border-color: var(--line-strong);
+  }
+  .hard-ic {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: var(--warn-soft);
+    color: var(--warn);
+    flex: none;
+  }
+  .hard-txt {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+  .hard-title {
+    font-weight: 700;
+  }
+  @media (max-width: 480px) {
+    .hard-btn {
+      display: none;
+    }
+  }
+
+  .lists-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+  }
+  .grid {
     display: grid;
     gap: 0.75rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .deck {
-    padding: 0.875rem 1rem 0.75rem;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
+  @media (min-width: 720px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+    }
   }
-  .deck-head {
+  .new {
     display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .deck-name {
-    display: inline-flex;
     align-items: center;
-    min-height: var(--tap);
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 100%;
+    padding: 1.5rem;
+    border-style: dashed;
+    border-width: 2px;
+    box-shadow: none;
+    background: transparent;
+    color: var(--accent-text);
     font-weight: 700;
-    font-size: 1.0625rem;
     text-decoration: none;
-    overflow-wrap: anywhere;
   }
-  .deck-name:hover {
-    text-decoration: underline;
-  }
-  .deck-due {
-    font-size: 0.875rem;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  .deck-due.zero {
-    color: var(--ink-2);
-    font-weight: 400;
-  }
-  .deck-meta {
-    margin: 0.125rem 0 0.625rem;
-  }
-  .deck-review {
-    margin-top: 0.375rem;
-    margin-left: -0.5rem;
+  .new:hover {
+    background: var(--accent-soft);
   }
 </style>

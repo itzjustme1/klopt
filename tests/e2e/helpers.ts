@@ -30,3 +30,34 @@ export function dayLabel(offsetDays: number): string {
   const d = new Date(Date.now() + offsetDays * 86_400_000);
   return new Intl.DateTimeFormat("nl", { day: "numeric", month: "long", timeZone: "Europe/Amsterdam" }).format(d);
 }
+
+export const WORDS: [string, string][] = [
+  ["la maison", "het huis"],
+  ["le chien", "de hond"],
+  ["l'école", "de school"],
+  ["le livre", "het boek"],
+];
+
+/** Creates a French list through the table editor, using the keyboard to move between cells. */
+export async function createFrenchList(page: Page, name = "Frans H1") {
+  await page.goto("/#/lijst/nieuw");
+  await page.getByLabel("Naam van de lijst").fill(name);
+  await page.getByLabel("Vak", { exact: true }).fill("Frans");
+  await page.getByLabel("Taal links").selectOption("fr");
+  await page.getByLabel("Taal rechts").selectOption("nl");
+  await page.getByLabel("Rij 1, Woord of begrip").click();
+  for (const [fr, nl] of WORDS) {
+    await page.keyboard.type(fr);
+    await page.keyboard.press("Enter");
+    await page.keyboard.type(nl);
+    await page.keyboard.press("Enter");
+  }
+  await page.getByRole("button", { name: "Lijst opslaan" }).click();
+  await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+}
+
+export function answerFor(prompt: string): string {
+  const pair = WORDS.find(([fr, nl]) => fr === prompt || nl === prompt);
+  if (!pair) throw new Error(`Unknown prompt ${prompt}`);
+  return pair[0] === prompt ? pair[1] : pair[0];
+}

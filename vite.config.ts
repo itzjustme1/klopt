@@ -6,7 +6,8 @@ import { APP_NAME } from "./src/config.ts";
 
 export const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // WebAssembly compilation only (on-device OCR). This is not 'unsafe-eval': JS eval and new Function stay blocked.
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
@@ -63,13 +64,13 @@ export default defineConfig({
       manifest: {
         name: APP_NAME,
         short_name: APP_NAME,
-        description: "Flashcards voor je examenvakken, met het vakjessysteem. Werkt offline, zonder account.",
+        description: "Oefen woordjes en begrippen voor je toetsen. Werkt offline, zonder account.",
         lang: "nl",
         start_url: "./",
         scope: "./",
         display: "standalone",
-        background_color: "#E8EDF0",
-        theme_color: "#E8EDF0",
+        background_color: "#F4F6FB",
+        theme_color: "#1660FF",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png" },
@@ -78,6 +79,16 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2,webmanifest}"],
+        // The OCR engine (about 4 MB plus language data) is only downloaded when a student uses it,
+        // then kept for offline use.
+        globIgnores: ["ocr/**"],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes("/ocr/") || /\/assets\/tesseract/.test(url.pathname),
+            handler: "CacheFirst",
+            options: { cacheName: "ocr", expiration: { maxEntries: 20 } },
+          },
+        ],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
       },

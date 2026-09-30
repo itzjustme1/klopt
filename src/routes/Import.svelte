@@ -1,23 +1,28 @@
 <script lang="ts">
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
+  import Flag from "../components/Flag.svelte";
+  import Icon from "../components/Icon.svelte";
   import { app } from "../lib/app.svelte";
+  import { takePendingImport } from "../lib/handoff";
   import { cardKey, parseImport } from "../lib/importText";
   import { skipText } from "../lib/messages";
   import { href } from "../lib/router";
-  import type { Lang } from "../lib/types";
+  import { CONTENT_LANGS, type ContentLang } from "../lib/types";
 
   let { deckId }: { deckId?: string } = $props();
 
   const PREVIEW_ROWS = 100;
   const SKIPPED_ROWS = 50;
 
-  let text = $state("");
-  let parsedText = $state("");
+  const fromPhoto = takePendingImport();
+  let text = $state(fromPhoto?.text ?? "");
+  let parsedText = $state(fromPhoto?.text ?? "");
   // svelte-ignore state_referenced_locally
   let target = $state<string>(deckId && app.deck(deckId) ? deckId : "new");
   let newName = $state("");
-  let newLang = $state<Lang>(getLang());
+  let langFront = $state<ContentLang>(fromPhoto?.langFront ?? "en");
+  let langBack = $state<ContentLang>(fromPhoto?.langBack ?? getLang());
   let error = $state("");
   let busy = $state(false);
   let done = $state<{ count: number; deckId: string; deckName: string } | null>(null);
@@ -33,7 +38,9 @@
   const existing = $derived(new Set(target === "new" ? [] : app.cardsIn(target).map((c) => cardKey(c.front, c.back))));
   const result = $derived(parseImport(parsedText, existing));
   const count = $derived(result.cards.length);
-  const cardLang = $derived(target === "new" ? newLang : (app.deck(target)?.lang ?? newLang));
+  const targetDeck = $derived(target === "new" ? undefined : app.deck(target));
+  const lf = $derived(targetDeck?.langFront ?? langFront);
+  const lb = $derived(targetDeck?.langBack ?? langBack);
   const canImport = $derived(count > 0 && !result.tooMany && !result.tooBig && !busy && parsedText === text);
 
   async function submit(e: SubmitEvent) {
@@ -41,23 +48,23 @@
     if (!canImport) return;
     error = "";
     let id = target;
-    let name = app.deck(target)?.name ?? "";
+    let name = targetDeck?.name ?? "";
     if (target === "new") {
       name = newName.trim();
       if (!name) {
-        error = t("decks.nameRequired");
+        error = t("editor.nameRequired");
         nameInput?.focus();
         return;
       }
       if (name.length > LIMITS.deckNameChars) {
-        error = t("decks.nameTooLong", { n: LIMITS.deckNameChars });
+        error = t("editor.nameTooLong", { n: LIMITS.deckNameChars });
         nameInput?.focus();
         return;
       }
     }
     busy = true;
     try {
-      if (target === "new") id = (await app.createDeck({ name, lang: newLang })).id;
+      if (target === "new") id = (await app.createDeck({ name, langFront, langBack })).id;
       await app.addCards(id, result.cards.map(({ front, back }) => ({ front, back })));
       done = { count, deckId: id, deckName: name };
       text = "";
@@ -69,65 +76,61 @@
       busy = false;
     }
   }
-
-  function again() {
-    done = null;
-    target = "new";
-  }
 </script>
 
-<section class="stack" style:--gap="1.25rem">
+<section class="import">
+  <a class="back small" href={href.newList()}><Icon name="back" size={18} />{t("common.back")}</a>
   <h1>{t("import.title")}</h1>
 
   {#if done}
-    <div class="panel success" role="status">
-      <p class="hand">{tp("import.success", done.count, { deck: done.deckName })}</p>
+    <div class="card card-pad success" role="status">
+      <span class="ok-ic" aria-hidden="true"><Icon name="check" size={28} /></span>
+      <p class="success-text">{tp("import.success", done.count, { deck: done.deckName })}</p>
       <div class="row">
         <a class="btn btn-primary" href={href.deck(done.deckId)}>{t("import.toDeck")}</a>
-        <button type="button" class="btn" onclick={again}>{t("import.again")}</button>
+        <button type="button" class="btn" onclick={() => (done = null)}>{t("import.again")}</button>
       </div>
     </div>
   {:else}
-    <p class="intro muted">{t("import.intro")}</p>
+    <p class="muted intro">{fromPhoto ? t("import.fromPhoto") : t("import.intro")}</p>
 
     <form class="stack" style:--gap="1.25rem" onsubmit={submit} novalidate>
       <div class="field">
         <label for="import-text">{t("import.textLabel")}</label>
-        <textarea
-          id="import-text"
-          class="paste mono"
-          rows="8"
-          bind:value={text}
-          placeholder={t("import.placeholder")}
-          spellcheck="false"
-          autocomplete="off"
-          lang={cardLang}
-        ></textarea>
+        <textarea id="import-text" class="paste" rows="8" bind:value={text} placeholder={t("import.placeholder")} spellcheck="false" autocomplete="off"></textarea>
       </div>
 
-      <div class="field">
-        <label for="import-target">{t("import.target")}</label>
-        <select id="import-target" bind:value={target}>
-          <option value="new">{t("import.newDeck")}</option>
-          {#each app.decks as d (d.id)}
-            <option value={d.id}>{d.name}</option>
-          {/each}
-        </select>
-      </div>
-
-      {#if target === "new"}
-        <div class="new-deck stack" style:--gap="1rem">
+      <div class="card card-pad target">
+        <div class="field">
+          <label for="import-target">{t("import.target")}</label>
+          <select id="import-target" bind:value={target}>
+            <option value="new">{t("import.newDeck")}</option>
+            {#each app.decks as d (d.id)}
+              <option value={d.id}>{d.name}</option>
+            {/each}
+          </select>
+        </div>
+        {#if target === "new"}
           <div class="field">
             <label for="import-name">{t("import.newDeckName")}</label>
-            <input id="import-name" type="text" bind:value={newName} bind:this={nameInput} maxlength={LIMITS.deckNameChars} autocomplete="off" />
+            <input id="import-name" type="text" bind:value={newName} bind:this={nameInput} maxlength={LIMITS.deckNameChars} autocomplete="off" placeholder={t("editor.namePlaceholder")} />
           </div>
-          <fieldset class="choice">
-            <legend>{t("decks.lang")}</legend>
-            <label><input type="radio" name="import-lang" value="nl" bind:group={newLang} />{t("lang.nl")}</label>
-            <label><input type="radio" name="import-lang" value="en" bind:group={newLang} />{t("lang.en")}</label>
-          </fieldset>
-        </div>
-      {/if}
+          <div class="langs">
+            <div class="field">
+              <label for="imp-lf">{t("editor.langFront")}</label>
+              <select id="imp-lf" bind:value={langFront}>
+                {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
+              </select>
+            </div>
+            <div class="field">
+              <label for="imp-lb">{t("editor.langBack")}</label>
+              <select id="imp-lb" bind:value={langBack}>
+                {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
+              </select>
+            </div>
+          </div>
+        {/if}
+      </div>
 
       <section class="preview" aria-labelledby="preview-title">
         <h2 id="preview-title">{t("import.preview")}</h2>
@@ -156,21 +159,21 @@
         {/if}
 
         {#if count > 0}
-          <div class="table-wrap">
+          <div class="table-wrap card">
             <table>
               <thead>
                 <tr>
-                  <th scope="col" class="num">{t("import.col.line")}</th>
-                  <th scope="col">{t("import.col.front")}</th>
-                  <th scope="col">{t("import.col.back")}</th>
+                  <th scope="col" class="num-col">{t("import.col.line")}</th>
+                  <th scope="col"><span class="th"><Flag lang={lf} size={18} />{t(`lang.${lf}`)}</span></th>
+                  <th scope="col"><span class="th"><Flag lang={lb} size={18} />{t(`lang.${lb}`)}</span></th>
                 </tr>
               </thead>
-              <tbody lang={cardLang}>
+              <tbody>
                 {#each result.cards.slice(0, PREVIEW_ROWS) as c (c.line)}
                   <tr>
-                    <td class="num mono">{c.line}</td>
-                    <td>{c.front}</td>
-                    <td>{c.back}</td>
+                    <td class="num-col num">{c.line}</td>
+                    <td lang={lf === "xx" ? undefined : lf}>{c.front}</td>
+                    <td lang={lb === "xx" ? undefined : lb}>{c.back}</td>
                   </tr>
                 {/each}
               </tbody>
@@ -181,26 +184,35 @@
       </section>
 
       {#if error}<p class="error" role="alert">{error}</p>{/if}
-      <button type="submit" class="btn btn-primary submit" disabled={!canImport}>
-        {count > 0 ? tp("import.submit", Math.min(count, LIMITS.importCards)) : tp("import.submit", 0)}
+      <button type="submit" class="btn btn-primary btn-lg submit" disabled={!canImport}>
+        {tp("import.submit", count > 0 ? Math.min(count, LIMITS.importCards) : 0)}
       </button>
     </form>
   {/if}
 </section>
 
 <style>
+  .import {
+    display: grid;
+    gap: 1rem;
+    max-width: 820px;
+  }
   .intro {
-    max-width: 38rem;
+    max-width: 40rem;
   }
   .paste {
-    font-size: 0.875rem;
-    line-height: 1.6;
     white-space: pre-wrap;
     tab-size: 4;
+    font-size: 0.9375rem;
   }
-  .new-deck {
-    padding-left: 1rem;
-    border-left: 1px solid var(--line);
+  .target {
+    display: grid;
+    gap: 1rem;
+  }
+  .langs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
   }
   .preview h2 {
     margin-bottom: 0.5rem;
@@ -212,7 +224,7 @@
   .skipped {
     margin: 0.75rem 0 0;
     padding-left: 1.25rem;
-    color: var(--accent);
+    color: var(--bad);
     display: grid;
     gap: 0.25rem;
   }
@@ -220,53 +232,61 @@
     margin-top: 0.75rem;
     max-height: 26rem;
     overflow: auto;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: var(--surface);
+    border-radius: var(--r-sm);
+    box-shadow: none;
   }
   table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9375rem;
+    table-layout: fixed;
   }
   th,
   td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.625rem 0.875rem;
     text-align: left;
     vertical-align: top;
-    border-bottom: 1px solid var(--rule);
-    overflow-wrap: break-word;
-    hyphens: auto;
+    border-bottom: 1px solid var(--line);
+    overflow-wrap: anywhere;
   }
   th {
     position: sticky;
     top: 0;
     background: var(--surface);
-    border-bottom: 2px solid var(--accent);
-    font-size: 0.8125rem;
+    font-size: var(--fs-caption);
     color: var(--ink-2);
-    font-weight: 600;
   }
-  td {
-    font-family: var(--font-card);
+  .th {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
   }
-  .num {
-    width: 3.5rem;
+  td:nth-child(2) {
+    font-weight: 700;
+  }
+  .num-col {
+    width: 4.5rem;
     color: var(--ink-2);
-    font-size: 0.8125rem;
-  }
-  td.num {
-    font-family: var(--font-mono);
+    font-size: var(--fs-caption);
   }
   .submit {
     justify-self: start;
-    min-height: 3.25rem;
   }
   .success {
     display: grid;
     gap: 1rem;
+    justify-items: start;
   }
-  .success .hand {
-    font-size: 2rem;
+  .ok-ic {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--good-fill);
+    color: #ffffff;
+  }
+  .success-text {
+    font-size: var(--fs-h2);
+    font-weight: 800;
   }
 </style>

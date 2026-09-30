@@ -7,81 +7,126 @@ async function audit(page: Page, label: string) {
   expect(issues).toEqual([]);
 }
 
-/** Asserts no horizontal page scroll and every visible control is at least 44px tall and wide (or a text link inside text). */
+/** No horizontal page scroll, and every visible control is at least 44 by 44 px. */
 async function layout(page: Page, label: string) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, `${label}: horizontal overflow`).toBeLessThanOrEqual(0);
   const small = await page.evaluate(() =>
-    [...document.querySelectorAll<HTMLElement>("button, a.btn, .nav a, input[type=radio], select, input[type=text], textarea")]
-      .filter((el) => el.offsetParent !== null)
+    [...document.querySelectorAll<HTMLElement>("button, a.btn, .nav a, input[type=radio], select, input[type=text], input[type=search], textarea")]
+      .filter((el) => el.offsetParent !== null || el.matches("input[type=radio]"))
       .map((el) => {
         const target = el.matches("input[type=radio]") ? (el.closest("label") as HTMLElement) : el;
         const r = target.getBoundingClientRect();
-        return { text: (target.textContent || target.getAttribute("aria-label") || target.tagName).trim().slice(0, 30), w: r.width, h: r.height };
+        return { text: (target.textContent || target.getAttribute("aria-label") || target.tagName).trim().slice(0, 30), w: Math.round(r.width), h: Math.round(r.height) };
       })
-      .filter((b) => b.h < 44 || b.w < 44),
+      .filter((b) => b.w > 0 && (b.h < 44 || b.w < 44)),
   );
   expect(small, `${label}: tap targets under 44px`).toEqual([]);
 }
 
 for (const scheme of ["light", "dark"] as const) {
   test(`accessibility and layout at 360px, ${scheme}`, async ({ browser }) => {
+    test.setTimeout(120_000);
     const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, colorScheme: scheme, locale: "nl-NL", timezoneId: "Europe/Amsterdam" });
     const page = await ctx.newPage();
     const base = "http://localhost:4173/";
     const check = async (label: string) => {
-      await page.waitForTimeout(450); // let the flip and toast animations settle
+      await page.waitForTimeout(450); // let the flip, sheet and toast animations settle
       await audit(page, `${scheme} ${label}`);
       await layout(page, `${scheme} ${label}`);
     };
 
     await page.goto(base);
-    await page.getByRole("heading", { name: "Nog geen kaarten" }).waitFor();
-    await check("empty");
-    await page.getByRole("button", { name: "Probeer een voorbeeldstapel" }).click();
-    await page.locator(".hero .count").waitFor();
+    await page.getByRole("heading", { name: "Welkom bij Klopt" }).waitFor();
+    await check("welcome");
+    await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+    await page.locator(".hero-num").waitFor();
     await check("today");
-    await page.getByRole("link", { name: "Begin met overhoren" }).click();
-    await check("review front");
-    await page.keyboard.press("Space");
-    await check("review back");
-    for (const key of ["3", "Space", "1", "Space", "2"]) {
-      await page.keyboard.press(key);
-      await page.waitForTimeout(450);
-    }
-    await page.getByRole("heading", { name: "Klaar" }).waitFor();
-    await check("done");
-    await page.goto(base + "#/stapels");
-    await check("decks");
-    await page.getByRole("link", { name: "Voorbeeldstapel" }).first().click();
-    await check("deck");
-    await page.getByRole("link", { name: "Delen" }).click();
+    await page.goto(base + "#/lijsten");
+    await check("lists");
+    await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
+    await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
+    await check("list");
+    await page.getByRole("link", { name: /^Leren/ }).click();
+    await page.locator(".options").waitFor();
+    await check("learn: multiple choice");
+    await page.keyboard.press("1");
+    await page.locator(".sheet").waitFor();
+    await check("learn: feedback");
+    const deckHash = await page.evaluate(() => location.hash.split("/")[2]);
+    await page.goto(`${base}#/oefenen/${deckHash}/typen/front/all`);
+    await page.locator(".answer-input").waitFor();
+    await check("type");
+    await page.keyboard.type("xyz");
+    await page.keyboard.press("Enter");
+    await page.locator(".sheet").waitFor();
+    await check("type: wrong");
+    await page.goto(`${base}#/oefenen/${deckHash}/flashcards/front/all`);
+    await page.locator(".flip").waitFor();
+    await check("flashcards");
+    await page.goto(`${base}#/lijst/${deckHash}/bewerken`);
+    await page.getByRole("heading", { name: "Lijst bewerken" }).waitFor();
+    await check("editor");
+    await page.goto(`${base}#/lijst/${deckHash}/delen`);
     await page.getByLabel("Deellink").waitFor();
     await check("share");
+    await page.goto(base + "#/voortgang");
+    await check("progress");
+    await page.goto(base + "#/nieuw");
+    await check("new list");
+    await page.goto(base + "#/foto");
+    await check("photo");
     await page.goto(base + "#/importeren");
     await page.getByLabel("Je lijst").fill("a;b\nzonder\nc\td");
     await check("import");
     await page.goto(base + "#/instellingen");
     await check("settings");
-    await page.getByLabel("English").check();
+    await page.getByText("English", { exact: true }).click();
     await page.goto(base);
     await check("today en");
     await ctx.close();
   });
 }
 
-test("reduced motion: the card swaps without rotating", async ({ browser }) => {
-  const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 390, height: 800 } });
+test("reduced motion: the flashcard swaps without rotating", async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 390, height: 800 }, locale: "nl-NL" });
   const page = await ctx.newPage();
   await page.goto("http://localhost:4173/");
-  await page.getByRole("button", { name: /voorbeeldstapel|sample deck/i }).click();
-  await page.getByRole("link", { name: /Begin met overhoren|Start reviewing/ }).click();
-  await page.locator(".flipper").waitFor();
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
+  await page.getByRole("link", { name: /^Flashcards/ }).click();
+  await page.locator(".flip").waitFor();
   await page.keyboard.press("Space");
-  await expect(page.locator(".flipper.flipped")).toHaveCount(1);
+  await expect(page.locator(".flip.flipped")).toHaveCount(1);
   const t = await page.locator(".face.back").evaluate((el) => getComputedStyle(el).transform);
   expect(t).toBe("none");
   await expect(page.locator(".face.back")).toBeVisible();
   await expect(page.locator(".face.front")).toBeHidden();
+  await ctx.close();
+});
+
+test("a very long word never widens the page", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, locale: "nl-NL" });
+  const page = await ctx.newPage();
+  const long = "Donaudampfschifffahrtsgesellschaftskapitänswitwe".repeat(3);
+  const noOverflow = async (label: string) => {
+    await page.waitForTimeout(300);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, label).toBeLessThanOrEqual(0);
+  };
+  await page.goto("http://localhost:4173/#/importeren");
+  await page.getByLabel("Je lijst").fill(`${long};${long}\nkort;${long}`);
+  await page.getByLabel("Naam van de nieuwe lijst").fill(long);
+  await noOverflow("import preview");
+  await page.getByRole("button", { name: "2 woorden toevoegen" }).click();
+  await page.getByRole("link", { name: "Naar de lijst" }).click();
+  await noOverflow("list page");
+  await page.goto("http://localhost:4173/#/lijsten");
+  await noOverflow("lists");
+  await page.goto("http://localhost:4173/");
+  await noOverflow("today");
+  await page.getByRole("link", { name: "Start herhalen" }).click();
+  await page.locator(".qcard").waitFor();
+  await noOverflow("practice");
   await ctx.close();
 });

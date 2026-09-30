@@ -3,7 +3,7 @@ export const APP_NAME = "Klopt";
 
 /** Fixed technical identifier inside backup and share files. Never change it when renaming the app. */
 export const FILE_FORMAT = "klopt-backup";
-export const FILE_VERSION = 1;
+export const FILE_VERSION = 2;
 
 export const LIMITS = {
   /** Max cards per text import. */

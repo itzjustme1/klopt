@@ -1,80 +1,171 @@
+/* Design tokens. Values and their sources: DESIGN-RECON.md. Components use these, never raw values. */
 :root {
   color-scheme: light;
-  --bg: #e8edf0;
-  --surface: #fafbfb;
-  --surface-2: #dae3e9;
-  --ink: #16212a;
-  --ink-2: #465661;
-  --line: #c2ced6;
-  --rule: #d3e2ee;
-  --accent: #c4301d;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #edf1f8;
+  --line: #e1e6f0;
+  --line-strong: #cfd6e4;
+  --ink: #151a2d;
+  --ink-2: #545d78;
+  --accent: #1660ff;
+  --accent-edge: #0a46d1;
+  --accent-text: #1052e6;
+  --accent-soft: #e6eeff;
   --on-accent: #ffffff;
-  --marker: #f2d14b;
-  --on-marker: #16212a;
-  --good: #2b7a52;
-  --on-good: #ffffff;
-  --b1: #cbd9e4;
-  --b2: #a3bed3;
-  --b3: #749ebd;
-  --b4: #457a9f;
-  --b5: #1e4c6c;
-  --stack: #16212a;
+  --good: #0b7a43;
+  --good-fill: #17b26a;
+  --good-soft: #e2f6ea;
+  --bad: #c4261a;
+  --bad-fill: #c93a2e;
+  --bad-soft: #fdecea;
+  --warn: #b54708;
+  --warn-soft: #fef0e1;
+  --flame: #f2711c;
+  --b1: #d7e3ff;
+  --b2: #a9c2ff;
+  --b3: #6b95ff;
+  --b4: #2f6bff;
+  --b5: #0a3fbf;
+  --heat-0: #e7ebf3;
+  --heat-1: #b9ccff;
+  --heat-2: #7fa2ff;
+  --heat-3: #1660ff;
 
-  --font-ui: "Familjen Grotesk", system-ui, sans-serif;
-  --font-card: "Source Serif 4", Georgia, serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --font-hand: "Reenie Beanie", cursive;
+  --font: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-display: 2.5rem;
+  --fs-h1: 1.75rem;
+  --fs-h2: 1.25rem;
+  --fs-body: 1rem;
+  --fs-small: 0.875rem;
+  --fs-caption: 0.8125rem;
 
-  --radius: 3px;
+  --r-sm: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgb(21 26 45 / 0.06), 0 6px 20px rgb(21 26 45 / 0.06);
+  --edge: 4px;
+  --edge-2: 3px;
+
   --gutter: 16px;
   --tap: 44px;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-base: 180ms;
+  --t-press: 110ms;
+  --t-signature: 260ms;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --gutter: 24px;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #0e1419;
-    --surface: #161e25;
-    --surface-2: #202b34;
-    --ink: #e7eef2;
-    --ink-2: #9dafbb;
-    --line: #2b3843;
-    --rule: #233440;
-    --accent: #ff7e64;
-    --on-accent: #1b0c07;
-    --marker: #d9b935;
-    --on-marker: #16212a;
-    --good: #5fc48d;
-    --on-good: #08150e;
-    --b1: #27394a;
-    --b2: #325069;
-    --b3: #3f7297;
-    --b4: #5b9ac3;
-    --b5: #93c8e8;
-    --stack: #05080a;
+    --bg: #0f1422;
+    --surface: #171d2e;
+    --surface-2: #212940;
+    --line: #2a3350;
+    --line-strong: #37426a;
+    --ink: #eef1f8;
+    --ink-2: #a7b0c8;
+    --accent-edge: #0a3bb0;
+    --accent-text: #7fa6ff;
+    --accent-soft: #1a2a52;
+    --good: #4ade9a;
+    --good-soft: #12301f;
+    --bad: #ff7a6e;
+    --bad-soft: #3a1a18;
+    --warn: #f5a04a;
+    --warn-soft: #3a2a12;
+    --b1: #25355e;
+    --b2: #2c4a9a;
+    --b3: #3a67d6;
+    --b4: #6b95ff;
+    --b5: #b5caff;
+    --heat-0: #212940;
+    --heat-1: #25407f;
+    --heat-2: #2f5fd6;
+    --heat-3: #7fa6ff;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0e1419;
-  --surface: #161e25;
-  --surface-2: #202b34;
-  --ink: #e7eef2;
-  --ink-2: #9dafbb;
-  --line: #2b3843;
-  --rule: #233440;
-  --accent: #ff7e64;
-  --on-accent: #1b0c07;
-  --marker: #d9b935;
-  --on-marker: #16212a;
-  --good: #5fc48d;
-  --on-good: #08150e;
-  --b1: #27394a;
-  --b2: #325069;
-  --b3: #3f7297;
-  --b4: #5b9ac3;
-  --b5: #93c8e8;
-  --stack: #05080a;
+  --bg: #0f1422;
+  --surface: #171d2e;
+  --surface-2: #212940;
+  --line: #2a3350;
+  --line-strong: #37426a;
+  --ink: #eef1f8;
+  --ink-2: #a7b0c8;
+  --accent-edge: #0a3bb0;
+  --accent-text: #7fa6ff;
+  --accent-soft: #1a2a52;
+  --good: #4ade9a;
+  --good-soft: #12301f;
+  --bad: #ff7a6e;
+  --bad-soft: #3a1a18;
+  --warn: #f5a04a;
+  --warn-soft: #3a2a12;
+  --b1: #25355e;
+  --b2: #2c4a9a;
+  --b3: #3a67d6;
+  --b4: #6b95ff;
+  --b5: #b5caff;
+  --heat-0: #212940;
+  --heat-1: #25407f;
+  --heat-2: #2f5fd6;
+  --heat-3: #7fa6ff;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
+}
+
+/* Subject badges: soft background, strong text. Six hues, assigned by a hash of the subject name. */
+:root {
+  --sub-1-bg: #e6eeff;
+  --sub-1-fg: #1043c4;
+  --sub-2-bg: #e2f6ea;
+  --sub-2-fg: #0b6b3b;
+  --sub-3-bg: #fef0e1;
+  --sub-3-fg: #9a3d06;
+  --sub-4-bg: #fde8f1;
+  --sub-4-fg: #a3175a;
+  --sub-5-bg: #dff5f5;
+  --sub-5-fg: #0b6566;
+  --sub-6-bg: #efe9ff;
+  --sub-6-fg: #5b2fc0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sub-1-bg: #1a2a52;
+    --sub-1-fg: #a9c2ff;
+    --sub-2-bg: #12301f;
+    --sub-2-fg: #7fe2ae;
+    --sub-3-bg: #3a2a12;
+    --sub-3-fg: #f8bf80;
+    --sub-4-bg: #3a1628;
+    --sub-4-fg: #f7a3c8;
+    --sub-5-bg: #0f3233;
+    --sub-5-fg: #7fdada;
+    --sub-6-bg: #291f4a;
+    --sub-6-fg: #c4b1ff;
+  }
+}
+:root[data-theme="dark"] {
+  --sub-1-bg: #1a2a52;
+  --sub-1-fg: #a9c2ff;
+  --sub-2-bg: #12301f;
+  --sub-2-fg: #7fe2ae;
+  --sub-3-bg: #3a2a12;
+  --sub-3-fg: #f8bf80;
+  --sub-4-bg: #3a1628;
+  --sub-4-fg: #f7a3c8;
+  --sub-5-bg: #0f3233;
+  --sub-5-fg: #7fdada;
+  --sub-6-bg: #291f4a;
+  --sub-6-fg: #c4b1ff;
 }

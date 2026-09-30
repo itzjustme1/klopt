@@ -1,17 +1,19 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
-  import SharedPreview from "./SharedPreview.svelte";
+  import Icon from "../components/Icon.svelte";
+  import SharedPreview from "../components/SharedPreview.svelte";
   import { parseShared, type SharedDeck } from "../lib/backup";
   import { readTextFile } from "../lib/files";
   import { backupErrorText } from "../lib/messages";
+  import { href } from "../lib/router";
 
   let error = $state("");
   let shared = $state.raw<SharedDeck | null>(null);
   let input: HTMLInputElement | undefined = $state();
 
-  async function choose(e: Event) {
-    const file = (e.currentTarget as HTMLInputElement).files?.[0];
+  async function choose() {
+    const file = input?.files?.[0];
     error = "";
     shared = null;
     if (!file) return;
@@ -28,25 +30,24 @@
   }
 </script>
 
-<section class="receive" aria-labelledby="receive-file-title">
-  <h2 id="receive-file-title">{t("decks.openShared")}</h2>
-  <div class="field">
-    <label for="receive-file" class="small muted">{t("decks.openSharedHelp")}</label>
-    <input id="receive-file" type="file" accept="application/json,.json" bind:this={input} onchange={choose} />
-  </div>
+<section class="open">
+  <a class="back small" href={href.newList()}><Icon name="back" size={18} />{t("common.back")}</a>
+  <h1>{t("new.file")}</h1>
+  <p class="muted">{t("new.fileDesc")}</p>
+  {#if !shared}
+    <div class="field">
+      <label for="receive-file">{t("receive.choose")}</label>
+      <input id="receive-file" type="file" accept="application/json,.json" bind:this={input} onchange={choose} />
+    </div>
+  {/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if shared}<SharedPreview {shared} oncancel={cancel} />{/if}
 </section>
 
 <style>
-  .receive {
+  .open {
     display: grid;
-    gap: 0.75rem;
-    margin-top: 2rem !important;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--line);
-  }
-  .receive .field > label {
-    font-weight: 400;
+    gap: 1rem;
+    max-width: 720px;
   }
 </style>

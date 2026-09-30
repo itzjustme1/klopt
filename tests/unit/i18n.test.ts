@@ -39,8 +39,8 @@ describe("i18n", () => {
   it("interpolates variables and the app name", () => {
     expect(interpolate("{app} {n}", { n: 3 })).toBe(`${APP_NAME} 3`);
     expect(interpolate("{missing}")).toBe("{missing}");
-    expect(translate("nl", "review.progress", { i: 3, n: 8 })).toBe("Kaart 3 van 8");
-    expect(translate("en", "review.progress", { i: 3, n: 8 })).toBe("Card 3 of 8");
+    expect(translate("nl", "practice.questionOf", { i: 3, n: 8 })).toBe("Vraag 3 van 8");
+    expect(translate("en", "practice.questionOf", { i: 3, n: 8 })).toBe("Question 3 of 8");
   });
 
   it("picks plural forms with Intl.PluralRules", () => {
@@ -54,6 +54,6 @@ describe("i18n", () => {
 
   it("does not interpret user text as a template", () => {
     // A deck name containing braces must come out exactly as typed.
-    expect(translate("nl", "receive.added", { name: "{app} <b>x</b>" })).toBe('Stapel "{app} <b>x</b>" toegevoegd.');
+    expect(translate("nl", "receive.added", { name: "{app} <b>x</b>" })).toBe('Lijst "{app} <b>x</b>" toegevoegd.');
   });
 });

@@ -10,6 +10,7 @@ export default defineConfig({
     timezoneId: "Europe/Amsterdam",
     locale: "nl-NL",
     serviceWorkers: "allow",
+    screenshot: "only-on-failure",
   },
   projects: [
     { name: "phone", use: { ...devices["Pixel 7"] } },

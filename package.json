@@ -11,15 +11,22 @@
     "lint": "eslint .",
     "test": "TZ=Europe/Amsterdam vitest run",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "predev": "node scripts/copy-ocr.mjs",
+    "prebuild": "node scripts/copy-ocr.mjs"
   },
   "dependencies": {
-    "@fontsource/familjen-grotesk": "^5.3.0",
-    "@fontsource/ibm-plex-mono": "^5.3.0",
-    "@fontsource/reenie-beanie": "^5.3.0",
-    "@fontsource/source-serif-4": "^5.3.0",
+    "@fontsource-variable/figtree": "^5.3.0",
+    "@tesseract.js-data/deu": "^1.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "@tesseract.js-data/ita": "^1.0.0",
+    "@tesseract.js-data/lat": "^1.0.0",
+    "@tesseract.js-data/nld": "^1.0.0",
+    "@tesseract.js-data/spa": "^1.0.0",
     "idb": "^8.0.3",
     "svelte": "^5.57.1",
+    "tesseract.js": "^7.0.0",
     "workbox-window": "^7.4.1"
   },
   "devDependencies": {

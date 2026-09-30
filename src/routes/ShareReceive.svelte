@@ -21,20 +21,31 @@
 
   function leave() {
     // Replace so the Back button doesn't reopen the shared link.
-    history.replaceState(null, "", href.today());
-    dispatchEvent(new HashChangeEvent("hashchange"));
+    location.replace(href.today());
   }
 </script>
 
-<section class="stack">
+<section class="receive">
   <h1>{t("receive.title")}</h1>
   {#if status === "loading"}
     <p class="muted" aria-busy="true">{t("receive.reading")}</p>
   {:else if status === "invalid"}
     <p class="error" role="alert">{t("receive.invalid")}</p>
-    <a class="btn" href={href.today()}>{t("review.backHome")}</a>
+    <a class="btn" href={href.today()}>{t("practice.backHome")}</a>
   {:else}
     <p class="muted">{t("receive.intro")}</p>
     <SharedPreview shared={status} oncancel={leave} />
   {/if}
 </section>
+
+<style>
+  .receive {
+    display: grid;
+    gap: 1rem;
+    max-width: 720px;
+    justify-items: start;
+  }
+  .receive :global(.preview) {
+    width: 100%;
+  }
+</style>
