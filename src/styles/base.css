@@ -402,6 +402,25 @@ main :where(section, form, div, li, article) {
   transition: width var(--t-signature) var(--ease);
 }
 
+/* Printing: no app chrome, black on white. */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --ink: #000000;
+    --ink-2: #333333;
+  }
+  header.top,
+  .nav,
+  .skip,
+  .toast {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

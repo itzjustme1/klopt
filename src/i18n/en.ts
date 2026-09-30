@@ -150,6 +150,9 @@ export const en: Messages = {
   "deck.deleteConfirm": "Delete \"{name}\" with all its words and progress? This can't be undone.",
   "deck.deleteYes": "Yes, delete",
   "deck.deleted": "List deleted.",
+  "deck.searchWords": "Search this list",
+  "deck.noMatches": "No words found for \"{q}\".",
+  "deck.print": "Print",
   "deck.showAll": "Show all {n} words",
   "deck.statusLabel": "Status: {status}",
 

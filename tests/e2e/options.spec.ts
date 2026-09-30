@@ -9,6 +9,14 @@ test("choose how many words, star words, practise only starred ones", async ({ p
   await page.getByRole("button", { name: "24 woorden toevoegen" }).click();
   await page.getByRole("link", { name: "Naar de lijst" }).click();
 
+  // Search within the list.
+  await page.getByLabel("Zoek in deze lijst").fill("woord 2");
+  await expect(page.locator(".word")).toHaveCount(6); // woord 2, 20-24
+  await page.getByLabel("Zoek in deze lijst").fill("bestaat niet");
+  await expect(page.getByText('Geen woorden gevonden voor "bestaat niet".')).toBeVisible();
+  await page.getByLabel("Zoek in deze lijst").fill("");
+  await expect(page.locator(".word")).toHaveCount(24);
+
   // Big lists start with a round of 20; pick 10 and take a test.
   const counts = page.getByRole("group", { name: "Aantal woorden" });
   await expect(counts.getByLabel("20")).toBeChecked();

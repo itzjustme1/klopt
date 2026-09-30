@@ -151,6 +151,9 @@ export const nl = {
   "deck.deleteConfirm": "\"{name}\" verwijderen, met alle woorden en voortgang? Dit kun je niet ongedaan maken.",
   "deck.deleteYes": "Ja, verwijderen",
   "deck.deleted": "Lijst verwijderd.",
+  "deck.searchWords": "Zoek in deze lijst",
+  "deck.noMatches": "Geen woorden gevonden voor \"{q}\".",
+  "deck.print": "Afdrukken",
   "deck.showAll": "Alle {n} woorden tonen",
   "deck.statusLabel": "Status: {status}",
 

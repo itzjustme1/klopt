@@ -161,3 +161,18 @@ Changes to the original brief, on purpose:
 - **CSP:** `script-src` gains `'wasm-unsafe-eval'`, which the OCR WebAssembly needs. JavaScript `eval` stays blocked, and a test checks that.
 - **Scheduling (rule 5 still holds):** only the first answer to a card on a local day moves it between boxes. Every answer is logged with `mode` and `counts`, and the stored state replays exactly from the counting reviews.
 - **Data:** schema v2 with an automatic migration from v1, and backup format v2 with v1 files still accepted.
+
+## v2.1 (continued after "keep working until it's fully complete")
+
+Added:
+- **Practice:** session size, starred words, lenient checking, sounds and vibration, swipe, the Koppelen matching game, and continuing an unfinished session.
+- **Planning:** a test date per list with a daily plan, and a 7-day forecast.
+- **Lists:** copy, export as text, native sharing, sorting, search within a list, print layout, and text shared in from other apps.
+- **Also:** a help page, the version number, and a GitHub Pages workflow plus Netlify config.
+
+Robustness fixes found by tests:
+- The daily plan target no longer shrinks while you practise.
+- Plain-http LAN testing had no `crypto.randomUUID`.
+- Answers in the same millisecond could replay out of order.
+
+Publishing online still needs Valentijn's OK and account.

@@ -13,6 +13,7 @@
   import { LIMITS } from "../config";
   import { app } from "../lib/app.svelte";
   import { difficulty } from "../lib/history";
+  import { normalize } from "../lib/answer";
   import type { Direction } from "../lib/practice";
   import { href, type Count, type Which } from "../lib/router";
   import { canSpeak, loadVoices } from "../lib/speech";
@@ -36,7 +37,19 @@
   /** Long lists show the first words; the rest on request (keeps big lists quick on phones). */
   const PAGE = 100;
   let showAll = $state(false);
-  const shownCards = $derived(showAll ? cards : cards.slice(0, PAGE));
+  let wordQuery = $state("");
+  const filtered = $derived.by(() => {
+    const q = normalize(wordQuery);
+    return q ? cards.filter((c) => normalize(`${c.front} ${c.back}`).includes(q)) : cards;
+  });
+  const shownCards = $derived(showAll || wordQuery ? filtered : filtered.slice(0, PAGE));
+
+  // Printing shows every word, whatever was on screen.
+  $effect(() => {
+    const before = () => (showAll = true);
+    window.addEventListener("beforeprint", before);
+    return () => window.removeEventListener("beforeprint", before);
+  });
   let voice = $state(false);
 
   $effect(() => {
@@ -231,8 +244,19 @@
 
       <div class="words-head">
         <h2 class="section-title">{t("deck.words")}</h2>
-        <a class="btn btn-quiet" href={href.edit(id)}><Icon name="edit" size={18} />{t("common.edit")}</a>
+        <div class="row no-print">
+          <button type="button" class="btn btn-quiet" onclick={() => window.print()}><Icon name="file" size={18} />{t("deck.print")}</button>
+          <a class="btn btn-quiet" href={href.edit(id)}><Icon name="edit" size={18} />{t("common.edit")}</a>
+        </div>
       </div>
+      {#if cards.length > 20}
+        <div class="word-search no-print">
+          <Icon name="search" size={20} />
+          <label class="visually-hidden" for="word-search">{t("deck.searchWords")}</label>
+          <input id="word-search" type="search" placeholder={t("deck.searchWords")} bind:value={wordQuery} autocomplete="off" />
+        </div>
+        {#if wordQuery && filtered.length === 0}<p class="muted" role="status">{t("deck.noMatches", { q: wordQuery })}</p>{/if}
+      {/if}
       <ol class="words card">
         {#each shownCards as card (card.id)}
           {@const d = difficulty(card.hist)}
@@ -475,6 +499,50 @@
   }
   .show-all {
     justify-self: start;
+  }
+  .word-search {
+    position: relative;
+    max-width: 420px;
+  }
+  .word-search :global(.icon) {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-2);
+    pointer-events: none;
+  }
+  .word-search input {
+    padding-left: 2.75rem;
+  }
+
+  /* Printing a list: just the title and the words, in two columns, ink on paper. */
+  @media print {
+    .deck > :global(*:not(.head):not(.words):not(.words-head)),
+    .no-print,
+    .tools,
+    .dot,
+    :global(.speak),
+    .star {
+      display: none !important;
+    }
+    .words {
+      box-shadow: none;
+      border: 1px solid #999;
+    }
+    .word {
+      grid-template-columns: 1fr 1fr !important;
+      break-inside: avoid;
+      padding: 0.35rem 0.75rem;
+    }
+    .s-front,
+    .s-back {
+      grid-column: auto !important;
+      grid-row: auto !important;
+    }
+    .w-back {
+      color: #000;
+    }
   }
   .set-exam {
     display: inline-flex;
