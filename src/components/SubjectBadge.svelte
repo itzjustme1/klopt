@@ -32,7 +32,7 @@
     width: 28px;
     height: 28px;
     font-size: var(--fs-caption);
-    border-radius: 8px;
+    border-radius: var(--r-xs);
   }
   .md {
     width: 44px;
@@ -43,7 +43,7 @@
     width: 56px;
     height: 56px;
     font-size: var(--fs-h2);
-    border-radius: 16px;
+    border-radius: var(--r-sm);
   }
   .sub-1 { background: var(--sub-1-bg); color: var(--sub-1-fg); }
   .sub-2 { background: var(--sub-2-bg); color: var(--sub-2-fg); }

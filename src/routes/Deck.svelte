@@ -233,12 +233,12 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .langs {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .actions {
     gap: 0.5rem;
@@ -288,7 +288,7 @@
     align-items: center;
     gap: 1rem;
     height: 100%;
-    padding: 1rem 1.125rem;
+    padding: 1rem 1.25rem;
     color: var(--ink-2);
     text-decoration: none;
     transition: border-color var(--t-base) var(--ease);
@@ -304,7 +304,7 @@
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: var(--r-sm);
     background: var(--accent-soft);
     color: var(--accent-text);
     flex: none;
@@ -325,7 +325,7 @@
   .mode-name {
     color: var(--ink);
     font-weight: 700;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
   }
 
   .progress {
@@ -352,7 +352,7 @@
     border-radius: var(--r-sm);
   }
   .d-num {
-    font-size: 1.75rem;
+    font-size: var(--fs-h1);
     font-weight: 800;
     line-height: 1.1;
   }
@@ -362,7 +362,7 @@
   .diff .d-nieuw { background: var(--surface-2); color: var(--ink-2); }
   .boxes {
     display: grid;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
 
   .danger {
@@ -392,7 +392,7 @@
     grid-template-columns: auto 1fr;
     gap: 0.125rem 0.75rem;
     align-items: center;
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1rem;
     border-top: 1px solid var(--line);
   }
   .word:first-child {

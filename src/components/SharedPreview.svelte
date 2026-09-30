@@ -78,7 +78,7 @@
   .langs {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .words {
     margin: 0;
@@ -89,7 +89,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1rem;
     border-top: 1px solid var(--line);
     overflow-wrap: anywhere;
     white-space: pre-wrap;

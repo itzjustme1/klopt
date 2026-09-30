@@ -18,14 +18,16 @@ One family: **Figtree** (variable, self-hosted). It's a geometric grotesk in the
 
 | Role | Size | Weight | Line-height | Source |
 |---|---|---|---|---|
-| Prompt / display | 40px (32px on phones) | 800 | 1.15 | StudyGo display 44/800, Quizlet 44/700 |
+| Hero number (due count, grade) | 64px | 800 | 1.0 | Duolingo and StudyGo stat numbers, set larger than the display size |
+| Prompt / display | 40px (28px or more on phones, fluid) | 800 | 1.15 | StudyGo display 44/800, Quizlet 44/700 |
 | H1 | 28px | 800 | 1.2 | StudyGo H2 32/800, Duolingo H1 32/700 |
 | H2 | 20px | 700 | 1.3 | Quizlet 20 |
+| Lead (large buttons, list names) | 17px | 700 | 1.3 | StudyGo button label 18/700 |
 | Body | 16px | 400 | 1.5 | median of StudyGo 18/1.6 and Quizlet 14/1.43 |
 | Small | 14px | 400 / 700 | 1.45 | StudyGo 14–15, Quizlet 14 |
 | Caption | 13px | 700 | 1.35 | Quizlet 12, Duolingo button labels 15/700 |
 
-- Distinct sizes: **6** (8 counting the phone prompt and the big streak number). Reference median is 8; target ≤ 10.
+- Distinct sizes: **8** across the app (13, 14, 16, 17, 20, 28, 40, 64), and 4 to 7 per screen. Reference median is 8; target ≤ 10.
 - Weights: **3** (400, 700, 800). Reference median is 3.
 - No tracked-out uppercase labels. Duolingo does it; it's on the tell list.
 
@@ -58,7 +60,7 @@ One family: **Figtree** (variable, self-hosted). It's a geometric grotesk in the
 
 ## Surface
 
-- Radii: **12px** for buttons, inputs and small tiles, **20px** for cards and sheets, **pill** for chips, progress and badges, and a circle for icon buttons. StudyGo uses 8/16/24/pill, Quizlet 4/8/pill, Duolingo 12.
+- Radii: **8px** for elements nested inside a 12px one (segmented options, small badges, keys; concentric with 4px padding), **12px** for buttons, inputs and icon tiles, **20px** for cards and sheets, and **pill** or a circle for chips, progress, dots and icon buttons. StudyGo uses 8/16/24/pill, Quizlet 4/8/pill, Duolingo 12.
 - Shadows, three in total:
   - A card shadow, `0 1px 2px` plus `0 6px 20px` at 6% ink. Quizlet uses `0 4px 16px` at 10%.
   - The primary 3D edge, `0 4px 0` in the accent edge colour, from StudyGo's knob and Duolingo.
@@ -95,3 +97,24 @@ One family: **Figtree** (variable, self-hosted). It's a geometric grotesk in the
 ## Implementation
 
 Tokens live in `src/styles/tokens.css`. Components use the tokens and never raw values, so the audit measures the system rather than one-offs.
+
+## Audit (phase 5)
+
+Measured on the production build with the same extractor at 1440×900, on the home, list, practice and settings screens.
+
+| Metric | References (median) | Spec target | Build | Verdict |
+|---|---|---|---|---|
+| Font families | 1 | 1 | 1 | pass |
+| Distinct font sizes per screen | 8 | ≤ 10 | 4–7 | pass |
+| Font weights | 3 | 3 | 3 (400, 700, 800) | pass |
+| Body size / line-height | 16 / 1.5 | 16 / 1.5 | 16 / 1.5 | pass |
+| Display tracking | 0 | -0.02em | -0.56px at 28px | pass |
+| Text colour roles | 7.5 | ≤ 8 | 5–8 | pass |
+| Distinct radii | 5.5 | ≤ 5 | 3–4 | pass (first pass: 7, fixed) |
+| Shadows | 2.5 | ≤ 3 | 3 | pass (first pass: 4, fixed) |
+| Space base alignment | 4px @ 74% | ≥ 70% | 4px @ 88–100% | pass (first pass: 69%, fixed) |
+| Container max-width | 1148 | 1040 | 1040 | pass |
+| Dominant easing and duration | ease-out, 0.12–0.25s | 180ms ease-out | 180ms `cubic-bezier(0.2, 0.8, 0.2, 1)`, one curve | pass |
+| Looping animations | 0 | 0 | 0 | pass |
+| Signature effects | 1 | 1 | 1 (answer sheet) | pass |
+| Reduced motion respected | | required | yes | pass |

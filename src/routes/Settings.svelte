@@ -247,7 +247,7 @@
   }
   .options > div {
     display: grid;
-    gap: 0.375rem;
+    gap: 0.5rem;
     justify-items: start;
   }
   @media (min-width: 560px) {
@@ -300,7 +300,7 @@
     height: 24px;
     border-radius: 50%;
     background: #ffffff;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    box-shadow: none;
     transition: transform var(--t-base) var(--ease);
   }
   .switch input:checked + .track {

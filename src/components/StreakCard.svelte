@@ -61,7 +61,7 @@
   .streak {
     display: grid;
     gap: 1rem;
-    padding: 1.125rem 1.25rem;
+    padding: 1.25rem 1.25rem;
   }
   .row-main {
     display: flex;
@@ -73,7 +73,7 @@
     place-items: center;
     width: 52px;
     height: 52px;
-    border-radius: 16px;
+    border-radius: var(--r-sm);
     background: var(--surface-2);
     color: var(--line-strong);
     flex: none;
@@ -104,7 +104,7 @@
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: 0.75rem;
+    font-size: var(--fs-caption);
   }
   .ring {
     transition: stroke-dashoffset var(--t-signature) var(--ease);
@@ -135,7 +135,8 @@
     background: var(--accent);
   }
   .today .dot {
-    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   .wd {
     color: var(--ink-2);

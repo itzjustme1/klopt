@@ -95,7 +95,7 @@
     color: #ffffff;
   }
   .cijfer {
-    font-size: 4.5rem;
+    font-size: var(--fs-hero);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
@@ -132,7 +132,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.125rem 1rem;
-    padding: 0.625rem 0;
+    padding: 0.75rem 0;
     border-top: 1px solid var(--line);
     overflow-wrap: anywhere;
   }

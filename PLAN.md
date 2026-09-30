@@ -150,3 +150,14 @@ As in the brief (1 to 5). After each: `npm run check`, `npm run build` (plus `np
 - Q6: yes, the empty state offers the sample deck as a secondary action.
 - Q7: yes, `WISSEN` / `DELETE`.
 - The Dutch UI calls decks "stapels" (a stack of index cards), since "vak" is already the Leitner box.
+
+## v2 (after feedback: "dat ziet er niet uit, kijk af bij studygo.com")
+
+The paper/index-card design and the v1 scope were replaced. Choices made with Valentijn: bright blue as the main colour, and a streak with a daily goal plus photo-to-list on top of StudyGo's practice modes.
+
+Changes to the original brief, on purpose:
+- **Design:** the "avoid" list of section 8 (rounded corners, shadows, colour) no longer applies. The measured StudyGo/Quizlet/Duolingo-derived system in `DESIGN-RECON.md` does. No purple, no mascot, and no copied identity or content.
+- **Section 11 (out of scope for v1):** the streak, the "lastige kaarten" list and per-list progress are now in, because they were asked for. OCR is in as well, on the device, with no network and no AI service. Accounts, sync, payments and leaderboards are still out.
+- **CSP:** `script-src` gains `'wasm-unsafe-eval'`, which the OCR WebAssembly needs. JavaScript `eval` stays blocked, and a test checks that.
+- **Scheduling (rule 5 still holds):** only the first answer to a card on a local day moves it between boxes. Every answer is logged with `mode` and `counts`, and the stored state replays exactly from the counting reviews.
+- **Data:** schema v2 with an automatic migration from v1, and backup format v2 with v1 files still accepted.

@@ -203,7 +203,7 @@
   .paste {
     white-space: pre-wrap;
     tab-size: 4;
-    font-size: 0.9375rem;
+    font-size: var(--fs-body);
   }
   .target {
     display: grid;
@@ -242,7 +242,7 @@
   }
   th,
   td {
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 0.75rem;
     text-align: left;
     vertical-align: top;
     border-bottom: 1px solid var(--line);
@@ -258,7 +258,7 @@
   .th {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   td:nth-child(2) {
     font-weight: 700;

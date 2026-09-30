@@ -44,7 +44,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 1.125rem;
+    padding: 1rem 1.25rem;
     color: var(--ink-2);
     text-decoration: none;
     transition: border-color var(--t-base) var(--ease);
@@ -57,7 +57,7 @@
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: var(--r-sm);
     background: var(--accent-soft);
     color: var(--accent-text);
     flex: none;

@@ -40,7 +40,7 @@
   .list-card {
     display: grid;
     gap: 1rem;
-    padding: 1rem 1.125rem;
+    padding: 1rem 1.25rem;
     color: inherit;
     text-decoration: none;
     transition: border-color var(--t-base) var(--ease), transform var(--t-base) var(--ease);
@@ -51,7 +51,7 @@
   .top {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.75rem;
     min-width: 0;
   }
   .titles {
@@ -62,7 +62,7 @@
   }
   .name {
     font-weight: 700;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
     line-height: 1.3;
     overflow-wrap: anywhere;
   }
@@ -84,7 +84,7 @@
   .due {
     flex: none;
     align-self: flex-start;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.75rem;
     border-radius: var(--r-pill);
     background: var(--accent-soft);
     color: var(--accent-text);

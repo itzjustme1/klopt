@@ -199,7 +199,7 @@
     align-items: center;
     gap: 0.5rem;
     min-height: var(--tap);
-    padding: 0 0.875rem;
+    padding: 0 0.75rem;
     border-radius: var(--r-sm);
     color: var(--ink-2);
     text-decoration: none;
@@ -267,7 +267,7 @@
     transform: translateX(-50%);
     z-index: 60;
     max-width: calc(100vw - 2rem);
-    padding: 0.875rem 1.25rem;
+    padding: 0.75rem 1.25rem;
     background: var(--ink);
     color: var(--bg);
     border-radius: var(--r-sm);

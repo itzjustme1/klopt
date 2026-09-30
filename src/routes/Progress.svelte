@@ -149,7 +149,7 @@
     color: var(--flame);
   }
   .big {
-    font-size: 2.5rem;
+    font-size: var(--fs-display);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;
@@ -181,7 +181,7 @@
   .cell {
     display: block;
     aspect-ratio: 1;
-    border-radius: 4px;
+    border-radius: var(--r-xs);
     background: var(--heat-0);
   }
   .cell.l-1 {
@@ -207,7 +207,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 1.125rem;
+    padding: 1rem 1.25rem;
     color: var(--ink-2);
     text-decoration: none;
   }
@@ -216,7 +216,7 @@
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: var(--r-sm);
     background: var(--warn-soft);
     color: var(--warn);
     flex: none;

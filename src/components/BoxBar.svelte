@@ -50,7 +50,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.25rem 1rem;
-    margin: 0.625rem 0 0;
+    margin: 0.75rem 0 0;
     padding: 0;
     list-style: none;
     color: var(--ink-2);
@@ -58,7 +58,7 @@
   .legend li {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .legend .num {
     color: var(--ink);
@@ -67,6 +67,6 @@
   .swatch {
     width: 10px;
     height: 10px;
-    border-radius: 3px;
+    border-radius: var(--r-pill);
   }
 </style>

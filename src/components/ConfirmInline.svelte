@@ -37,7 +37,7 @@
   .confirm {
     display: grid;
     gap: 1rem;
-    padding: 1.125rem;
+    padding: 1.25rem;
     border: 2px solid var(--bad);
     border-radius: var(--r-lg);
     background: var(--bad-soft);

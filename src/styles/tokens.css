@@ -33,13 +33,16 @@
   --heat-3: #1660ff;
 
   --font: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-hero: 4rem;
   --fs-display: 2.5rem;
   --fs-h1: 1.75rem;
   --fs-h2: 1.25rem;
+  --fs-lead: 1.0625rem;
   --fs-body: 1rem;
   --fs-small: 0.875rem;
   --fs-caption: 0.8125rem;
 
+  --r-xs: 8px;
   --r-sm: 12px;
   --r-lg: 20px;
   --r-pill: 999px;

@@ -436,7 +436,7 @@
   .counts {
     display: inline-flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.75rem;
     color: var(--ink-2);
   }
   .c-right,
@@ -535,7 +535,7 @@
     border-radius: 0;
     padding-inline: 0.25rem;
     background: transparent;
-    font-size: 1.375rem;
+    font-size: var(--fs-h2);
     font-weight: 700;
   }
   .answer-input:focus-visible {
@@ -558,24 +558,24 @@
 
   .options {
     display: grid;
-    gap: 0.625rem;
+    gap: 0.75rem;
   }
   .option {
     display: flex;
     align-items: center;
-    gap: 0.875rem;
+    gap: 0.75rem;
     min-height: 3.5rem;
-    padding: 0.625rem 1rem;
+    padding: 0.75rem 1rem;
     border: 2px solid var(--line);
     border-radius: var(--r-sm);
     background: var(--surface);
     color: var(--ink);
     font: inherit;
     font-weight: 700;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
     text-align: left;
     cursor: pointer;
-    box-shadow: 0 var(--edge-2) 0 var(--line);
+    box-shadow: 0 var(--edge-2) 0 var(--line-strong);
     margin-bottom: var(--edge-2);
     transition: border-color var(--t-base) var(--ease), background-color var(--t-base) var(--ease), transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
   }
@@ -584,7 +584,7 @@
   }
   .option:active:not([disabled]) {
     transform: translateY(var(--edge-2));
-    box-shadow: 0 0 0 var(--line);
+    box-shadow: 0 0 0 var(--line-strong);
   }
   .option[disabled] {
     opacity: 0.5;
@@ -607,7 +607,7 @@
     place-items: center;
     width: 28px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: var(--r-xs);
     background: var(--surface-2);
     color: var(--ink-2);
     flex: none;
@@ -667,7 +667,7 @@
   /* The signature moment: the answer sheet slides up from the bottom of the card. */
   .sheet {
     display: grid;
-    gap: 0.375rem;
+    gap: 0.5rem;
     margin: 0 -1.25rem -1.5rem;
     padding: 1rem 1.25rem 1.25rem;
     animation: sheet-in var(--t-signature) var(--ease);
@@ -687,7 +687,7 @@
   .sheet-head {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.75rem;
   }
   .sheet-ic {
     display: grid;
@@ -730,7 +730,7 @@
   }
   .grades {
     display: grid;
-    gap: 0.625rem;
+    gap: 0.75rem;
   }
   .grades.two {
     grid-template-columns: 1fr 1fr;
@@ -742,8 +742,8 @@
     display: none;
     font: inherit;
     font-size: var(--fs-caption);
-    padding: 0 0.375rem;
-    border-radius: 6px;
+    padding: 0 0.5rem;
+    border-radius: var(--r-xs);
     border: 1px solid currentColor;
     opacity: 0.7;
   }

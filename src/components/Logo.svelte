@@ -20,7 +20,7 @@
   }
   .name {
     font-weight: 800;
-    font-size: 1.25rem;
+    font-size: var(--fs-h2);
     letter-spacing: -0.03em;
     color: var(--ink);
   }

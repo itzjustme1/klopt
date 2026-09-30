@@ -26,21 +26,21 @@
   .accents {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .acc {
     min-width: var(--tap);
     min-height: var(--tap);
     padding: 0 0.5rem;
     border: 2px solid var(--line);
-    border-radius: 10px;
+    border-radius: var(--r-xs);
     background: var(--surface);
     color: var(--ink);
     font: inherit;
     font-weight: 700;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
     cursor: pointer;
-    box-shadow: 0 2px 0 var(--line);
+    box-shadow: 0 var(--edge-2) 0 var(--line-strong);
     transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
   }
   .acc:hover {
@@ -48,6 +48,6 @@
   }
   .acc:active {
     transform: translateY(2px);
-    box-shadow: 0 0 0 var(--line);
+    box-shadow: 0 0 0 var(--line-strong);
   }
 </style>

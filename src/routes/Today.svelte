@@ -97,10 +97,10 @@
     max-width: 760px;
   }
   .welcome h1 {
-    font-size: 2rem;
+    font-size: var(--fs-display);
   }
   .lead {
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
     max-width: 36rem;
   }
   .demo {
@@ -138,7 +138,7 @@
     font-size: var(--fs-small);
   }
   .hero-num {
-    font-size: 4rem;
+    font-size: var(--fs-hero);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.04em;
@@ -146,7 +146,7 @@
   }
   .hero-text {
     font-weight: 700;
-    font-size: 1.0625rem;
+    font-size: var(--fs-lead);
   }
   .hero-done {
     font-size: var(--fs-h2);
@@ -161,7 +161,7 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 1.125rem;
+    padding: 1rem 1.25rem;
     color: inherit;
     text-decoration: none;
   }
@@ -173,7 +173,7 @@
     place-items: center;
     width: 48px;
     height: 48px;
-    border-radius: 14px;
+    border-radius: var(--r-sm);
     background: var(--warn-soft);
     color: var(--warn);
     flex: none;
