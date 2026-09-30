@@ -224,6 +224,7 @@
   <div class="card group" aria-labelledby="about-title">
     <h2 id="about-title">{t("settings.about")}</h2>
     <p class="muted">{t("settings.aboutText")}</p>
+    <p class="small muted">{t("settings.version", { v: __APP_VERSION__ })}</p>
   </div>
 </section>
 

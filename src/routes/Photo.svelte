@@ -33,7 +33,7 @@
         error = t("photo.none");
         return;
       }
-      setPendingImport({ text: rows.join("\n"), langFront, langBack });
+      setPendingImport({ text: rows.join("\n"), langFront, langBack, source: "photo" });
       location.hash = href.import(deckId);
     } catch (e) {
       console.error(e);

@@ -92,7 +92,7 @@
       </div>
     </div>
   {:else}
-    <p class="muted intro">{fromPhoto ? t("import.fromPhoto") : t("import.intro")}</p>
+    <p class="muted intro">{fromPhoto?.source === "photo" ? t("import.fromPhoto") : fromPhoto?.source === "share" ? t("import.fromShare") : t("import.intro")}</p>
 
     <form class="stack" style:--gap="1.25rem" onsubmit={submit} novalidate>
       <div class="field">

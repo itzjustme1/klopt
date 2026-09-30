@@ -47,3 +47,17 @@ describe("router", () => {
     expect(parseHash("#/lijst/%E0%A4%A")).toEqual({ name: "notfound" });
   });
 });
+
+describe("shared text from another app", async () => {
+  const { sharedTextFromUrl } = await import("../../src/lib/handoff");
+  it("reads text and url from the query", () => {
+    expect(sharedTextFromUrl("?title=x&text=huis%09house%0Ahond%09dog")).toBe("huis\thouse\nhond\tdog");
+    expect(sharedTextFromUrl("?text=a%3Bb&url=https%3A%2F%2Fexample.com")).toBe("a;b\nhttps://example.com");
+    expect(sharedTextFromUrl("")).toBeNull();
+    expect(sharedTextFromUrl("?title=only")).toBeNull();
+    expect(sharedTextFromUrl("?text=%20%20")).toBeNull();
+  });
+  it("caps very long shared text", () => {
+    expect(sharedTextFromUrl(`?text=${"a".repeat(300_000)}`)!.length).toBe(200_000);
+  });
+});

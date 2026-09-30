@@ -8,7 +8,8 @@
   import { app } from "../lib/app.svelte";
   import { formatDay } from "../lib/dates";
   import { demoLists } from "../lib/demo";
-  import { href } from "../lib/router";
+  import { href, parseHash } from "../lib/router";
+  import { peekSession } from "../lib/resume";
 
   const due = $derived(app.dueCount());
   const next = $derived(app.nextDue());
@@ -16,6 +17,10 @@
   const hour = new Date().getHours();
   const greeting = $derived(hour < 12 ? t("home.morning") : hour < 18 ? t("home.afternoon") : t("home.evening"));
   const exams = $derived(app.upcomingExams().slice(0, 3));
+  // A practice left halfway today, if its list still exists.
+  const saved = peekSession();
+  const savedRoute = saved ? parseHash(`#/oefenen/${saved.key}`) : null;
+  const savedDeck = savedRoute?.name === "practice" && savedRoute.scope !== "alles" ? app.deck(savedRoute.scope) : undefined;
   const recent = $derived(app.decks.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4));
   let busy = $state(false);
 
@@ -62,6 +67,17 @@
       </div>
       <StreakCard />
     </div>
+
+    {#if saved && savedRoute?.name === "practice" && savedDeck}
+      <a class="continue card" href={`#/oefenen/${saved.key}`}>
+        <span class="cont-ic"><Icon name="learn" size={24} /></span>
+        <span class="cont-txt">
+          <span class="cont-title">{t("home.continue", { list: savedDeck.name })}</span>
+          <span class="small muted">{tp("home.continueMeta", saved.left, { mode: t(`mode.${savedRoute.mode}`) })}</span>
+        </span>
+        <Icon name="chevron" size={20} />
+      </a>
+    {/if}
 
     {#if exams.length > 0}
       <h2 class="lists-head-title">{t("exam.upcoming")}</h2>
@@ -203,6 +219,35 @@
     }
   }
 
+  .continue {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    color: var(--ink-2);
+    text-decoration: none;
+    border: 2px solid var(--accent);
+  }
+  .cont-ic {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--r-sm);
+    background: var(--accent);
+    color: var(--on-accent);
+    flex: none;
+  }
+  .cont-txt {
+    display: grid;
+    flex: 1;
+    min-width: 0;
+  }
+  .cont-title {
+    color: var(--ink);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
   .lists-head-title {
     margin-top: 0.75rem;
   }

@@ -475,6 +475,16 @@
         </div>
       {/key}
 
+      <details class="shortcuts small">
+        <summary>{t("shortcuts.title")}</summary>
+        <ul>
+          <li>{t("shortcuts.enter")}</li>
+          <li>{t("shortcuts.numbers")}</li>
+          <li>{t("shortcuts.space")}</li>
+          <li>{t("shortcuts.grade")}</li>
+        </ul>
+      </details>
+
       <div class="actions">
         {#if q.kind === "flash"}
           {#if !flipped}
@@ -910,5 +920,28 @@
   }
   .center {
     text-align: center;
+  }
+  .shortcuts {
+    order: 99;
+    color: var(--ink-2);
+    justify-self: center;
+  }
+  .shortcuts summary {
+    cursor: pointer;
+    min-height: var(--tap);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .shortcuts ul {
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.25rem;
+  }
+  @media (hover: none), (pointer: coarse) {
+    .shortcuts {
+      display: none;
+    }
   }
 </style>

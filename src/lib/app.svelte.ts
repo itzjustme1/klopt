@@ -2,8 +2,9 @@ import { APP_NAME } from "../config";
 import { setLang, t } from "../i18n/index.svelte";
 import { backupFileName, makeBackup, type SharedDeck } from "./backup";
 import { localDay } from "./dates";
-import { Store, defaultSettings, type DeckInput, type NewCard, type Snapshot } from "./db";
+import { Store, defaultSettings, detectLang, type DeckInput, type NewCard, type Snapshot } from "./db";
 import { downloadText } from "./files";
+import { setPendingImport, sharedTextFromUrl } from "./handoff";
 import { difficulty, isHard, streak, type Difficulty } from "./history";
 import { requestPersist } from "./persist";
 import type { PracticeCard } from "./practice";
@@ -35,6 +36,12 @@ class App {
   }
 
   async init(): Promise<void> {
+    // Text shared into the app from another app (Android share sheet) goes to the paste screen.
+    const shared = sharedTextFromUrl(location.search);
+    if (shared !== null) {
+      setPendingImport({ text: shared, langFront: "en", langBack: detectLang(navigator.language), source: "share" });
+      history.replaceState(null, "", `${location.pathname}#/importeren`);
+    }
     this.route = parseHash(location.hash);
     window.addEventListener("hashchange", () => {
       this.route = parseHash(location.hash);
