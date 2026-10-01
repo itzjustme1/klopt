@@ -103,6 +103,26 @@ try {
     await page.goto(base + "#/instellingen");
     await page.getByRole("heading", { name: "Instellingen" }).waitFor();
     await shot("17-settings", true);
+    await page.goto(base + "#/lijsten");
+    await page.getByRole("link", { name: /WO2: begrippen/ }).click();
+    await page.getByRole("heading", { name: "WO2: begrippen" }).waitFor();
+    await shot("18-terms", true);
+    await page.goto(base + "#/quizzen");
+    await page.getByRole("link", { name: /WO2: oefentoets/ }).click();
+    await page.getByRole("link", { name: "Start quiz" }).waitFor();
+    await shot("19-quiz", true);
+    const quizHash = await page.evaluate(() => location.hash);
+    await page.goto(base + quizHash + "/bewerken");
+    await page.getByRole("heading", { name: "Quiz bewerken" }).waitFor();
+    await shot("20-quiz-editor", true);
+    await page.goto(base + quizHash + "/maken");
+    await page.keyboard.press("2");
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Lege plek 1").fill("1941");
+    await page.getByLabel("Lege plek 2").fill("Rotterdam");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(400);
+    await shot("21-quiz-fill-in");
     await ctx.close();
   }
 } finally {

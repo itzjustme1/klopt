@@ -1,5 +1,5 @@
 import type { DeckInput, NewCard } from "./db";
-import type { Lang } from "./types";
+import type { Lang, Quiz } from "./types";
 
 /** Starter cards from the brief, in both languages. Also used as test fixtures. */
 export const DEMO_CARDS: Record<Lang, [string, string]>[] = [
@@ -63,4 +63,19 @@ export function demoLists(lang: Lang, names: { economics: string; french: string
     { deck: { name: names.french, subject: lang === "nl" ? "Frans" : "French", langFront: "fr", langBack: lang }, cards: FRENCH.map(([fr, nl, en]) => ({ front: fr, back: lang === "nl" ? nl : en })) },
     { deck: { name: names.economics, subject: lang === "nl" ? "Economie" : "Economics", langFront: "xx", langBack: "xx", kind: "terms" }, cards: demoCards(lang) },
   ];
+}
+
+/** A short WW2 quiz with every question type, to show quizzes. Ids are made by the caller. */
+export function demoQuiz(lang: Lang, newId: () => string): Pick<Quiz, "name" | "subject" | "questions"> {
+  const nl = lang === "nl";
+  return {
+    name: nl ? "WO2: oefentoets" : "WW2: practice test",
+    subject: nl ? "Geschiedenis" : "History",
+    questions: [
+      { id: newId(), type: "mc", prompt: nl ? "Wanneer was D-Day?" : "When was D-Day?", options: ["6 juni 1942", "6 juni 1944", "5 mei 1945"].map((o) => (nl ? o : o.replace("juni", "June").replace("mei", "May"))), correct: 1 },
+      { id: newId(), type: "cloze", text: nl ? "De Februaristaking was in [1941] in [Amsterdam]." : "The February strike was in [1941] in [Amsterdam]." },
+      { id: newId(), type: "tf", prompt: nl ? "Nederland bleef in de Tweede Wereldoorlog neutraal." : "The Netherlands stayed neutral in the Second World War.", answer: false },
+      { id: newId(), type: "open", prompt: nl ? "Wat was de Hongerwinter?" : "What was the Hunger Winter?", answer: nl ? "De winter van 1944-1945 waarin in West-Nederland duizenden mensen van honger stierven." : "The winter of 1944-1945 in which thousands of people in the western Netherlands starved." },
+    ],
+  };
 }

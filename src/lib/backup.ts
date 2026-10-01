@@ -2,7 +2,8 @@ import { FILE_FORMAT, FILE_VERSION, LIMITS } from "../config";
 import { isValidDay, localDay } from "./dates";
 import type { Snapshot } from "./db";
 import { nextBox } from "./scheduler";
-import { CONTENT_LANGS, MODES, type Box, type Card, type ContentLang, type Deck, type Grade, type Mode, type Review } from "./types";
+import { blanksOf, QUIZ_LIMITS } from "./quiz";
+import { CONTENT_LANGS, MODES, type Box, type Card, type ContentLang, type Deck, type Grade, type Mode, type Quiz, type QuizQuestion, type Review } from "./types";
 
 export interface BackupFile extends Snapshot {
   format: typeof FILE_FORMAT;
@@ -20,7 +21,9 @@ export type BackupError =
 export type Parsed<T> = { ok: true; data: T } | { ok: false; error: BackupError };
 
 export function makeBackup(data: Snapshot, now: Date = new Date()): BackupFile {
-  return { format: FILE_FORMAT, version: FILE_VERSION, exportedAt: now.toISOString(), decks: data.decks, cards: data.cards, reviews: data.reviews };
+  const file: BackupFile = { format: FILE_FORMAT, version: FILE_VERSION, exportedAt: now.toISOString(), decks: data.decks, cards: data.cards, reviews: data.reviews };
+  if (data.quizzes?.length) file.quizzes = data.quizzes;
+  return file;
 }
 
 /** A shareable deck: cards only, no progress, no review log. */
@@ -127,7 +130,7 @@ function arr(v: unknown, where: string, max: number): unknown[] {
 }
 
 function validate(raw: unknown, version: number): Snapshot {
-  const root = obj(raw, "root", ["format", "version", "exportedAt", "decks", "cards", "reviews"], ["format", "version", "decks", "cards", "reviews"]);
+  const root = obj(raw, "root", ["format", "version", "exportedAt", "decks", "cards", "reviews", ...(version === 1 ? [] : ["quizzes"])], ["format", "version", "decks", "cards", "reviews"]);
   if (root.exportedAt !== undefined) iso(root.exportedAt, "exportedAt");
   const v1 = version === 1;
 
@@ -206,7 +209,76 @@ function validate(raw: unknown, version: number): Snapshot {
     return review;
   });
 
-  return { decks, cards, reviews };
+  const quizIds = new Set<string>();
+  const quizzes: Quiz[] = root.quizzes === undefined ? [] : arr(root.quizzes, "quizzes", LIMITS.backupDecks).map((q, i) => {
+    const quiz = parseQuiz(q, `quizzes[${i}]`);
+    if (quizIds.has(quiz.id)) throw new Invalid(`quizzes[${i}].id`);
+    quizIds.add(quiz.id);
+    return quiz;
+  });
+
+  return quizzes.length ? { decks, cards, reviews, quizzes } : { decks, cards, reviews };
+}
+
+function parseQuiz(raw: unknown, w: string): Quiz {
+  const o = obj(raw, w, ["id", "name", "subject", "questions", "createdAt", "updatedAt", "last"], ["id", "name", "questions", "createdAt", "updatedAt"]);
+  const qIds = new Set<string>();
+  const quiz: Quiz = {
+    id: uuid(o.id, `${w}.id`),
+    name: str(o.name, `${w}.name`, LIMITS.deckNameChars),
+    questions: arr(o.questions, `${w}.questions`, QUIZ_LIMITS.questions).map((q, j) => {
+      const question = parseQuestion(q, `${w}.questions[${j}]`);
+      if (qIds.has(question.id)) throw new Invalid(`${w}.questions[${j}].id`);
+      qIds.add(question.id);
+      return question;
+    }),
+    createdAt: iso(o.createdAt, `${w}.createdAt`),
+    updatedAt: iso(o.updatedAt, `${w}.updatedAt`),
+  };
+  const subject = optStr(o.subject, `${w}.subject`, LIMITS.labelChars);
+  if (subject) quiz.subject = subject;
+  if (o.last !== undefined) {
+    const l = obj(o.last, `${w}.last`, ["points", "total", "at"], ["points", "total", "at"]);
+    const total = l.total;
+    const points = l.points;
+    if (typeof total !== "number" || !Number.isInteger(total) || total < 0 || total > QUIZ_LIMITS.questions) throw new Invalid(`${w}.last.total`);
+    if (typeof points !== "number" || !Number.isFinite(points) || points < 0 || points > total) throw new Invalid(`${w}.last.points`);
+    quiz.last = { points, total, at: iso(l.at, `${w}.last.at`) };
+  }
+  return quiz;
+}
+
+function parseQuestion(raw: unknown, w: string): QuizQuestion {
+  if (typeof raw !== "object" || raw === null) throw new Invalid(w);
+  const type = (raw as { type?: unknown }).type;
+  const text = (v: unknown, where: string) => str(v, where, QUIZ_LIMITS.text);
+  switch (type) {
+    case "mc": {
+      const o = obj(raw, w, ["id", "type", "prompt", "options", "correct"], ["id", "type", "prompt", "options", "correct"]);
+      const options = arr(o.options, `${w}.options`, QUIZ_LIMITS.options).map((x, k) => text(x, `${w}.options[${k}]`));
+      if (options.length < 2) throw new Invalid(`${w}.options`);
+      const correct = o.correct;
+      if (typeof correct !== "number" || !Number.isInteger(correct) || correct < 0 || correct >= options.length) throw new Invalid(`${w}.correct`);
+      return { id: uuid(o.id, `${w}.id`), type, prompt: text(o.prompt, `${w}.prompt`), options, correct };
+    }
+    case "open": {
+      const o = obj(raw, w, ["id", "type", "prompt", "answer"], ["id", "type", "prompt", "answer"]);
+      return { id: uuid(o.id, `${w}.id`), type, prompt: text(o.prompt, `${w}.prompt`), answer: text(o.answer, `${w}.answer`) };
+    }
+    case "tf": {
+      const o = obj(raw, w, ["id", "type", "prompt", "answer"], ["id", "type", "prompt", "answer"]);
+      return { id: uuid(o.id, `${w}.id`), type, prompt: text(o.prompt, `${w}.prompt`), answer: bool(o.answer, `${w}.answer`) };
+    }
+    case "cloze": {
+      const o = obj(raw, w, ["id", "type", "text"], ["id", "type", "text"]);
+      const t = text(o.text, `${w}.text`);
+      const n = blanksOf(t).length;
+      if (n < 1 || n > QUIZ_LIMITS.blanks) throw new Invalid(`${w}.text`);
+      return { id: uuid(o.id, `${w}.id`), type, text: t };
+    }
+    default:
+      throw new Invalid(`${w}.type`);
+  }
 }
 
 /** Strictly parses a backup or shared-deck file. Never throws. */

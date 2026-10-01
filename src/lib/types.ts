@@ -99,3 +99,27 @@ export const GRADES: readonly Grade[] = ["fout", "twijfel", "goed"];
 export const BOXES: readonly Box[] = [1, 2, 3, 4, 5];
 export const CONTENT_LANGS: readonly ContentLang[] = ["nl", "en", "fr", "de", "es", "it", "la", "xx"];
 export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets", "koppelen"];
+
+/**
+ * A question in a quiz. Fill-in text marks each blank with square brackets:
+ * "De Februaristaking was in [1941] in [Amsterdam]."
+ */
+export type QuizQuestion =
+  | { id: string; type: "mc"; prompt: string; options: string[]; correct: number }
+  | { id: string; type: "open"; prompt: string; answer: string }
+  | { id: string; type: "cloze"; text: string }
+  | { id: string; type: "tf"; prompt: string; answer: boolean };
+
+export type QuizQuestionType = QuizQuestion["type"];
+
+/** A quiz made by the student, with mixed question types, taken like a test. */
+export interface Quiz {
+  id: string;
+  name: string;
+  subject?: string;
+  questions: QuizQuestion[];
+  createdAt: string;
+  updatedAt: string;
+  /** The last attempt: points (half points possible) out of the number of questions. */
+  last?: { points: number; total: number; at: string };
+}

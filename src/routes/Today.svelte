@@ -9,7 +9,8 @@
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { formatDay } from "../lib/dates";
-  import { demoLists } from "../lib/demo";
+  import { newId } from "../lib/db";
+  import { demoLists, demoQuiz } from "../lib/demo";
   import { examPlan } from "../lib/plan";
   import { href, parseHash } from "../lib/router";
   import { peekSession } from "../lib/resume";
@@ -45,6 +46,7 @@
         const d = await app.createDeck(deck);
         await app.addCards(d.id, cards);
       }
+      await app.saveQuiz(demoQuiz(lang, newId));
       // The demo button sits low on a phone: start at the top of the new home screen.
       await tick();
       window.scrollTo(0, 0);
@@ -113,6 +115,7 @@
     <h2 class="sect">{t("home.items")}</h2>
     <ul class="chips">
       <li><a class="chip" href={href.lists()}><Icon name="lists" size={20} />{t("nav.lists")} <span class="count">{app.decks.length}</span></a></li>
+      <li><a class="chip" href={href.quizzes()}><Icon name="quiz" size={20} />{t("quiz.title")} <span class="count">{app.quizzes.length}</span></a></li>
       {#if hard > 0}
         <li><a class="chip" href={href.practice("alles", "leren", "front", "hard")}><Icon name="learn" size={20} />{t("home.hard")} <span class="count">{hard}</span></a></li>
       {/if}

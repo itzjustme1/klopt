@@ -24,10 +24,14 @@
   import Settings from "./routes/Settings.svelte";
   import Help from "./routes/Help.svelte";
   import ShareReceive from "./routes/ShareReceive.svelte";
+  import Quizzes from "./routes/Quizzes.svelte";
+  import QuizView from "./routes/QuizView.svelte";
+  import QuizEditor from "./routes/QuizEditor.svelte";
+  import QuizPlay from "./routes/QuizPlay.svelte";
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
     { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
-    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file"] },
+    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
     { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help"] },
   ];
@@ -46,6 +50,10 @@
     settings: "nav.settings",
     help: "help.title",
     share: "receive.title",
+    quizzes: "quiz.title",
+    quiz: "quiz.title",
+    quizEditor: "quiz.edit",
+    quizPlay: "quiz.title",
   };
 
   let main: HTMLElement | undefined = $state();
@@ -71,9 +79,9 @@
     });
   });
 
-  const focusMode = $derived(app.route.name === "practice");
+  const focusMode = $derived(app.route.name === "practice" || app.route.name === "quizPlay");
   /** Making a list has its own save bar at the bottom, so the tab bar steps aside (as in StudyGo). */
-  const hideNav = $derived(focusMode || app.route.name === "editor");
+  const hideNav = $derived(focusMode || app.route.name === "editor" || app.route.name === "quizEditor");
   let newOpen = $state(false);
   // Phones: Vandaag, Lijsten, [Nieuw], Voortgang, Instellingen.
   const navStart = nav.slice(0, 2);
@@ -153,6 +161,14 @@
       {#key app.route.payload}
         <ShareReceive payload={app.route.payload} />
       {/key}
+    {:else if app.route.name === "quizzes"}
+      <Quizzes />
+    {:else if app.route.name === "quiz"}
+      {#key app.route.id}<QuizView id={app.route.id} />{/key}
+    {:else if app.route.name === "quizEditor"}
+      {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+    {:else if app.route.name === "quizPlay"}
+      {#key app.route.id}<QuizPlay id={app.route.id} />{/key}
     {:else}
       <Today />
     {/if}

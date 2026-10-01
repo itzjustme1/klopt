@@ -23,7 +23,7 @@ describe("settings", () => {
     expect(detectLang("nl-NL")).toBe("nl");
     expect(detectLang("de-DE")).toBe("nl");
     expect(detectLang(undefined)).toBe("nl");
-    expect(defaultSettings("en-US")).toMatchObject({ uiLang: "en", theme: "dark", schemaVersion: 2, designVersion: 3, dailyGoal: 20, autoSpeak: false });
+    expect(defaultSettings("en-US")).toMatchObject({ uiLang: "en", theme: "dark", schemaVersion: 3, designVersion: 3, dailyGoal: 20, autoSpeak: false });
   });
 
   it("moves settings from an older look to the navy default once, then keeps what is chosen", async () => {
@@ -241,7 +241,7 @@ describe("snapshot, merge, replace, wipe", () => {
     const [card] = await store.addCards(deck.id, [{ front: "Q", back: "A" }]);
     await store.grade(card!.id, "goed");
     await store.wipe();
-    expect(await store.snapshot()).toEqual({ decks: [], cards: [], reviews: [] });
+    expect(await store.snapshot()).toEqual({ decks: [], cards: [], reviews: [], quizzes: [] });
     expect(await store.allDays()).toEqual([]);
     expect((await store.getSettings()).theme).toBe("dark");
   });

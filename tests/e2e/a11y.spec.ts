@@ -114,6 +114,26 @@ for (const scheme of ["light", "dark"] as const) {
     await page.goto(base + "#/importeren");
     await page.getByLabel("Je lijst").fill("a;b\nzonder\nc\td");
     await check("import");
+    // Quizzes: the overview, a quiz, its editor, and taking it (multiple choice, then a fill-in).
+    await page.goto(base + "#/quizzen");
+    await page.getByRole("link", { name: /WO2: oefentoets/ }).waitFor();
+    await check("quizzes");
+    await page.getByRole("link", { name: /WO2: oefentoets/ }).click();
+    await page.getByRole("link", { name: "Start quiz" }).waitFor();
+    await check("quiz");
+    const quizHash = await page.evaluate(() => location.hash);
+    await page.goto(base + quizHash + "/bewerken");
+    await page.getByRole("heading", { name: "Quiz bewerken" }).waitFor();
+    await check("quiz editor");
+    await page.goto(base + quizHash + "/maken");
+    await page.getByText("Vraag 1 van 4").waitFor();
+    await check("quiz: multiple choice");
+    await page.keyboard.press("1");
+    await page.getByText("Niet goed").waitFor();
+    await check("quiz: feedback");
+    await page.keyboard.press("Enter");
+    await page.getByLabel("Lege plek 1").waitFor();
+    await check("quiz: fill in");
     await page.goto(base + "#/instellingen");
     await check("settings");
     await page.getByText("English", { exact: true }).click();

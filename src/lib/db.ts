@@ -3,9 +3,9 @@ import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from "
 import { localDay } from "./dates";
 import { appendHist, rebuildCaches } from "./history";
 import { answerCard } from "./scheduler";
-import type { Card, ContentLang, Box, DayStat, Deck, Grade, Lang, Mode, Review, Settings } from "./types";
+import type { Card, ContentLang, Box, DayStat, Deck, Grade, Lang, Mode, Quiz, Review, Settings } from "./types";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 interface KloptDB extends DBSchema {
   decks: { key: string; value: Deck };
@@ -13,12 +13,15 @@ interface KloptDB extends DBSchema {
   reviews: { key: string; value: Review; indexes: { cardId: string } };
   days: { key: string; value: DayStat };
   meta: { key: string; value: Settings };
+  quizzes: { key: string; value: Quiz };
 }
 
 export interface Snapshot {
   decks: Deck[];
   cards: Card[];
   reviews: Review[];
+  /** Absent in files from before quizzes existed. */
+  quizzes?: Quiz[];
 }
 
 const SETTINGS_KEY = "settings";
@@ -128,6 +131,7 @@ export class Store {
           db.createObjectStore("days", { keyPath: "day" });
           if (oldVersion >= 1) await migrateV1(tx as unknown as UpgradeTx);
         }
+        if (oldVersion < 3) db.createObjectStore("quizzes", { keyPath: "id" });
       },
     });
     return new Store(db);
@@ -361,21 +365,39 @@ export class Store {
   // Whole-database operations
 
   async snapshot(): Promise<Snapshot> {
-    const tx = this.db.transaction(["decks", "cards", "reviews"], "readonly");
-    const [decks, cards, reviews] = await Promise.all([
+    const tx = this.db.transaction(["decks", "cards", "reviews", "quizzes"], "readonly");
+    const [decks, cards, reviews, quizzes] = await Promise.all([
       tx.objectStore("decks").getAll(),
       tx.objectStore("cards").getAll(),
       tx.objectStore("reviews").getAll(),
+      tx.objectStore("quizzes").getAll(),
     ]);
     await tx.done;
-    return { decks, cards, reviews };
+    return { decks, cards, reviews, quizzes };
+  }
+
+  // Quizzes
+
+  async allQuizzes(): Promise<Quiz[]> {
+    const quizzes = await this.db.getAll("quizzes");
+    return quizzes.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
+  /** Creates or replaces a quiz. */
+  async saveQuiz(quiz: Quiz): Promise<void> {
+    await this.db.put("quizzes", quiz);
+  }
+
+  async deleteQuiz(id: string): Promise<void> {
+    await this.db.delete("quizzes", id);
   }
 
   /** Wipes all decks, cards and reviews and writes the given data, atomically. Caches are rebuilt from the log. */
   async replaceAll(data: Snapshot): Promise<void> {
-    const tx = this.db.transaction(["decks", "cards", "reviews", "days"], "readwrite");
-    await Promise.all(["decks", "cards", "reviews", "days"].map((s) => tx.objectStore(s as "decks").clear()));
+    const tx = this.db.transaction(["decks", "cards", "reviews", "days", "quizzes"], "readwrite");
+    await Promise.all(["decks", "cards", "reviews", "days", "quizzes"].map((s) => tx.objectStore(s as "decks").clear()));
     const caches = rebuildCaches(data.reviews);
+    for (const q of data.quizzes ?? []) await tx.objectStore("quizzes").put(q);
     for (const d of data.decks) await tx.objectStore("decks").put(d);
     for (const c of data.cards) await tx.objectStore("cards").put(withCaches(c, caches.cards.get(c.id)));
     for (const r of data.reviews) await tx.objectStore("reviews").put(r);
@@ -388,8 +410,12 @@ export class Store {
    * Reviews are a union by id. Caches are rebuilt afterwards. Returns counts of what was written.
    */
   async merge(data: Snapshot): Promise<{ decks: number; cards: number; reviews: number }> {
-    const tx = this.db.transaction(["decks", "cards", "reviews", "days"], "readwrite");
+    const tx = this.db.transaction(["decks", "cards", "reviews", "days", "quizzes"], "readwrite");
     const counts = { decks: 0, cards: 0, reviews: 0 };
+    for (const q of data.quizzes ?? []) {
+      const existing = await tx.objectStore("quizzes").get(q.id);
+      if (!existing || q.updatedAt > existing.updatedAt) await tx.objectStore("quizzes").put(q);
+    }
     for (const d of data.decks) {
       if (!(await tx.objectStore("decks").getKey(d.id))) {
         await tx.objectStore("decks").put(d);
@@ -423,7 +449,7 @@ export class Store {
 
   /** Deletes everything, including settings. */
   async wipe(): Promise<void> {
-    const stores = ["decks", "cards", "reviews", "days", "meta"] as const;
+    const stores = ["decks", "cards", "reviews", "days", "meta", "quizzes"] as const;
     const tx = this.db.transaction([...stores], "readwrite");
     await Promise.all(stores.map((s) => tx.objectStore(s).clear()));
     await tx.done;

@@ -2,7 +2,7 @@ import { APP_NAME } from "../config";
 import { setLang, t } from "../i18n/index.svelte";
 import { backupFileName, makeBackup, type SharedDeck } from "./backup";
 import { localDay } from "./dates";
-import { Store, defaultSettings, detectLang, type DeckInput, type NewCard, type Snapshot } from "./db";
+import { Store, defaultSettings, detectLang, newId, type DeckInput, type NewCard, type Snapshot } from "./db";
 import { downloadText } from "./files";
 import { setPendingImport, sharedTextFromUrl } from "./handoff";
 import { difficulty, isHard, streak, type Difficulty } from "./history";
@@ -10,7 +10,7 @@ import { requestPersist } from "./persist";
 import type { PracticeCard } from "./practice";
 import { parseHash, type Count, type Route, type Which } from "./router";
 import { buildSession } from "./session";
-import type { Box, Card, DayStat, Deck, Grade, Lang, Mode, Settings, Theme } from "./types";
+import type { Box, Card, DayStat, Deck, Grade, Lang, Mode, Quiz, Settings, Theme } from "./types";
 import { getSelection } from "./selection";
 
 export type BoxCounts = [number, number, number, number, number];
@@ -24,6 +24,7 @@ class App {
   decks = $state.raw<Deck[]>([]);
   cards = $state.raw<Card[]>([]);
   days = $state.raw<DayStat[]>([]);
+  quizzes = $state.raw<Quiz[]>([]);
   today = $state(localDay());
   /** Short-lived message for the whole app, announced politely. */
   flash = $state("");
@@ -69,7 +70,8 @@ class App {
   }
 
   async reload(): Promise<void> {
-    const [decks, cards, days] = await Promise.all([this.db.listDecks(), this.db.allCards(), this.db.allDays()]);
+    const [decks, cards, days, quizzes] = await Promise.all([this.db.listDecks(), this.db.allCards(), this.db.allDays(), this.db.allQuizzes()]);
+    this.quizzes = quizzes;
     this.decks = decks;
     this.cards = cards;
     this.days = days;
@@ -272,6 +274,39 @@ class App {
     await this.db.deleteDeck(id);
     this.decks = this.decks.filter((d) => d.id !== id);
     this.cards = this.cards.filter((c) => c.deckId !== id);
+  }
+
+  // Quizzes
+
+  quiz(id: string): Quiz | undefined {
+    return this.quizzes.find((q) => q.id === id);
+  }
+
+  /** Saves a new or edited quiz; returns it with its id. */
+  async saveQuiz(input: Pick<Quiz, "name" | "questions"> & Partial<Pick<Quiz, "id" | "subject">>): Promise<Quiz> {
+    const now = new Date().toISOString();
+    const existing = input.id ? this.quiz(input.id) : undefined;
+    const quiz: Quiz = { ...existing, id: existing?.id ?? newId(), name: input.name, questions: input.questions, createdAt: existing?.createdAt ?? now, updatedAt: now };
+    if (input.subject) quiz.subject = input.subject;
+    else delete quiz.subject;
+    // Changed questions make an old score meaningless.
+    if (existing && JSON.stringify(existing.questions) !== JSON.stringify(input.questions)) delete quiz.last;
+    await this.db.saveQuiz(quiz);
+    this.quizzes = existing ? this.quizzes.map((q) => (q.id === quiz.id ? quiz : q)) : [...this.quizzes, quiz];
+    return quiz;
+  }
+
+  async recordQuizResult(id: string, points: number, total: number): Promise<void> {
+    const q = this.quiz(id);
+    if (!q) return;
+    const next: Quiz = { ...q, last: { points, total, at: new Date().toISOString() } };
+    await this.db.saveQuiz(next);
+    this.quizzes = this.quizzes.map((x) => (x.id === id ? next : x));
+  }
+
+  async deleteQuiz(id: string): Promise<void> {
+    await this.db.deleteQuiz(id);
+    this.quizzes = this.quizzes.filter((q) => q.id !== id);
   }
 
   // Cards

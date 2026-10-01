@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { t } from "../i18n/index.svelte";
+  import CreationTabs from "../components/CreationTabs.svelte";
   import Icon from "../components/Icon.svelte";
   import ListCard from "../components/ListCard.svelte";
   import PageHead from "../components/PageHead.svelte";
@@ -34,6 +35,7 @@
 </PageHead>
 
 <section class="lists">
+  <CreationTabs current="lists" />
   {#if app.decks.length === 0}
     <p class="muted">{t("lists.none")}</p>
     <a class="btn btn-primary" href={href.newList()}><Icon name="plus" size={20} />{t("lists.new")}</a>

@@ -22,6 +22,10 @@ export type Route =
   | { name: "settings" }
   | { name: "help" }
   | { name: "share"; payload: string }
+  | { name: "quizzes" }
+  | { name: "quiz"; id: string }
+  | { name: "quizEditor"; id?: string }
+  | { name: "quizPlay"; id: string }
   | { name: "notfound" };
 
 function seg(s: string | undefined): string | undefined {
@@ -94,6 +98,17 @@ export function parseHash(hash: string): Route {
       return n === 1 ? { name: "help" } : notFound;
     case "deel":
       return a ? { name: "share", payload: parts.slice(1).join("/") } : notFound;
+    case "quizzen":
+      return n === 1 ? { name: "quizzes" } : notFound;
+    case "quiz": {
+      if (a === "nieuw" && n === 2) return { name: "quizEditor" };
+      const id = seg(a);
+      if (!id) return notFound;
+      if (n === 2) return { name: "quiz", id };
+      if (n === 3 && b === "bewerken") return { name: "quizEditor", id };
+      if (n === 3 && b === "maken") return { name: "quizPlay", id };
+      return notFound;
+    }
     default:
       return notFound;
   }
@@ -120,4 +135,9 @@ export const href = {
   settings: () => "#/instellingen",
   help: () => "#/uitleg",
   share: (payload: string) => `#/deel/${payload}`,
+  quizzes: () => "#/quizzen",
+  quizNew: () => "#/quiz/nieuw",
+  quiz: (id: string) => `#/quiz/${enc(id)}`,
+  quizEdit: (id: string) => `#/quiz/${enc(id)}/bewerken`,
+  quizPlay: (id: string) => `#/quiz/${enc(id)}/maken`,
 };
