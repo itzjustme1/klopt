@@ -170,7 +170,7 @@
     {:else if app.route.name === "quizzes"}
       <Quizzes />
     {:else if app.route.name === "quiz"}
-      {#key app.route.id}<QuizView id={app.route.id} />{/key}
+      {#key app.route.id}<QuizView id={app.route.id} share={app.route.share ?? false} />{/key}
     {:else if app.route.name === "quizEditor"}
       {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
     {:else if app.route.name === "folders"}

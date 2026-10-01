@@ -1,14 +1,14 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
   import PageHead from "../components/PageHead.svelte";
-  import SharedPreview from "../components/SharedPreview.svelte";
-  import type { SharedDeck } from "../lib/backup";
+  import ItemPreview from "../components/ItemPreview.svelte";
+  import type { SharedItem } from "../lib/backup";
   import { href } from "../lib/router";
   import { decodeShare } from "../lib/share";
 
   let { payload }: { payload: string } = $props();
 
-  let status = $state.raw<"loading" | "invalid" | SharedDeck>("loading");
+  let status = $state.raw<"loading" | "invalid" | SharedItem>("loading");
 
   $effect(() => {
     let cancelled = false;
@@ -34,7 +34,7 @@
     <p class="error" role="alert">{t("receive.invalid")}</p>
     <a class="btn" href={href.today()}>{t("practice.backHome")}</a>
   {:else}
-    <SharedPreview shared={status} oncancel={leave} />
+    <ItemPreview item={status} oncancel={leave} />
   {/if}
 </section>
 

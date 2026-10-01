@@ -27,10 +27,10 @@ describe("share links", () => {
     expect(payload).toMatch(/^[A-Za-z0-9_-]+$/);
     const r = await decodeShare(payload!);
     expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.data.deck.name).toBe("Economie <i>");
-      expect(r.data.cards.map((c) => c.front)).toEqual(demoCards("nl").map((c) => c.front));
-    }
+    if (r.ok && r.data.kind === "deck") {
+      expect(r.data.data.deck.name).toBe("Economie <i>");
+      expect(r.data.data.cards.map((c) => c.front)).toEqual(demoCards("nl").map((c) => c.front));
+    } else throw new Error("expected a list");
   });
 
   it("returns null when the link would be too long", async () => {

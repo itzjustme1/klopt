@@ -2,14 +2,14 @@
   import { t } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import PageHead from "../components/PageHead.svelte";
-  import SharedPreview from "../components/SharedPreview.svelte";
-  import { parseShared, type SharedDeck } from "../lib/backup";
+  import ItemPreview from "../components/ItemPreview.svelte";
+  import { parseSharedItem, type SharedItem } from "../lib/backup";
   import { readTextFile } from "../lib/files";
   import { backupErrorText } from "../lib/messages";
   import { href } from "../lib/router";
 
   let error = $state("");
-  let shared = $state.raw<SharedDeck | null>(null);
+  let shared = $state.raw<SharedItem | null>(null);
   let input: HTMLInputElement | undefined = $state();
 
   async function choose() {
@@ -19,7 +19,7 @@
     if (!file) return;
     const read = await readTextFile(file, LIMITS.backupBytes);
     if (!read.ok) return void (error = backupErrorText({ code: read.reason }));
-    const parsed = parseShared(read.text);
+    const parsed = parseSharedItem(read.text);
     if (parsed.ok) shared = parsed.data;
     else error = backupErrorText(parsed.error);
   }
@@ -39,7 +39,7 @@
     </div>
   {/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
-  {#if shared}<SharedPreview {shared} oncancel={cancel} />{/if}
+  {#if shared}<ItemPreview item={shared} oncancel={cancel} />{/if}
 </section>
 
 <style>

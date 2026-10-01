@@ -19,6 +19,7 @@
   import type { Direction } from "../lib/practice";
   import { href, type Count } from "../lib/router";
   import { getSelection, setSelection } from "../lib/selection";
+  import { shareJson } from "../lib/share";
   import { canSpeak, loadVoices } from "../lib/speech";
   import type { Mode } from "../lib/types";
 
@@ -152,7 +153,7 @@
     </PageHead>
 
     {#if share}
-      <SharePanel {deck} {cards} onclose={() => (location.hash = href.deck(id))} />
+      <SharePanel name={deck.name} json={shareJson(deck, cards)} {cards} onclose={() => (location.hash = href.deck(id))} />
     {/if}
 
     {#if deck.examDate}<ExamCard {deck} />{/if}

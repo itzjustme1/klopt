@@ -35,7 +35,7 @@ npm run e2e
 - **Pictures on cards:** add a picture to any row in the editor (it is shrunk to a small JPEG on the device). With a picture the front may stay empty, so the picture is the question, as in biology or geography.
 - **Folders (mappen):** put lists and quizzes that belong together in a folder, from *Nieuw → Map* or a list's ⋮ menu. Rename or remove a folder; removing keeps what was in it. Folders are kept in backups but never in a shared list.
 - Copy, delete and print a list. Select words (or "Lastige" / "Gemarkeerd") and practise only those.
-- Share a list as a link, a file or through the phone's share sheet; export it as text for Quizlet or Excel.
+- **Send lists, quizzes and whole folders** as a link, a file or through the phone's share sheet (WhatsApp and so on). The receiver sees a preview and adds a copy; progress, grades and your folders are never sent. Lists can also be exported as text for Quizlet or Excel.
 
 **Five ways to fill a list**
 - **Type it yourself:** a table editor. Enter moves to the next cell, there are accent keys, and you can paste several lines into one cell.
@@ -200,7 +200,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## How it's tested
 
-**Unit tests (Vitest, 228 tests, run with `TZ=Europe/Amsterdam`)**
+**Unit tests (Vitest, 229 tests, run with `TZ=Europe/Amsterdam`)**
 - **Scheduler:** your four table cases, every box × grade × day of 2026 against the reference implementation, DST, and the first-answer-of-the-day rule.
 - **Dates:** rollover and DST.
 - **Answer checking:** alternatives, brackets, accents, typos including swapped letters, decimal commas, hints, and the lenient options.
@@ -218,7 +218,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 The unit suite was also run 30 times in a row to rule out flaky tests.
 
-**End-to-end tests (Playwright, 25 tests, production build)**
+**End-to-end tests (Playwright, 26 tests, production build)**
 - **Learn, review and test by keyboard:** checks the boxes, streak, grade, persistence and offline.
 - **Session size, starred words, lenient accents, swiping flashcards.**
 - **The matching game:** two rounds and a record.
@@ -227,7 +227,7 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Text shared from another app.**
 - **Photo:** a real image goes through the on-device OCR.
 - **Import and backup:** paste, back up, wipe, restore, merge.
-- **Sharing by link, and the backup reminder.**
+- **Sharing by link** (a list; a quiz and a folder opened in a second, empty browser), **and the backup reminder.**
 - **A term list** made from the Nieuw menu and learnt with flashcards.
 - **Pictures:** added in the editor, downscaled, stored, shown on the list and in flashcards, checked with axe.
 - **Folders:** made from the Nieuw menu, a list moved in, renamed, removed.

@@ -32,7 +32,13 @@ export function makeShareFile(deck: Deck, cards: readonly Card[], now: Date = ne
   return makeBackup(
     {
       // Your folders are your own business: a shared list arrives without one.
-      decks: [(({ folder: _, ...d }) => d)(deck)],
+      decks: [
+        (() => {
+          const d = { ...deck };
+          delete d.folder;
+          return d;
+        })(),
+      ],
       cards: cards.map((c) => {
         const out: Card = { ...c, box: 1, due: today };
         delete out.hist;
@@ -321,28 +327,106 @@ export interface SharedDeck {
   cards: { front: string; back: string; topic?: string; image?: string }[];
 }
 
+/** A shareable quiz: the questions only, without your last grade or folder. */
+export function makeQuizShareFile(quiz: Quiz, now: Date = new Date()): BackupFile {
+  const shared: Quiz = { ...quiz };
+  delete shared.last;
+  delete shared.folder;
+  return makeBackup({ decks: [], cards: [], reviews: [], quizzes: [shared] }, now);
+}
+
+export interface SharedQuiz {
+  quiz: Pick<Quiz, "name" | "subject" | "questions">;
+}
+
+export interface SharedFolder {
+  name: string;
+  decks: SharedDeck[];
+  quizzes: SharedQuiz["quiz"][];
+}
+
+export type SharedItem = { kind: "deck"; data: SharedDeck } | { kind: "quiz"; data: SharedQuiz } | { kind: "folder"; data: SharedFolder };
+
+/** A shareable folder: its lists (words only) and quizzes, each marked with the folder name. */
+export function makeFolderShareFile(name: string, decks: readonly Deck[], cards: readonly Card[], quizzes: readonly Quiz[], now: Date = new Date()): BackupFile {
+  const today = localDay(now);
+  const ids = new Set(decks.map((d) => d.id));
+  return makeBackup(
+    {
+      decks: decks.map((d) => ({ ...d, folder: name })),
+      cards: cards
+        .filter((c) => ids.has(c.deckId))
+        .map((c) => {
+          const out: Card = { ...c, box: 1, due: today };
+          delete out.hist;
+          delete out.lastDay;
+          delete out.starred;
+          return out;
+        }),
+      reviews: [],
+      quizzes: quizzes.map((q) => {
+        const out: Quiz = { ...q, folder: name };
+        delete out.last;
+        return out;
+      }),
+    },
+    now,
+  );
+}
+
+/** A shared file or link holds exactly one list, or exactly one quiz. */
+export function parseSharedItem(text: string): Parsed<SharedItem> {
+  const parsed = parseBackup(text);
+  if (!parsed.ok) return parsed;
+  const { decks, cards, quizzes = [] } = parsed.data;
+  // A folder: everything in the file carries the same folder name.
+  const folders = new Set([...decks.map((d) => d.folder ?? ""), ...quizzes.map((q) => q.folder ?? "")]);
+  if (folders.size === 1 && !folders.has("") && decks.length + quizzes.length > 0) {
+    const name = [...folders][0]!;
+    if (quizzes.some((q) => !q.questions.length) || decks.some((d) => !cards.some((c) => c.deckId === d.id))) return { ok: false, error: { code: "invalid", where: "folder" } };
+    return {
+      ok: true,
+      data: { kind: "folder", data: { name, decks: decks.map((d) => toSharedDeck(d, cards.filter((c) => c.deckId === d.id))), quizzes: quizzes.map(toSharedQuiz) } },
+    };
+  }
+  if (decks.length === 0 && quizzes.length === 1) {
+    const q = quizzes[0]!;
+    if (!q.questions.length) return { ok: false, error: { code: "invalid", where: "quizzes" } };
+    return { ok: true, data: { kind: "quiz", data: { quiz: toSharedQuiz(q) } } };
+  }
+  if (quizzes.length) return { ok: false, error: { code: "invalid", where: "quizzes" } };
+  const deck = parseShared(text);
+  return deck.ok ? { ok: true, data: { kind: "deck", data: deck.data } } : deck;
+}
+
 /** A shared deck must hold exactly one deck. Progress in it is ignored. */
+function toSharedDeck(d: Deck, cards: readonly Card[]): SharedDeck {
+  const deck: SharedDeck["deck"] = { name: d.name, langFront: d.langFront, langBack: d.langBack };
+  if (d.subject) deck.subject = d.subject;
+  if (d.examDate) deck.examDate = d.examDate;
+  if (d.kind) deck.kind = d.kind;
+  return {
+    deck,
+    cards: cards.map((c) => {
+      const out: SharedDeck["cards"][number] = { front: c.front, back: c.back };
+      if (c.topic) out.topic = c.topic;
+      if (c.image) out.image = c.image;
+      return out;
+    }),
+  };
+}
+
+function toSharedQuiz(q: Quiz): SharedQuiz["quiz"] {
+  const quiz: SharedQuiz["quiz"] = { name: q.name, questions: q.questions };
+  if (q.subject) quiz.subject = q.subject;
+  return quiz;
+}
+
 export function parseShared(text: string): Parsed<SharedDeck> {
   const parsed = parseBackup(text);
   if (!parsed.ok) return parsed;
   const { decks, cards } = parsed.data;
   if (decks.length !== 1) return { ok: false, error: { code: "invalid", where: "decks" } };
   if (cards.length === 0) return { ok: false, error: { code: "invalid", where: "cards" } };
-  const d = decks[0]!;
-  const deck: SharedDeck["deck"] = { name: d.name, langFront: d.langFront, langBack: d.langBack };
-  if (d.subject) deck.subject = d.subject;
-  if (d.examDate) deck.examDate = d.examDate;
-  if (d.kind) deck.kind = d.kind;
-  return {
-    ok: true,
-    data: {
-      deck,
-      cards: cards.map((c) => {
-        const out: SharedDeck["cards"][number] = { front: c.front, back: c.back };
-        if (c.topic) out.topic = c.topic;
-        if (c.image) out.image = c.image;
-        return out;
-      }),
-    },
-  };
+  return { ok: true, data: toSharedDeck(decks[0]!, cards) };
 }

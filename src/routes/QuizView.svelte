@@ -2,6 +2,8 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
   import FolderPicker from "../components/FolderPicker.svelte";
+  import SharePanel from "../components/SharePanel.svelte";
+  import { quizShareJson } from "../lib/share";
   import Icon from "../components/Icon.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
@@ -11,7 +13,7 @@
   import { href } from "../lib/router";
   import type { QuizQuestion } from "../lib/types";
 
-  let { id }: { id: string } = $props();
+  let { id, share = false }: { id: string; share?: boolean } = $props();
 
   const quiz = $derived(app.quiz(id));
   const fmt = $derived(new Intl.NumberFormat(getLang(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
@@ -52,6 +54,10 @@
       <a class="btn btn-primary btn-lg start" href={href.quizPlay(id)}><Icon name="play" size={18} />{t("quiz.start")}</a>
     </PageHead>
 
+    {#if share}
+      <SharePanel name={quiz.name} json={quizShareJson(quiz)} title={t("quiz.share")} onclose={() => (location.hash = href.quiz(id))} />
+    {/if}
+
     {#if deleting}
       <ConfirmInline message={t("quiz.deleteConfirm", { name: quiz.name })} confirmLabel={t("deck.deleteYes")} onconfirm={remove} oncancel={() => (deleting = false)} />
     {/if}
@@ -76,6 +82,7 @@
     <Sheet title={t("deck.more")} onclose={() => (moreOpen = false)}>
       <ul class="drawer-list">
         <li><a class="drawer-item" href={href.quizEdit(id)}><Icon name="edit" />{t("common.edit")}</a></li>
+        <li><a class="drawer-item" href={href.quizShare(id)} onclick={() => (moreOpen = false)}><Icon name="share" />{t("deck.share")}</a></li>
         <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; moving = true; }}><Icon name="folder" />{t("folder.move")}{#if quiz.folder}<span class="hint">{quiz.folder}</span>{/if}</button></li>
         <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; deleting = true; }}><Icon name="trash" />{t("common.delete")}</button></li>
       </ul>

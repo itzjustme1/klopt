@@ -89,3 +89,30 @@ describe("quizzes in the database and backups", () => {
     expect((await store.allQuizzes())[0]!.name).toBe("Nieuwer");
   });
 });
+
+describe("sharing quizzes and folders", () => {
+  it("shares a quiz without its grade or folder, and recognises what a file holds", async () => {
+    const { makeQuizShareFile, makeFolderShareFile, parseSharedItem } = await import("../../src/lib/backup");
+    const quiz: Quiz = { id: id(20), name: "WO2", folder: "Geschiedenis", questions: [mc, cloze], createdAt: "2026-10-01T10:00:00.000Z", updatedAt: "2026-10-01T10:00:00.000Z", last: { points: 1, total: 2, at: "2026-10-01T11:00:00.000Z" } };
+    const file = makeQuizShareFile(quiz);
+    expect(file.quizzes![0]).not.toHaveProperty("last");
+    expect(file.quizzes![0]).not.toHaveProperty("folder");
+    const q = parseSharedItem(JSON.stringify(file));
+    expect(q.ok && q.data.kind).toBe("quiz");
+
+    const store = await Store.open("share-folder");
+    const deck = await store.createDeck({ name: "Begrippen", langFront: "xx", langBack: "xx", kind: "terms" });
+    const cards = await store.addCards(deck.id, [{ front: "Verzet", back: "Strijd tegen de bezetter." }]);
+    await store.grade(cards[0]!.id, "goed");
+    const folder = makeFolderShareFile("WO2", [deck], await store.allCards(), [quiz]);
+    expect(folder.reviews).toEqual([]);
+    expect(folder.cards[0]).not.toHaveProperty("hist");
+    const f = parseSharedItem(JSON.stringify(folder));
+    expect(f.ok && f.data.kind === "folder" && [f.data.data.name, f.data.data.decks.length, f.data.data.quizzes.length]).toEqual(["WO2", 1, 1]);
+
+    // A file mixing a folder with something outside it is not a valid share.
+    const mixed = JSON.parse(JSON.stringify(folder));
+    delete mixed.quizzes[0].folder;
+    expect(parseSharedItem(JSON.stringify(mixed)).ok).toBe(false);
+  });
+});

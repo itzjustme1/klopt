@@ -6,6 +6,8 @@
   import ListCard from "../components/ListCard.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
+  import SharePanel from "../components/SharePanel.svelte";
+  import { folderShareJson } from "../lib/share";
   import { app } from "../lib/app.svelte";
   import { href } from "../lib/router";
 
@@ -16,6 +18,7 @@
   let renaming = $state(false);
   let dissolving = $state(false);
   let newName = $state("");
+  let sharing = $state(false);
 
   async function rename(e: SubmitEvent) {
     e.preventDefault();
@@ -47,6 +50,10 @@
       {/snippet}
     </PageHead>
 
+    {#if sharing}
+      <SharePanel name={name} json={folderShareJson(name, folder.decks, app.cards, folder.quizzes)} title={t("folder.share")} onclose={() => (sharing = false)} />
+    {/if}
+
     {#if dissolving}
       <ConfirmInline message={t("folder.dissolveConfirm", { name })} confirmLabel={t("folder.dissolveYes")} onconfirm={dissolve} oncancel={() => (dissolving = false)} />
     {/if}
@@ -75,6 +82,7 @@
   {#if moreOpen}
     <Sheet title={t("deck.more")} onclose={() => (moreOpen = false)}>
       <ul class="drawer-list">
+        <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; sharing = true; }}><Icon name="share" />{t("deck.share")}</button></li>
         <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; newName = name; renaming = true; }}><Icon name="edit" />{t("folder.rename")}</button></li>
         <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; dissolving = true; }}><Icon name="trash" />{t("folder.dissolve")}</button></li>
       </ul>

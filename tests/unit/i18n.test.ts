@@ -54,6 +54,6 @@ describe("i18n", () => {
 
   it("does not interpret user text as a template", () => {
     // A deck name containing braces must come out exactly as typed.
-    expect(translate("nl", "receive.added", { name: "{app} <b>x</b>" })).toBe('Lijst "{app} <b>x</b>" toegevoegd.');
+    expect(translate("nl", "receive.added", { name: "{app} <b>x</b>" })).toBe('"{app} <b>x</b>" toegevoegd.');
   });
 });

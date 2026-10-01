@@ -1,6 +1,6 @@
 import { APP_NAME, LIMITS } from "../config";
 import { setLang, t } from "../i18n/index.svelte";
-import { backupFileName, makeBackup, type SharedDeck } from "./backup";
+import { backupFileName, makeBackup, type SharedDeck, type SharedFolder, type SharedQuiz } from "./backup";
 import { localDay } from "./dates";
 import { Store, defaultSettings, detectLang, newId, type DeckInput, type NewCard, type Snapshot } from "./db";
 import { downloadText } from "./files";
@@ -383,8 +383,21 @@ class App {
   }
 
   /** Adds a shared deck as a new deck with fresh cards (box 1, due today). */
-  async importShared(shared: SharedDeck): Promise<Deck> {
-    const deck = await this.createDeck(shared.deck);
+  /** Adds a received quiz as your own, with fresh ids. */
+  async importSharedQuiz(shared: SharedQuiz["quiz"], folder = ""): Promise<Quiz> {
+    const quiz = await this.saveQuiz({ name: shared.name, subject: shared.subject ?? "", questions: shared.questions.map((q) => ({ ...q, id: newId() })) });
+    if (folder) await this.moveToFolder({ quizzes: [quiz.id] }, folder);
+    return this.quiz(quiz.id) ?? quiz;
+  }
+
+  /** Adds a received folder: all its lists and quizzes, in a folder with that name. */
+  async importSharedFolder(shared: SharedFolder): Promise<void> {
+    for (const d of shared.decks) await this.importShared(d, shared.name);
+    for (const q of shared.quizzes) await this.importSharedQuiz(q, shared.name);
+  }
+
+  async importShared(shared: SharedDeck, folder = ""): Promise<Deck> {
+    const deck = await this.createDeck({ ...shared.deck, ...(folder ? { folder } : {}) });
     await this.addCards(deck.id, shared.cards);
     return deck;
   }

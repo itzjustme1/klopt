@@ -26,7 +26,7 @@ export type Route =
   | { name: "folders" }
   | { name: "folder"; folder: string }
   | { name: "newFolder" }
-  | { name: "quiz"; id: string }
+  | { name: "quiz"; id: string; share?: boolean }
   | { name: "quizEditor"; id?: string }
   | { name: "quizPlay"; id: string }
   | { name: "notfound" };
@@ -118,6 +118,7 @@ export function parseHash(hash: string): Route {
       if (n === 2) return { name: "quiz", id };
       if (n === 3 && b === "bewerken") return { name: "quizEditor", id };
       if (n === 3 && b === "maken") return { name: "quizPlay", id };
+      if (n === 3 && b === "delen") return { name: "quiz", id, share: true };
       return notFound;
     }
     default:
@@ -154,4 +155,5 @@ export const href = {
   quiz: (id: string) => `#/quiz/${enc(id)}`,
   quizEdit: (id: string) => `#/quiz/${enc(id)}/bewerken`,
   quizPlay: (id: string) => `#/quiz/${enc(id)}/maken`,
+  quizShare: (id: string) => `#/quiz/${enc(id)}/delen`,
 };

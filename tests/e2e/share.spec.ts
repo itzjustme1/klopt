@@ -15,7 +15,7 @@ test("share a list by link and open it", async ({ page }) => {
 
   // Open the link: preview first, nothing is added until the student agrees.
   await page.goto(link);
-  await expect(page.getByRole("heading", { name: "Gedeelde lijst" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Gedeeld met jou" })).toBeVisible();
   await expect(page.getByText("la fenêtre")).toBeVisible();
   await page.getByRole("button", { name: "Toevoegen aan mijn lijsten" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Frans: basiswoorden" })).toBeVisible();
@@ -41,4 +41,47 @@ test("backup reminder after 50 new words", async ({ page }) => {
   await page.getByRole("button", { name: "Later" }).click();
   await expect(page.getByText(/sinds je laatste back-up/)).toHaveCount(0);
   await check();
+});
+
+test("send a quiz and a folder by link; the receiver adds them", async ({ page, browser }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+
+  await page.goto("/#/quizzen");
+  await page.getByRole("link", { name: /WO2: oefentoets/ }).click();
+  await page.getByRole("button", { name: "Meer opties" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Delen" }).click();
+  await expect(page.getByRole("heading", { name: "Quiz delen" })).toBeVisible();
+  const quizLink = await page.getByLabel("Deellink").inputValue();
+
+  await page.goto("/#/mappen/nieuw");
+  await page.getByLabel("Naam van de map").fill("WO2");
+  await page.getByLabel(/WO2: begrippen/).check();
+  await page.getByLabel(/WO2: oefentoets/).check();
+  await page.getByRole("button", { name: "Map maken" }).click();
+  await page.getByRole("button", { name: "Meer opties" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delen" }).click();
+  await expect(page.getByRole("heading", { name: "Map delen" })).toBeVisible();
+  const folderLink = await page.getByLabel("Deellink").inputValue();
+  await check();
+
+  // Someone else, with an empty app.
+  const other = await browser.newContext({ locale: "nl-NL" });
+  const them = await other.newPage();
+  await them.goto(quizLink);
+  await expect(them.getByRole("heading", { name: "Gedeeld met jou" })).toBeVisible();
+  await expect(them.getByText("Quiz · 4 vragen")).toBeVisible();
+  await them.getByRole("button", { name: "Toevoegen", exact: true }).click();
+  await expect(them.getByRole("heading", { level: 1, name: "WO2: oefentoets" })).toBeVisible();
+  // Their copy has no grade of mine.
+  await expect(them.getByText(/Laatste cijfer/)).toHaveCount(0);
+
+  await them.goto(folderLink);
+  await expect(them.getByText("1 lijst · 1 quiz")).toBeVisible();
+  await them.getByRole("button", { name: "Toevoegen", exact: true }).click();
+  await expect(them.getByRole("heading", { level: 1, name: "WO2" })).toBeVisible();
+  await expect(them.getByRole("link", { name: /WO2: begrippen/ })).toBeVisible();
+  await other.close();
 });

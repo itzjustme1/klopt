@@ -1,6 +1,6 @@
 import { LIMITS } from "../config";
-import { makeShareFile, parseShared, type Parsed, type SharedDeck } from "./backup";
-import type { Card, Deck } from "./types";
+import { makeFolderShareFile, makeQuizShareFile, makeShareFile, parseSharedItem, type Parsed, type SharedItem } from "./backup";
+import type { Card, Deck, Quiz } from "./types";
 
 const B64URL = /^[A-Za-z0-9_-]+$/;
 /** Hard cap on a link payload we are willing to decode at all. */
@@ -61,13 +61,25 @@ export function shareJson(deck: Deck, cards: readonly Card[]): string {
   return JSON.stringify(makeShareFile(deck, cards));
 }
 
-/** Returns the link payload, or null if the deck is too big for a link. */
-export async function encodeShare(deck: Deck, cards: readonly Card[]): Promise<string | null> {
-  const payload = toBase64Url(await gzip(shareJson(deck, cards)));
+export function folderShareJson(name: string, decks: readonly Deck[], cards: readonly Card[], quizzes: readonly Quiz[]): string {
+  return JSON.stringify(makeFolderShareFile(name, decks, cards, quizzes));
+}
+
+export function quizShareJson(quiz: Quiz): string {
+  return JSON.stringify(makeQuizShareFile(quiz));
+}
+
+/** Returns the link payload for a share file, or null if it is too big for a link. */
+export async function encodeJson(json: string): Promise<string | null> {
+  const payload = toBase64Url(await gzip(json));
   return payload.length <= LIMITS.shareLinkChars ? payload : null;
 }
 
-export async function decodeShare(payload: string): Promise<Parsed<SharedDeck>> {
+export async function encodeShare(deck: Deck, cards: readonly Card[]): Promise<string | null> {
+  return encodeJson(shareJson(deck, cards));
+}
+
+export async function decodeShare(payload: string): Promise<Parsed<SharedItem>> {
   const bad = { ok: false as const, error: { code: "invalid" as const, where: "link" } };
   if (!payload || payload.length > MAX_PAYLOAD_CHARS || !B64URL.test(payload)) return bad;
   let bytes: Uint8Array;
@@ -78,5 +90,5 @@ export async function decodeShare(payload: string): Promise<Parsed<SharedDeck>> 
   }
   const text = await gunzip(bytes, LIMITS.shareInflatedBytes);
   if (text === null) return bad;
-  return parseShared(text);
+  return parseSharedItem(text);
 }

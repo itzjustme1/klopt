@@ -4,10 +4,11 @@
   import { backupFileName } from "../lib/backup";
   import { downloadText } from "../lib/files";
   import { href } from "../lib/router";
-  import { encodeShare, shareJson } from "../lib/share";
-  import type { Card, Deck } from "../lib/types";
+  import { encodeJson } from "../lib/share";
+  import type { Card } from "../lib/types";
 
-  let { deck, cards, onclose }: { deck: Deck; cards: Card[]; onclose: () => void } = $props();
+  /** Share a list, quiz or folder: `json` is its share file; `cards` (a list) also offers a plain-text export. */
+  let { name, json, cards = [], title, onclose }: { name: string; json: string; cards?: Card[]; title?: string; onclose: () => void } = $props();
 
   let link = $state<string | null | undefined>(undefined);
   let copied = $state<"" | "ok" | "failed">("");
@@ -18,10 +19,10 @@
   });
 
   $effect(() => {
-    if (cards.length === 0) return;
+    const file = json;
     let cancelled = false;
     link = undefined;
-    void encodeShare(deck, cards).then((payload) => {
+    void encodeJson(file).then((payload) => {
       if (cancelled) return;
       link = payload ? new URL(href.share(payload), location.href).href : null;
     });
@@ -41,7 +42,7 @@
   }
 
   function download() {
-    downloadText(backupFileName(APP_NAME, new Date(), "deck", deck.name), shareJson(deck, cards));
+    downloadText(backupFileName(APP_NAME, new Date(), "deck", name), json);
   }
 
   const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
@@ -49,10 +50,10 @@
   async function nativeShare() {
     try {
       if (link) {
-        await navigator.share({ title: deck.name, text: t("share.nativeText"), url: link });
+        await navigator.share({ title: name, text: t("share.nativeText"), url: link });
       } else {
-        const file = new File([shareJson(deck, cards)], backupFileName(APP_NAME, new Date(), "deck", deck.name), { type: "application/json" });
-        if (navigator.canShare?.({ files: [file] })) await navigator.share({ title: deck.name, files: [file] });
+        const file = new File([json], backupFileName(APP_NAME, new Date(), "deck", name), { type: "application/json" });
+        if (navigator.canShare?.({ files: [file] })) await navigator.share({ title: name, files: [file] });
         else download();
       }
     } catch {
@@ -74,17 +75,14 @@
   }
 
   function downloadAsText() {
-    const base = backupFileName(APP_NAME, new Date(), "deck", deck.name).replace(/\.json$/, ".txt");
+    const base = backupFileName(APP_NAME, new Date(), "deck", name).replace(/\.json$/, ".txt");
     downloadText(base, asText, "text/plain;charset=utf-8");
   }
 </script>
 
 <section class="card card-pad share" aria-labelledby="share-title">
-  <h2 id="share-title" tabindex="-1" bind:this={heading}>{t("share.title")}</h2>
-  {#if cards.length === 0}
-    <p class="muted">{t("share.noCards")}</p>
-  {:else}
-    <p class="muted">{t("share.intro")}</p>
+  <h2 id="share-title" tabindex="-1" bind:this={heading}>{title ?? t("share.title")}</h2>
+  <p class="muted">{t("share.intro")}</p>
     {#if link === null}
       <p>{t("share.tooLong")}</p>
     {:else if link}
@@ -102,7 +100,7 @@
       <button type="button" class={link === null && !canNativeShare ? "btn btn-primary" : "btn"} onclick={download}>{t("share.file")}</button>
     </div>
 
-    <div class="export">
+    {#if cards.length}<div class="export">
       <h3>{t("share.export")}</h3>
       <p class="small muted">{t("share.exportIntro")}</p>
       <div class="row">
@@ -112,9 +110,8 @@
       <p class="small" aria-live="polite">
         {#if textCopied === "ok"}{t("share.textCopied")}{:else if textCopied === "failed"}<span class="error">{t("share.copyFailed")}</span>{/if}
       </p>
-    </div>
+    </div>{/if}
     <button type="button" class="btn btn-quiet close" onclick={onclose}>{t("common.close")}</button>
-  {/if}
 </section>
 
 <style>
