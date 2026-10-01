@@ -41,7 +41,9 @@ npm run e2e
 
 **Five ways to fill a list**
 - **Type it yourself:** a table editor. Enter moves to the next cell, there are accent keys, and you can paste several lines into one cell.
-- **Photo of your book:** the text is recognised on the device.
+- **Photo of your book:** the text is recognised on the device. Two kinds:
+  - a word list (two columns) becomes rows to check in the paste screen;
+  - a page of running text (history, economics, biology…) becomes a term list: every **bold** or *italic* word or phrase is a term, explained by the sentence it stands in (with the term blanked as "…"). "Dat noemen we …" takes the sentences before it; a short sentence takes the next one; "Term: explanation" glossary lines and margin boxes are read as such; the page heading names the list. You tick off what is not a term and can add more pages before saving.
 - **Paste:** from Quizlet, Excel or Google Sheets. Tab or semicolon separated, and spreadsheet quotes are handled.
 - **Shared file:** open a list someone else shared.
 - **From another app:** Android's share sheet sends text straight into the paste screen.
@@ -137,6 +139,8 @@ le chien;de hond
 1. Open a list and choose *Toetsdatum instellen*.
 2. Pick the date.
 3. The list page and the home screen then show how many words to practise today, with a button that starts Leren with the words you need most.
+
+**Bold and italic, measured.** The recogniser (Tesseract's LSTM engine) does not report font styles, so `src/lib/emphasis.ts` measures them in the photo, per word: the stroke width (median width of the horizontal ink runs, with sub-pixel edges) compared with the other words on the same line, and the slant (the shear that makes the strokes most upright) compared with the page. When more than 15% of the words seem to stand out, the photo is called unclear.
 
 **Photograph a list.**
 1. Go to *Nieuwe lijst → Foto van je boek* and pick the two languages.
@@ -255,6 +259,7 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Continuing a session** after a reload.
 - **Text shared from another app.**
 - **Photo:** a real image goes through the on-device OCR.
+- **Photo of a textbook page:** two rendered pages (a serif history page and a sans-serif economics page), turned into phone-like photos (tilted, blurred, uneven light, JPEG), give exactly their bold and italic terms; a photo too blurry to tell bold from regular says so instead of guessing.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link** (a list; a quiz and a folder opened in a second, empty browser), **and the backup reminder.**
 - **A term list** made from the Nieuw menu and learnt with flashcards.

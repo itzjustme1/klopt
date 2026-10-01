@@ -3,6 +3,7 @@
  * Everything is served from this app's own origin (/ocr/); nothing is sent anywhere.
  * Loaded lazily: the engine is only downloaded the first time a student uses it.
  */
+import { cardsFromWords, styleWords, toGray, type PageWord, type TermCard } from "./emphasis";
 import { rowsFromWords, type OcrWord } from "./ocrRows";
 import type { ContentLang } from "./types";
 
@@ -28,9 +29,8 @@ export interface OcrProgress {
 }
 
 /** Scales a photo down so recognition stays fast on a phone. */
-async function prepare(file: Blob): Promise<HTMLCanvasElement> {
+async function prepare(file: Blob, max = 2200): Promise<HTMLCanvasElement> {
   const bitmap = await createImageBitmap(file);
-  const max = 2200;
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
@@ -51,7 +51,7 @@ interface TessBlock {
   paragraphs: { lines: { words: TessWord[] }[] }[];
 }
 
-export async function recognizeList(file: Blob, langs: readonly ContentLang[], onProgress: (p: OcrProgress) => void): Promise<string[]> {
+async function worker(langs: readonly ContentLang[], onProgress: (p: OcrProgress) => void) {
   const { createWorker } = await import("tesseract.js");
   const base = new URL("ocr/", document.baseURI).href;
   onProgress({ status: "loading", progress: 0 });
@@ -65,15 +65,51 @@ export async function recognizeList(file: Blob, langs: readonly ContentLang[], o
       onProgress({ status: m.status.startsWith("recognizing") ? "reading" : "loading", progress: m.progress });
     },
   });
+  return worker;
+}
+
+export async function recognizeList(file: Blob, langs: readonly ContentLang[], onProgress: (p: OcrProgress) => void): Promise<string[]> {
+  const w = await worker(langs, onProgress);
   try {
     const canvas = await prepare(file);
-    const { data } = await worker.recognize(canvas, {}, { blocks: true });
+    const { data } = await w.recognize(canvas, {}, { blocks: true });
     const words: OcrWord[] = [];
     for (const block of (data.blocks ?? []) as TessBlock[]) {
       for (const p of block.paragraphs) for (const l of p.lines) for (const w of l.words) words.push({ text: w.text, confidence: w.confidence, ...w.bbox });
     }
     return rowsFromWords(words);
   } finally {
-    await worker.terminate();
+    await w.terminate();
+  }
+}
+
+/**
+ * A photo of a textbook page: its bold and italic words become terms, explained by the sentence
+ * they stand in. Also returns the page's heading, as a name for the list.
+ */
+export async function recognizeTerms(file: Blob, lang: ContentLang, onProgress: (p: OcrProgress) => void): Promise<{ cards: TermCard[]; title: string; words: number; unclear: boolean }> {
+  const w = await worker([lang], onProgress);
+  try {
+    // More pixels than for a word list: telling bold from regular needs the detail.
+    const canvas = await prepare(file, 3000);
+    const { data } = await w.recognize(canvas, {}, { blocks: true });
+    const words: PageWord[] = [];
+    let para = 0;
+    let line = 0;
+    for (const block of (data.blocks ?? []) as TessBlock[]) {
+      for (const p of block.paragraphs) {
+        para++;
+        for (const l of p.lines) {
+          line++;
+          for (const x of l.words) if (x.text.trim()) words.push({ text: x.text, confidence: x.confidence, para, line, ...x.bbox });
+        }
+      }
+    }
+    const ctx = canvas.getContext("2d")!;
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { cards, title, unclear } = cardsFromWords(styleWords(toGray(img.data, canvas.width, canvas.height), words));
+    return { cards, title, unclear, words: words.length };
+  } finally {
+    await w.terminate();
   }
 }

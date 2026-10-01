@@ -1,26 +1,39 @@
 <script lang="ts">
-  import { getLang, t } from "../i18n/index.svelte";
+  import { getLang, t, tp } from "../i18n/index.svelte";
+  import { LIMITS } from "../config";
   import Icon from "../components/Icon.svelte";
   import PageHead from "../components/PageHead.svelte";
   import { app } from "../lib/app.svelte";
   import { setPendingImport } from "../lib/handoff";
-  import { recognizeList, tesseractLangs, type OcrProgress } from "../lib/ocr";
+  import { recognizeList, recognizeTerms, tesseractLangs, type OcrProgress } from "../lib/ocr";
   import { href } from "../lib/router";
+  import { SUBJECTS } from "../lib/subjects";
   import { CONTENT_LANGS, type ContentLang } from "../lib/types";
 
   let { deckId }: { deckId?: string } = $props();
 
   // svelte-ignore state_referenced_locally
   const deck = deckId ? app.deck(deckId) : undefined;
+  /** What is on the photo: a two-column word list, or running text with bold or italic terms. */
+  let kind = $state<"list" | "terms">(deck?.kind === "terms" ? "terms" : "list");
   let langFront = $state<ContentLang>(deck?.langFront ?? "en");
   let langBack = $state<ContentLang>(deck?.langBack ?? getLang());
+  let textLang = $state<ContentLang>(deck?.kind === "terms" ? deck.langFront : getLang());
   let progress = $state<OcrProgress | null>(null);
   let error = $state("");
   let input: HTMLInputElement | undefined = $state();
 
+  // Found terms, to check before they become a list. More pages can be added.
+  let found = $state<{ term: string; explanation: string; keep: boolean }[]>([]);
+  let pages = $state(0);
+  let name = $state("");
+  let subject = $state("");
+  let saving = $state(false);
+  const kept = $derived(found.filter((f) => f.keep));
+
   /** Rough download size in MB: engine plus the language data. */
   const LANG_MB: Record<string, number> = { nld: 3, eng: 3, fra: 0.7, deu: 1.3, spa: 2.1, ita: 1.7, lat: 1.7 };
-  const mb = $derived(Math.round(4 + tesseractLangs([langFront, langBack]).reduce((sum, l) => sum + (LANG_MB[l] ?? 2), 0)));
+  const mb = $derived(Math.round(4 + tesseractLangs(kind === "terms" ? [textLang] : [langFront, langBack]).reduce((sum, l) => sum + (LANG_MB[l] ?? 2), 0)));
 
   async function choose() {
     const file = input?.files?.[0];
@@ -28,63 +41,186 @@
     if (!file) return;
     try {
       progress = { status: "loading", progress: 0 };
-      const rows = await recognizeList(file, [langFront, langBack], (p) => (progress = p));
-      progress = null;
-      if (!rows.length) {
-        error = t("photo.none");
-        return;
-      }
-      setPendingImport({ text: rows.join("\n"), langFront, langBack, source: "photo" });
-      location.hash = href.import(deckId);
+      if (kind === "terms") await readTerms(file);
+      else await readList(file);
     } catch (e) {
       console.error(e);
-      progress = null;
       error = t("photo.failed");
     } finally {
+      progress = null;
       if (input) input.value = "";
     }
   }
+
+  async function readList(file: File) {
+    const rows = await recognizeList(file, [langFront, langBack], (p) => (progress = p));
+    if (!rows.length) {
+      error = t("photo.none");
+      return;
+    }
+    setPendingImport({ text: rows.join("\n"), langFront, langBack, source: "photo" });
+    location.hash = href.import(deckId);
+  }
+
+  async function readTerms(file: File) {
+    const res = await recognizeTerms(file, textLang, (p) => (progress = p));
+    if (res.unclear) {
+      error = t("photo.unclear");
+      return;
+    }
+    if (!res.words) {
+      error = t("photo.none");
+      return;
+    }
+    const known = new Set(found.map((f) => f.term.toLocaleLowerCase()));
+    const fresh = res.cards.filter((c) => !known.has(c.term.toLocaleLowerCase()));
+    if (!fresh.length) {
+      error = pages ? t("photo.noNewTerms") : t("photo.noTerms");
+      return;
+    }
+    found = [...found, ...fresh.map((c) => ({ term: c.term.slice(0, LIMITS.sideChars), explanation: c.explanation.slice(0, LIMITS.sideChars), keep: true }))];
+    if (!pages && !name) name = res.title.slice(0, LIMITS.deckNameChars) || t("photo.defaultName");
+    pages++;
+  }
+
+  async function save() {
+    if (!kept.length) return;
+    saving = true;
+    try {
+      const cards = kept.map((f) => ({ front: f.term.trim(), back: f.explanation.trim() })).filter((c) => c.front && c.back);
+      let id = deck?.id;
+      if (!id) {
+        const made = await app.createDeck({ name: name.trim().slice(0, LIMITS.deckNameChars) || t("photo.defaultName"), subject: subject.trim().slice(0, LIMITS.labelChars), langFront: textLang, langBack: textLang, kind: "terms" });
+        id = made.id;
+      }
+      await app.addCards(id, cards);
+      app.showFlash(tp("photo.saved", cards.length));
+      location.hash = href.deck(id);
+    } catch {
+      error = t("common.saveFailed");
+      saving = false;
+    }
+  }
+
+  function startOver() {
+    found = [];
+    pages = 0;
+    name = "";
+    error = "";
+  }
 </script>
 
-<PageHead title={t("photo.title")} subtitle={t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
+<PageHead title={t("photo.title")} subtitle={found.length ? undefined : t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
 <section class="photo">
-  <div class="card card-pad box">
-    <div class="art"></div>
-    <fieldset class="fieldset-wrap">
-      <legend>{t("photo.langs")}</legend>
-      <div class="langs">
+  {#if found.length}
+    <div class="card card-pad review">
+      <div class="review-head">
+        <h2>{tp("photo.found", found.length)}</h2>
+        <p class="small muted">{t("photo.checkTerms")}</p>
+      </div>
+      <ul class="found">
+        {#each found as f, i (f.term)}
+          <li>
+            <label class="term" class:off={!f.keep}>
+              <input type="checkbox" bind:checked={found[i]!.keep} />
+              <span class="term-text">
+                <span class="t-front">{f.term}</span>
+                <span class="t-back small">{f.explanation}</span>
+              </span>
+            </label>
+          </li>
+        {/each}
+      </ul>
+      {#if !deck}
+        <div class="meta">
+          <div class="field">
+            <label for="ph-name">{t("editor.name")}</label>
+            <input id="ph-name" type="text" bind:value={name} maxlength={LIMITS.deckNameChars} autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="ph-subject">{t("editor.subject")}</label>
+            <input id="ph-subject" type="text" bind:value={subject} list="ph-subjects" maxlength={LIMITS.labelChars} autocomplete="off" />
+            <datalist id="ph-subjects">
+              {#each SUBJECTS[getLang()] as s (s)}<option value={s}></option>{/each}
+            </datalist>
+          </div>
+        </div>
+      {/if}
+      {#if error}<p class="error" role="alert">{error}</p>{/if}
+      {#if progress}
+        <div class="progress" role="status">
+          <p class="small">{progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}</p>
+          <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
+        </div>
+      {:else}
+        <div class="row actions">
+          <button type="button" class="btn btn-primary btn-lg" disabled={saving || !kept.length} onclick={save}>
+            {deck ? tp("photo.addTo", kept.length, { name: deck.name }) : tp("photo.makeList", kept.length)}
+          </button>
+          <label class="btn pick">
+            <Icon name="camera" size={20} />{t("photo.morePage")}
+            <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
+          </label>
+          <button type="button" class="btn btn-quiet" onclick={startOver}>{t("photo.startOver")}</button>
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <div class="card card-pad box">
+      <fieldset class="fieldset-wrap">
+        <legend>{t("photo.what")}</legend>
+        <div class="segmented kinds">
+          <label><input type="radio" name="ph-kind" value="list" bind:group={kind} disabled={!!progress} />{t("photo.kindList")}</label>
+          <label><input type="radio" name="ph-kind" value="terms" bind:group={kind} disabled={!!progress} />{t("photo.kindTerms")}</label>
+        </div>
+        <p class="small muted kind-help">{kind === "terms" ? t("photo.termsHelp") : t("photo.listHelp")}</p>
+      </fieldset>
+
+      {#if kind === "terms"}
         <div class="field">
-          <label for="ph-lf">{t("editor.langFront")}</label>
-          <select id="ph-lf" bind:value={langFront} disabled={!!progress}>
+          <label for="ph-tl">{t("photo.textLang")}</label>
+          <select id="ph-tl" bind:value={textLang} disabled={!!progress}>
             {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
           </select>
         </div>
-        <div class="field">
-          <label for="ph-lb">{t("editor.langBack")}</label>
-          <select id="ph-lb" bind:value={langBack} disabled={!!progress}>
-            {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
-          </select>
+      {:else}
+        <fieldset class="fieldset-wrap">
+          <legend>{t("photo.langs")}</legend>
+          <div class="langs">
+            <div class="field">
+              <label for="ph-lf">{t("editor.langFront")}</label>
+              <select id="ph-lf" bind:value={langFront} disabled={!!progress}>
+                {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
+              </select>
+            </div>
+            <div class="field">
+              <label for="ph-lb">{t("editor.langBack")}</label>
+              <select id="ph-lb" bind:value={langBack} disabled={!!progress}>
+                {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+      {/if}
+
+      {#if progress}
+        <div class="progress" role="status">
+          <p class="small">
+            {progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}
+          </p>
+          <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
         </div>
-      </div>
-    </fieldset>
+      {:else}
+        <label class="btn btn-primary btn-lg pick">
+          <Icon name="camera" size={22} />{t("photo.choose")}
+          <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
+        </label>
+      {/if}
 
-    {#if progress}
-      <div class="progress" role="status">
-        <p class="small">
-          {progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}
-        </p>
-        <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
-      </div>
-    {:else}
-      <label class="btn btn-primary btn-lg pick">
-        <Icon name="camera" size={22} />{t("photo.choose")}
-        <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
-      </label>
-    {/if}
-
-    {#if error}<p class="error" role="alert">{error}</p>{/if}
-    <p class="small muted">{t("photo.firstTime", { mb })} {t("photo.handwriting")}</p>
-  </div>
+      {#if error}<p class="error" role="alert">{error}</p>{/if}
+      <p class="small muted">{t("photo.firstTime", { mb })} {t("photo.handwriting")}</p>
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -93,15 +229,19 @@
     gap: 1rem;
     max-width: 640px;
   }
-  .art {
-    display: grid;
-    justify-items: center;
-  }
-  .box {
+  .box,
+  .review {
     display: grid;
     gap: 1.25rem;
   }
-  .langs {
+  .kinds label {
+    flex: 1;
+  }
+  .kind-help {
+    margin-top: 0.5rem;
+  }
+  .langs,
+  .meta {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
@@ -116,5 +256,58 @@
   .progress {
     display: grid;
     gap: 0.5rem;
+  }
+  .review-head {
+    display: grid;
+    gap: 0.25rem;
+  }
+  .found {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface-2);
+  }
+  .found li + li {
+    border-top: 1px solid var(--line);
+  }
+  .term {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+  }
+  .term input {
+    width: 22px;
+    height: 22px;
+    margin-top: 0.125rem;
+    flex: none;
+    accent-color: var(--green);
+  }
+  .term-text {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .t-front {
+    font-weight: 800;
+  }
+  .t-back {
+    color: var(--ink-2);
+  }
+  .term.off .term-text {
+    opacity: 0.5;
+  }
+  .actions {
+    flex-wrap: wrap;
+  }
+  @media (max-width: 480px) {
+    .meta {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
