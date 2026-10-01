@@ -32,7 +32,7 @@ npm run e2e
 - **Verb lists (rijtjes):** a verb, its meaning and its forms in up to 8 columns (je, tu, il … or past simple, past participle). Make your own, or add a ready-made set from *Nieuw → Werkwoorden*: English irregular verbs (61), French présent (16), German Präsens (21) and Spanish presente (13). The *Rijtjes* mode asks the whole row at once; a row that is not fully right comes back.
 - A subject badge per list.
 - An optional test date per list.
-- **Test-week planner** (*Toetsweek*, from the Tests heading on the home screen): all upcoming tests, and per day which list to learn and how many words. The words still to learn are spread evenly over the days before each test, the last day before a test is for reviewing the whole list, and weekdays you mark as *Geen tijd* (hockey, a job) are skipped unless there is no other day left. *In je agenda* downloads an `.ics` file with the tests (with a reminder the evening before) and the study sessions, for Apple Calendar, Google Calendar or Outlook. Importing it again updates the same events.
+- **Test-week planner** (*Toetsweek*, from the Tests heading on the home screen): all upcoming tests, and per day which list to learn and how many words. The words still to learn are spread evenly over the days before each test, the last day before a test is for reviewing the whole list, and weekdays you mark as *Geen tijd* (hockey, a job) are skipped unless there is no other day left. *In je agenda* downloads an `.ics` file with the tests (with a reminder the evening before) and the study sessions, for Apple Calendar, Google Calendar or Outlook. Importing it again updates the tests and the sessions that stayed on the same day.
 - Search, sort and a subject filter across lists; search within a list of more than 20 words.
 - **Pictures on cards:** add a picture to any row in the editor (it is shrunk to a small JPEG on the device). With a picture the front may stay empty, so the picture is the question, as in biology or geography.
 - **Folders (mappen):** put lists and quizzes that belong together in a folder, from *Nieuw → Map* or a list's ⋮ menu. Rename or remove a folder; removing keeps what was in it. Folders are kept in backups but never in a shared list.
@@ -89,6 +89,7 @@ Taking a quiz shows the right answer after each question, gives half points for 
 
 **Progress and planning**
 - A streak, a daily goal and a 12-week calendar.
+- **Streak freezes:** every 7 days in a row earn one (at most 2). A missed day uses one automatically, so the streak survives; the calendar marks the frozen day. They are worked out from the answers themselves, so every device shows the same.
 - How many cards come back in the next 7 days.
 - Per list: often wrong, sometimes wrong, mostly right, and not practised yet, plus the Leitner boxes.
 - **A test date per list** turns into a daily plan ("Oefen vandaag 5 woorden"). The target is fixed for the day, and upcoming tests appear on the home screen.
@@ -99,6 +100,7 @@ Taking a quiz shows the right answer after each question, gives half points for 
   - your lists, cards, answers and quizzes sync between your devices, also offline-first: changes go up and come down when you are online
   - you can send a list, quiz or folder to a classmate by username; it waits under *Gedeeld met jou*
   - you can make a group, share its 6-character code, and share lists, quizzes and folders in it
+  - a weekly ranking per group, opt-in: who joins shares only this week's totals (answers, % right, days practised), never what they practised; it starts over every Monday
 - Signing up asks for a username, a display name and a confirmation that you are 16 or older or have a parent's permission (AVG). You can delete your account and everything on the server; what is on the device stays.
 
 **Help:** *Instellingen → Hoe werkt Klopt?* explains the boxes, the modes, how answers are checked, test planning and your data.

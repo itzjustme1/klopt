@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { appendHist, difficulty, isHard, rebuildCaches, streak, weekDays } from "../../src/lib/history";
+import { addDays } from "../../src/lib/dates";
+import { appendHist, difficulty, isHard, rebuildCaches, streak, streakInfo, weekDays } from "../../src/lib/history";
 import type { Review } from "../../src/lib/types";
 
 describe("history", () => {
@@ -57,5 +58,38 @@ describe("streak", () => {
     expect(weekDays("2026-09-30")).toEqual(["2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04"]);
     // A Sunday belongs to the week that started the Monday before.
     expect(weekDays("2026-10-04")[0]).toBe("2026-09-28");
+  });
+});
+
+describe("streak freezes", () => {
+  const run = (from: string, n: number) => Array.from({ length: n }, (_, i) => addDays(from, i));
+  const set = (...days: string[]) => new Set(days);
+
+  it("earns a freeze per 7 days in a row, up to 2", () => {
+    expect(streakInfo(set(...run("2026-09-01", 6)), "2026-09-06")).toMatchObject({ days: 6, freezes: 0, toNextFreeze: 1 });
+    expect(streakInfo(set(...run("2026-09-01", 7)), "2026-09-07")).toMatchObject({ days: 7, freezes: 1, toNextFreeze: 7 });
+    expect(streakInfo(set(...run("2026-09-01", 30)), "2026-09-30")).toMatchObject({ days: 30, freezes: 2, toNextFreeze: 0 });
+  });
+
+  it("uses a freeze for a missed day and keeps the streak", () => {
+    const days = set(...run("2026-09-01", 7), "2026-09-09");
+    expect(streakInfo(days, "2026-09-09")).toMatchObject({ days: 8, freezes: 0, frozen: ["2026-09-08"], best: 8 });
+    // Missed yesterday, today not done yet: the freeze already covers yesterday.
+    expect(streakInfo(set(...run("2026-09-01", 7)), "2026-09-09")).toMatchObject({ days: 7, today: false, freezes: 0, frozen: ["2026-09-08"] });
+  });
+
+  it("breaks when more days are missed than there are freezes", () => {
+    expect(streakInfo(set(...run("2026-09-01", 7)), "2026-09-10")).toMatchObject({ days: 0, freezes: 0, frozen: [], best: 7 });
+    expect(streakInfo(set(...run("2026-09-01", 14), "2026-09-17"), "2026-09-17")).toMatchObject({ days: 15, freezes: 0, frozen: ["2026-09-15", "2026-09-16"] });
+    expect(streakInfo(set(...run("2026-09-01", 3), "2026-09-05"), "2026-09-05")).toMatchObject({ days: 1, best: 3 });
+  });
+
+  it("matches the plain streak when nothing was missed", () => {
+    for (const today of ["2026-09-03", "2026-09-04", "2026-09-06"]) {
+      const days = set(...run("2026-09-01", 3));
+      const plain = streak(days, today);
+      expect(streakInfo(days, today)).toMatchObject(plain);
+    }
+    expect(streakInfo(new Set(), "2026-09-01")).toMatchObject({ days: 0, freezes: 0, best: 0 });
   });
 });

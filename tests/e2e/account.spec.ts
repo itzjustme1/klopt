@@ -124,6 +124,27 @@ test("sign in on two phones and sync, send a list by name, share a quiz in a gro
   await c.getByRole("button", { name: "Toevoegen", exact: true }).click();
   await expect(c.getByRole("heading", { level: 1, name: "WO2: oefentoets" })).toBeVisible();
 
+  // The weekly ranking is opt-in: only totals, and only for who joined.
+  await c.goto("/#/groepen");
+  await c.getByRole("link", { name: /4 havo geschiedenis/ }).click();
+  await expect(c.getByRole("heading", { name: "Ranglijst deze week" })).toBeVisible();
+  await c.getByRole("button", { name: "Meedoen" }).click();
+  const bramRank = c.locator("ol.rank li");
+  await expect(bramRank).toHaveCount(1);
+  await expect(bramRank.first()).toContainText("Bram (@bram) · jij");
+  await a.goto("/#/groepen");
+  await a.getByRole("link", { name: /4 havo geschiedenis/ }).click();
+  await expect(a.locator("ol.rank li")).toHaveCount(1);
+  await a.getByRole("button", { name: "Meedoen" }).click();
+  await expect(a.locator("ol.rank li")).toHaveCount(2);
+  await expect(a.locator("ol.rank")).toContainText("Anna (@anna) · jij");
+  await axe(a, "group ranking");
+  expect(Object.keys(fake.tables.weekly_stats![0]!).sort()).toEqual(["answers", "correct", "days", "updated_at", "user_id", "week"]);
+  await c.getByRole("button", { name: "Stoppen met de ranglijst" }).click();
+  await expect(c.getByRole("button", { name: "Meedoen" })).toBeVisible();
+  await a.reload();
+  await expect(a.locator("ol.rank li")).toHaveCount(1);
+
   // Signing out keeps everything on the phone.
   await a.goto("/#/account");
   await a.getByRole("button", { name: /Uitloggen/ }).click();

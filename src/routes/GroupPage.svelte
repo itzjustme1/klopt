@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { getLang, t } from "../i18n/index.svelte";
+  import { getLang, num, t, tp } from "../i18n/index.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
   import Icon from "../components/Icon.svelte";
   import ItemPreview from "../components/ItemPreview.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
-  import { account, type Group, type GroupItem } from "../lib/account.svelte";
+  import { account, type Group, type GroupItem, type RankRow } from "../lib/account.svelte";
   import { app } from "../lib/app.svelte";
   import { href } from "../lib/router";
   import { folderShareJson, quizShareJson, shareJson } from "../lib/share";
@@ -19,6 +19,10 @@
   let error = $state("");
   let copied = $state(false);
 
+  let rank = $state.raw<RankRow[]>([]);
+  let inRank = $state(false);
+  let rankBusy = $state(false);
+
   async function load() {
     try {
       data = await account.group(id);
@@ -26,10 +30,34 @@
       error = t("account.offline");
       data = null;
     }
+    void loadRanking();
   }
   $effect(() => {
     if (account.user) void load();
   });
+
+  async function loadRanking() {
+    try {
+      inRank = await account.inRanking();
+      if (inRank) await app.pushWeek(true);
+      rank = await account.ranking(id, app.weekStats().week);
+    } catch {
+      rank = [];
+    }
+  }
+
+  async function joinRanking(on: boolean) {
+    rankBusy = true;
+    try {
+      if (on) await app.pushWeek(true);
+      else await account.leaveRanking();
+      await loadRanking();
+    } catch {
+      app.showFlash(t("account.failed"));
+    } finally {
+      rankBusy = false;
+    }
+  }
 
   const isOwner = $derived(!!data && data.group.owner === account.user?.id);
   const fmt = $derived(new Intl.DateTimeFormat(getLang(), { day: "numeric", month: "short" }));
@@ -102,6 +130,30 @@
         </div>
         <button type="button" class="btn" onclick={copyCode}>{copied ? t("share.copied") : t("groups.copyCode")}</button>
       </div>
+
+      <h2 class="section-title">{t("rank.title")}</h2>
+      {#if rank.length}
+        <ol class="rows rank">
+          {#each rank as r, i (r.id)}
+            <li class="row-item" class:me={r.me}>
+              <span class="pos num" class:top={i === 0 && r.answers > 0}>{i + 1}</span>
+              <span class="row-main">
+                <span class="row-title">{r.name}{#if r.me}<span class="you">{` · ${t("rank.you")}`}</span>{/if}</span>
+                <span class="row-sub">{tp("rank.days", r.days)} · {t("rank.pct", { p: r.answers ? Math.round((r.correct / r.answers) * 100) : 0 })}</span>
+              </span>
+              <span class="score"><span class="num">{num(r.answers)}</span><span class="caption muted">{` ${tp("rank.answers", r.answers)}`}</span></span>
+            </li>
+          {/each}
+        </ol>
+      {/if}
+      {#if !inRank}
+        <div class="card card-pad join">
+          <p class="small">{t("rank.joinHelp")}</p>
+          <button type="button" class="btn btn-primary" disabled={rankBusy} onclick={() => joinRanking(true)}>{t("rank.join")}</button>
+        </div>
+      {:else}
+        <p class="small muted">{t("rank.help")} <button type="button" class="link-btn" disabled={rankBusy} onclick={() => joinRanking(false)}>{t("rank.leave")}</button></p>
+      {/if}
 
       <div class="sect-head">
         <h2>{t("groups.items")}</h2>
@@ -183,6 +235,49 @@
   .gi .row-item {
     flex: 1;
     min-width: 0;
+  }
+  .rank .me {
+    background: var(--surface-2);
+  }
+  .pos {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--surface-3);
+    font-weight: 900;
+  }
+  .pos.top {
+    background: var(--yellow);
+    color: #2b2100;
+  }
+  .you {
+    color: var(--accent);
+  }
+  .score {
+    display: grid;
+    justify-items: end;
+    font-weight: 900;
+    font-size: var(--fs-section);
+    line-height: 1.1;
+  }
+  .join {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+  }
+  .link-btn {
+    min-height: var(--tap);
+    padding: 0 0.25rem;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .danger {
     justify-self: start;

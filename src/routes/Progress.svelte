@@ -5,12 +5,13 @@
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { addDays, formatDay } from "../lib/dates";
-  import { weekDays } from "../lib/history";
+  import { FREEZE_MAX, weekDays } from "../lib/history";
   import { forecast } from "../lib/plan";
   import { href } from "../lib/router";
 
   const s = $derived(app.streak());
-  const best = $derived(Math.max(app.bestStreak(), s.days));
+  const best = $derived(Math.max(s.best, s.days));
+  const frozenDays = $derived(new Set(s.frozen));
   const byDay = $derived(new Map(app.days.map((d) => [d.day, d])));
   const goal = $derived(app.settings.dailyGoal);
 
@@ -64,6 +65,17 @@
     </div>
   </div>
 
+  <div class="card card-pad freeze">
+    <span class="freeze-icon" class:has={s.freezes > 0}><Icon name="freeze" size={28} /></span>
+    <div class="freeze-text">
+      <h2>{t("freeze.title", { n: s.freezes, max: FREEZE_MAX })}</h2>
+      <p class="small muted">{s.toNextFreeze ? tp("freeze.next", s.toNextFreeze) : t("freeze.full")}</p>
+      {#if s.frozen.length}
+        <p class="small">{t("freeze.saved", { days: s.frozen.map((d) => formatDay(d, getLang(), { weekday: "short", day: "numeric", month: "short" })).join(", ") })}</p>
+      {/if}
+    </div>
+  </div>
+
   <div class="card card-pad cal">
     <h2>{t("progress.calendar")}</h2>
     <div class="cal-head">
@@ -78,6 +90,7 @@
             <span
               class="cell l{lv}"
               class:today={day === app.today}
+              class:frozen={frozenDays.has(day)}
               title={t("progress.dayCell", { date: formatDay(day, getLang(), { day: "numeric", month: "short" }), count: tp("progress.answers", byDay.get(day)?.answers ?? 0) })}
             ></span>
           {/each}
@@ -159,6 +172,31 @@
     font-size: var(--fs-small);
     color: var(--ink-2);
     margin-bottom: 0.25rem;
+  }
+  .freeze {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+  }
+  .freeze-icon {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--ink-2);
+  }
+  .freeze-icon.has {
+    color: var(--accent);
+  }
+  .freeze-text {
+    display: grid;
+    gap: 0.25rem;
+  }
+  .freeze h2 {
+    font-size: var(--fs-body);
   }
   .flame {
     color: var(--ink-2);
@@ -323,5 +361,9 @@
     .pl-bar {
       display: none;
     }
+  }
+  .cell.frozen {
+    background: transparent;
+    box-shadow: inset 0 0 0 2px var(--accent);
   }
 </style>

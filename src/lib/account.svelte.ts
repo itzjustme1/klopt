@@ -40,6 +40,17 @@ export interface GroupItem {
   item: SharedItem | null;
 }
 
+export interface WeekStats {
+  answers: number;
+  correct: number;
+  days: number;
+}
+export interface RankRow extends WeekStats {
+  id: string;
+  name: string;
+  me: boolean;
+}
+
 export const USERNAME = /^[a-z0-9_]{3,20}$/;
 
 let client: SupabaseClient | null = null;
@@ -300,6 +311,53 @@ class Account {
   }
 
   // Groups
+
+  // Weekly ranking (opt-in)
+
+  /** Whether this account takes part in group rankings: it does once it has a weekly row. */
+  async inRanking(): Promise<boolean> {
+    const u = this.user;
+    if (!u) return false;
+    const c = await sb();
+    const { data, error } = await c.from("weekly_stats").select("week").eq("user_id", u.id).limit(1);
+    fail(error);
+    return (data ?? []).length > 0;
+  }
+
+  /** Stores this week's totals (`week` is its Monday). */
+  async pushWeek(week: string, stats: WeekStats): Promise<void> {
+    const u = this.user;
+    if (!u) return;
+    const c = await sb();
+    const { error } = await c.from("weekly_stats").upsert({ user_id: u.id, week, ...stats }, { onConflict: "user_id,week" });
+    fail(error);
+  }
+
+  /** Stops taking part: removes every weekly row. */
+  async leaveRanking(): Promise<void> {
+    const u = this.user;
+    if (!u) return;
+    const c = await sb();
+    const { error } = await c.from("weekly_stats").delete().eq("user_id", u.id);
+    fail(error);
+  }
+
+  /** This week's ranking of the members of a group who take part, most answers first. */
+  async ranking(groupId: string, week: string): Promise<RankRow[]> {
+    const u = this.user;
+    const c = await sb();
+    const { data: m, error } = await c.from("group_members").select("user_id").eq("group_id", groupId);
+    fail(error);
+    const members = ((m ?? []) as { user_id: string }[]).map((x) => x.user_id);
+    if (!members.length) return [];
+    const { data: rows, error: e2 } = await c.from("weekly_stats").select("user_id,answers,correct,days").eq("week", week).in("user_id", members);
+    fail(e2);
+    const stats = (rows ?? []) as ({ user_id: string } & WeekStats)[];
+    const names = await this.names(stats.map((r) => r.user_id));
+    return stats
+      .map((r) => ({ id: r.user_id, name: names.get(r.user_id) ?? "?", answers: r.answers, correct: r.correct, days: r.days, me: r.user_id === u?.id }))
+      .sort((a, b) => b.answers - a.answers || b.days - a.days || a.name.localeCompare(b.name));
+  }
 
   async groups(): Promise<Group[]> {
     const c = await sb();

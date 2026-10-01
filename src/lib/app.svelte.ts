@@ -5,7 +5,7 @@ import { localDay } from "./dates";
 import { Store, defaultSettings, detectLang, newId, type DeckInput, type NewCard, type Snapshot } from "./db";
 import { downloadText } from "./files";
 import { setPendingImport, sharedTextFromUrl } from "./handoff";
-import { difficulty, isHard, streak, type Difficulty } from "./history";
+import { difficulty, isHard, streakInfo, weekDays, type Difficulty, type StreakInfo } from "./history";
 import { requestPersist } from "./persist";
 import type { PracticeCard } from "./practice";
 import { parseHash, type Count, type Route, type Which } from "./router";
@@ -91,6 +91,30 @@ class App {
         await this.reload();
       },
     );
+    await this.pushWeek().catch(() => {});
+  }
+
+  /** This week's totals: answers, right answers and days practised, Monday to today. */
+  weekStats(): { week: string; answers: number; correct: number; days: number } {
+    const days = weekDays(this.today);
+    let answers = 0;
+    let correct = 0;
+    let practised = 0;
+    for (const d of this.days) {
+      if (d.day < days[0]! || d.day > this.today) continue;
+      answers += d.answers;
+      correct += d.correct;
+      if (d.answers > 0) practised++;
+    }
+    return { week: days[0]!, answers, correct: Math.min(correct, answers), days: practised };
+  }
+
+  /** Sends this week's totals for the group rankings, only when this account takes part. */
+  async pushWeek(force = false): Promise<void> {
+    if (!account.user) return;
+    if (!force && !(await account.inRanking())) return;
+    const { week, ...stats } = this.weekStats();
+    await account.pushWeek(week, stats);
   }
 
   showFlash(message: string): void {
@@ -223,21 +247,13 @@ class App {
     return this.days.find((d) => d.day === this.today)?.answers ?? 0;
   }
 
-  streak(): { days: number; today: boolean } {
-    return streak(new Set(this.days.filter((d) => d.answers > 0).map((d) => d.day)), this.today);
+  /** The current streak, with streak freezes. */
+  streak(): StreakInfo {
+    return streakInfo(new Set(this.days.filter((d) => d.answers > 0).map((d) => d.day)), this.today);
   }
 
   bestStreak(): number {
-    const days = this.days.filter((d) => d.answers > 0).map((d) => d.day).sort();
-    let best = 0;
-    let run = 0;
-    let prev = "";
-    for (const d of days) {
-      run = prev && new Date(`${d}T12:00:00Z`).getTime() - new Date(`${prev}T12:00:00Z`).getTime() === 86_400_000 ? run + 1 : 1;
-      best = Math.max(best, run);
-      prev = d;
-    }
-    return best;
+    return this.streak().best;
   }
 
   // Settings

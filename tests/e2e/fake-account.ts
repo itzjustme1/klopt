@@ -12,7 +12,7 @@ type Row = Record<string, unknown>;
 
 export class FakeAccount {
   users: { id: string; email: string; password: string; meta: Row }[] = [];
-  tables: Record<string, Row[]> = { profiles: [], records: [], shares: [], groups: [], group_members: [], group_items: [] };
+  tables: Record<string, Row[]> = { profiles: [], records: [], shares: [], groups: [], group_members: [], group_items: [], weekly_stats: [] };
   private clock = Date.UTC(2026, 9, 1);
   private seq = 0;
 
@@ -96,11 +96,13 @@ export class FakeAccount {
     const rows = this.tables[table];
     if (!rows) return json(404, { message: `no table ${table}` });
     const member = (g: unknown) => this.tables.group_members!.some((m) => m.group_id === g && m.user_id === me.id);
+    const classmate = (u: unknown) => this.tables.group_members!.some((a) => a.user_id === me.id && this.tables.group_members!.some((b) => b.group_id === a.group_id && b.user_id === u));
     const visible = (r: Row) =>
       table === "profiles" ? true
       : table === "records" ? r.user_id === me.id
       : table === "shares" ? r.to_user === me.id || r.from_user === me.id
       : table === "groups" ? member(r.id)
+      : table === "weekly_stats" ? r.user_id === me.id || classmate(r.user_id)
       : member(r.group_id);
     const filters: ((r: Row) => boolean)[] = [];
     let order: [string, boolean] | null = null;
@@ -163,11 +165,17 @@ export class FakeAccount {
         } else if (table === "shares") {
           rows.push({ id: this.uuid(), from_user: me.id, created_at: this.now(), ...r });
           r.id = rows.at(-1)!.id;
+        } else if (table === "weekly_stats") {
+          if (r.user_id !== me.id) return json(403, { message: "row level security" });
+          r.updated_at = this.now();
+          const i = rows.findIndex((x) => x.user_id === r.user_id && x.week === r.week);
+          if (i >= 0) rows[i] = r;
+          else rows.push(r);
         } else if (table === "group_items") {
           if (!member(r.group_id)) return json(403, { message: "row level security" });
           rows.push({ id: this.uuid(), added_by: me.id, created_at: this.now(), ...r });
         } else return json(403, { message: "not allowed" });
-        out.push(table === "records" ? r : rows.at(-1)!);
+        out.push(table === "records" || table === "weekly_stats" ? r : rows.at(-1)!);
       }
       return reply(out);
     }
@@ -179,6 +187,7 @@ export class FakeAccount {
     if (table === "group_members") return r.user_id === me || this.tables.groups!.some((g) => g.id === r.group_id && g.owner === me);
     if (table === "group_items") return r.added_by === me || this.tables.groups!.some((g) => g.id === r.group_id && g.owner === me);
     if (table === "groups") return r.owner === me;
+    if (table === "weekly_stats") return r.user_id === me;
     return false;
   }
 }

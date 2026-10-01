@@ -152,3 +152,33 @@ end $$;
 
 revoke all on function public.create_group(text), public.join_group(text), public.delete_me() from public, anon;
 grant execute on function public.create_group(text), public.join_group(text), public.delete_me(), public.is_member(uuid) to authenticated;
+
+-- Weekly ranking in groups, opt-in: a row only exists for students who chose to take part.
+-- Only the totals for a week are shared (answers, right answers, days practised), never what was practised.
+create table if not exists public.weekly_stats (
+  user_id uuid not null default auth.uid() references auth.users on delete cascade,
+  week date not null check (extract(isodow from week) = 1),
+  answers integer not null default 0 check (answers between 0 and 100000),
+  correct integer not null default 0 check (correct between 0 and answers),
+  days integer not null default 0 check (days between 0 and 7),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, week)
+);
+create or replace function public.shares_a_group(other uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.group_members a join public.group_members b on a.group_id = b.group_id
+    where a.user_id = auth.uid() and b.user_id = other
+  );
+$$;
+alter table public.weekly_stats enable row level security;
+drop policy if exists "weekly: your own, and classmates in a group with you" on public.weekly_stats;
+create policy "weekly: your own, and classmates in a group with you" on public.weekly_stats for select to authenticated
+  using (user_id = auth.uid() or public.shares_a_group(user_id));
+drop policy if exists "weekly: write your own" on public.weekly_stats;
+create policy "weekly: write your own" on public.weekly_stats for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists "weekly: update your own" on public.weekly_stats;
+create policy "weekly: update your own" on public.weekly_stats for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "weekly: stop taking part" on public.weekly_stats;
+create policy "weekly: stop taking part" on public.weekly_stats for delete to authenticated using (user_id = auth.uid());
+revoke all on function public.shares_a_group(uuid) from public, anon;
+grant execute on function public.shares_a_group(uuid) to authenticated;

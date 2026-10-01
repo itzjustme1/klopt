@@ -1,4 +1,4 @@
-import { addDays } from "./dates";
+import { addDays, diffDays } from "./dates";
 import type { Card, DayStat, Grade, Review } from "./types";
 
 const HIST_LEN = 8;
@@ -62,6 +62,67 @@ export function streak(practiced: ReadonlySet<string>, today: string): { days: n
     day = addDays(day, -1);
   }
   return { days: n, today: doneToday };
+}
+
+/** A freeze is earned for every this many days practised in a row. */
+export const FREEZE_EVERY = 7;
+/** At most this many freezes are kept. */
+export const FREEZE_MAX = 2;
+
+export interface StreakInfo {
+  /** Days practised in the current streak (a frozen day keeps it alive but does not add to it). */
+  days: number;
+  today: boolean;
+  /** Freezes ready to use. */
+  freezes: number;
+  /** Missed days a freeze covered, in the current streak. */
+  frozen: string[];
+  /** The longest streak ever, with freezes. */
+  best: number;
+  /** Days still to practise for the next freeze (0 when the maximum is kept). */
+  toNextFreeze: number;
+}
+
+/**
+ * The streak with freezes, replayed from the practised days, so it needs no stored state and comes out
+ * the same on every device. Every FREEZE_EVERY days in a row earn a freeze (up to FREEZE_MAX); a missed
+ * day uses one automatically. Today is never missed yet: it can still be practised.
+ */
+export function streakInfo(practiced: ReadonlySet<string>, today: string): StreakInfo {
+  const days = [...practiced].filter((d) => d <= today).sort();
+  let run = 0;
+  let freezes = 0;
+  let sinceEarn = 0;
+  let best = 0;
+  let frozen: string[] = [];
+  let prev: string | null = null;
+  const miss = (from: string, missed: number) => {
+    if (missed <= 0) return;
+    if (missed <= freezes) {
+      freezes -= missed;
+      for (let i = 1; i <= missed; i++) frozen.push(addDays(from, i));
+    } else {
+      run = 0;
+      freezes = 0;
+      sinceEarn = 0;
+      frozen = [];
+    }
+  };
+  for (const day of days) {
+    if (prev) miss(prev, diffDays(prev, day) - 1);
+    run++;
+    sinceEarn++;
+    if (sinceEarn >= FREEZE_EVERY) {
+      sinceEarn = 0;
+      freezes = Math.min(FREEZE_MAX, freezes + 1);
+    }
+    best = Math.max(best, run);
+    prev = day;
+  }
+  const doneToday = practiced.has(today);
+  // Days missed between the last practice and today (today itself can still be done).
+  if (prev && !doneToday) miss(prev, diffDays(prev, today) - 1);
+  return { days: run, today: doneToday, freezes, frozen, best, toNextFreeze: freezes >= FREEZE_MAX ? 0 : FREEZE_EVERY - sinceEarn };
 }
 
 /** The seven days of the current week, Monday first. */
