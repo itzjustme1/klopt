@@ -4,6 +4,7 @@
   import BoxBar from "../components/BoxBar.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
   import ExamCard from "../components/ExamCard.svelte";
+  import FolderPicker from "../components/FolderPicker.svelte";
   import Icon from "../components/Icon.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
@@ -38,6 +39,16 @@
 
   let practiceOpen = $state(false);
   let moreOpen = $state(false);
+  let moving = $state(false);
+  async function moveTo(folder: string) {
+    moving = false;
+    try {
+      await app.moveToFolder({ decks: [id] }, folder);
+      app.showFlash(folder ? t("folder.moved", { name: folder }) : t("folder.removed"));
+    } catch {
+      app.showFlash(t("common.saveFailed"));
+    }
+  }
   let deleting = $state(false);
 
   /** Long lists show the first words; the rest on request (keeps big lists quick on phones). */
@@ -262,6 +273,10 @@
     </Sheet>
   {/if}
 
+  {#if moving}
+    <FolderPicker current={deck.folder ?? ""} onpick={moveTo} onclose={() => (moving = false)} />
+  {/if}
+
   {#if moreOpen}
     <Sheet title={t("deck.more")} onclose={() => (moreOpen = false)}>
       <ul class="drawer-list">
@@ -271,6 +286,7 @@
           <li><button type="button" class="drawer-item" disabled={copying} onclick={duplicate}><Icon name="cards" />{t("deck.copy")}</button></li>
           <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; setTimeout(() => window.print(), 50); }}><Icon name="file" />{t("deck.print")}</button></li>
         {/if}
+        <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; moving = true; }}><Icon name="folder" />{t("folder.move")}{#if deck.folder}<span class="hint">{deck.folder}</span>{/if}</button></li>
         <li><a class="drawer-item" href={href.photo(id)}><Icon name="camera" />{t("new.photo")}</a></li>
         <li><a class="drawer-item" href={href.import(id)}><Icon name="paste" />{t("new.paste")}</a></li>
         <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; deleting = true; }}><Icon name="trash" />{t("common.delete")}</button></li>

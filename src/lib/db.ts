@@ -54,7 +54,7 @@ export function defaultSettings(navLang?: string): Settings {
 }
 
 export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic">>;
-export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate" | "kind">>;
+export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate" | "kind" | "folder">>;
 
 /**
  * Random UUID v4. crypto.randomUUID only exists in secure contexts (https or localhost), so opening
@@ -185,6 +185,7 @@ export class Store {
     if (input.subject) deck.subject = input.subject;
     if (input.examDate) deck.examDate = input.examDate;
     if (input.kind === "terms") deck.kind = "terms";
+    if (input.folder) deck.folder = input.folder;
     await this.db.add("decks", deck);
     return deck;
   }
@@ -197,6 +198,7 @@ export class Store {
     if (!next.subject) delete next.subject;
     if (!next.examDate) delete next.examDate;
     if (next.kind !== "terms") delete next.kind;
+    if (!next.folder) delete next.folder;
     await tx.store.put(next);
     await tx.done;
     return next;

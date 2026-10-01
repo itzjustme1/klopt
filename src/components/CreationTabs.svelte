@@ -3,25 +3,29 @@
   import { app } from "../lib/app.svelte";
   import { href } from "../lib/router";
 
-  /** Switch between your lists and your quizzes, like StudyGo's "Creaties" filter. */
-  let { current }: { current: "lists" | "quizzes" } = $props();
+  /** Switch between your lists, quizzes and folders, like StudyGo's "Creaties" filter. */
+  let { current }: { current: "lists" | "quizzes" | "folders" } = $props();
 </script>
 
 <nav class="tabs" aria-label={t("nav.creations")}>
   <a href={href.lists()} aria-current={current === "lists" ? "page" : undefined}>{t("nav.lists")} <span class="n">{app.decks.length}</span></a>
   <a href={href.quizzes()} aria-current={current === "quizzes" ? "page" : undefined}>{t("quiz.title")} <span class="n">{app.quizzes.length}</span></a>
+  <a href={href.folders()} aria-current={current === "folders" ? "page" : undefined}>{t("folder.title")} <span class="n">{app.folders().length}</span></a>
 </nav>
 
 <style>
   .tabs {
     display: flex;
-    gap: 1.5rem;
+    gap: 1.25rem;
     border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
   a {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
+    flex: none;
     min-height: var(--tap);
     margin-bottom: -1px;
     border-bottom: 3px solid transparent;

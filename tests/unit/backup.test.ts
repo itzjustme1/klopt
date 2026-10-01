@@ -214,3 +214,19 @@ describe("term lists", () => {
     expect(await store.updateDeck(deck.id, { kind: "words" })).not.toHaveProperty("kind");
   });
 });
+
+describe("folders", () => {
+  it("keep a list's folder in backups but leave it out of shared files", async () => {
+    const store = await Store.open("folders");
+    const deck = await store.createDeck({ name: "H3", langFront: "fr", langBack: "nl", folder: "Frans hoofdstuk 3" });
+    const cards = await store.addCards(deck.id, [{ front: "la gare", back: "het station" }]);
+    const back = parseBackup(JSON.stringify(makeBackup(await store.snapshot())));
+    expect(back.ok && back.data.decks[0]!.folder).toBe("Frans hoofdstuk 3");
+    const share = makeShareFile(deck, cards);
+    expect(share.decks[0]).not.toHaveProperty("folder");
+    expect(await store.updateDeck(deck.id, { folder: "" })).not.toHaveProperty("folder");
+    const bad = good();
+    bad.decks[0].folder = 42;
+    expect(parseBackup(JSON.stringify(bad))).toMatchObject({ ok: false, error: { where: "decks[0].folder" } });
+  });
+});

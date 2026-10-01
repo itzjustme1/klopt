@@ -116,6 +116,7 @@
     <ul class="chips">
       <li><a class="chip" href={href.lists()}><Icon name="lists" size={20} />{t("nav.lists")} <span class="count">{app.decks.length}</span></a></li>
       <li><a class="chip" href={href.quizzes()}><Icon name="quiz" size={20} />{t("quiz.title")} <span class="count">{app.quizzes.length}</span></a></li>
+      <li><a class="chip" href={href.folders()}><Icon name="folder" size={20} />{t("folder.title")} <span class="count">{app.folders().length}</span></a></li>
       {#if hard > 0}
         <li><a class="chip" href={href.practice("alles", "leren", "front", "hard")}><Icon name="learn" size={20} />{t("home.hard")} <span class="count">{hard}</span></a></li>
       {/if}

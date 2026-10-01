@@ -19,6 +19,8 @@ export interface Deck {
   examDate?: string;
   /** "terms": a term and its explanation (history, biology), practised mostly as flashcards. Absent: words. */
   kind?: DeckKind;
+  /** The folder ("map") this list is in, by name. */
+  folder?: string;
   createdAt: string;
 }
 
@@ -117,6 +119,8 @@ export interface Quiz {
   id: string;
   name: string;
   subject?: string;
+  /** The folder ("map") this quiz is in, by name. */
+  folder?: string;
   questions: QuizQuestion[];
   createdAt: string;
   updatedAt: string;

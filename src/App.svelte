@@ -28,10 +28,13 @@
   import QuizView from "./routes/QuizView.svelte";
   import QuizEditor from "./routes/QuizEditor.svelte";
   import QuizPlay from "./routes/QuizPlay.svelte";
+  import Folders from "./routes/Folders.svelte";
+  import Folder from "./routes/Folder.svelte";
+  import NewFolder from "./routes/NewFolder.svelte";
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
     { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
-    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor"] },
+    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
     { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help"] },
   ];
@@ -54,6 +57,9 @@
     quiz: "quiz.title",
     quizEditor: "quiz.edit",
     quizPlay: "quiz.title",
+    folders: "folder.title",
+    folder: "folder.title",
+    newFolder: "folder.new",
   };
 
   let main: HTMLElement | undefined = $state();
@@ -167,6 +173,12 @@
       {#key app.route.id}<QuizView id={app.route.id} />{/key}
     {:else if app.route.name === "quizEditor"}
       {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+    {:else if app.route.name === "folders"}
+      <Folders />
+    {:else if app.route.name === "folder"}
+      {#key app.route.folder}<Folder name={app.route.folder} />{/key}
+    {:else if app.route.name === "newFolder"}
+      <NewFolder />
     {:else if app.route.name === "quizPlay"}
       {#key app.route.id}<QuizPlay id={app.route.id} />{/key}
     {:else}

@@ -134,6 +134,16 @@ for (const scheme of ["light", "dark"] as const) {
     await page.keyboard.press("Enter");
     await page.getByLabel("Lege plek 1").waitFor();
     await check("quiz: fill in");
+    // Folders: make one, then the folder and the overview.
+    await page.goto(base + "#/mappen/nieuw");
+    await page.getByLabel("Naam van de map").fill("WO2");
+    await check("new folder");
+    await page.getByLabel(/WO2: begrippen/).check();
+    await page.getByRole("button", { name: "Map maken" }).click();
+    await page.getByRole("heading", { level: 1, name: "WO2" }).waitFor();
+    await check("folder");
+    await page.goto(base + "#/mappen");
+    await check("folders");
     await page.goto(base + "#/instellingen");
     await check("settings");
     await page.getByText("English", { exact: true }).click();

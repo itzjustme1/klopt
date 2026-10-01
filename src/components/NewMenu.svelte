@@ -11,6 +11,7 @@
     { icon: "lists", label: "new.type", href: href.editorNew() },
     { icon: "cards", label: "new.terms", href: href.termsNew() },
     { icon: "quiz", label: "new.quiz", href: href.quizNew() },
+    { icon: "folder", label: "new.folder", href: href.newFolder() },
     { icon: "camera", label: "new.photo", href: href.photo() },
     { icon: "paste", label: "new.paste", href: href.import() },
     { icon: "file", label: "new.file", href: href.file() },

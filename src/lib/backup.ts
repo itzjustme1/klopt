@@ -31,7 +31,8 @@ export function makeShareFile(deck: Deck, cards: readonly Card[], now: Date = ne
   const today = localDay(now);
   return makeBackup(
     {
-      decks: [deck],
+      // Your folders are your own business: a shared list arrives without one.
+      decks: [(({ folder: _, ...d }) => d)(deck)],
       cards: cards.map((c) => {
         const out: Card = { ...c, box: 1, due: today };
         delete out.hist;
@@ -139,13 +140,15 @@ function validate(raw: unknown, version: number): Snapshot {
     const w = `decks[${i}]`;
     const o = v1
       ? obj(d, w, ["id", "name", "lang", "subject", "createdAt"], ["id", "name", "lang", "createdAt"])
-      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "kind", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
+      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "kind", "folder", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
     const langFront = lang(v1 ? o.lang : o.langFront, v1 ? `${w}.lang` : `${w}.langFront`);
     const langBack = v1 ? langFront : lang(o.langBack, `${w}.langBack`);
     if (v1 && langFront !== "nl" && langFront !== "en") throw new Invalid(`${w}.lang`);
     const deck: Deck = { id: uuid(o.id, `${w}.id`), name: str(o.name, `${w}.name`, LIMITS.deckNameChars), langFront, langBack, createdAt: iso(o.createdAt, `${w}.createdAt`) };
     const subject = optStr(o.subject, `${w}.subject`, LIMITS.labelChars);
     if (subject) deck.subject = subject;
+    const folder = v1 ? undefined : optStr(o.folder, `${w}.folder`, LIMITS.labelChars);
+    if (folder) deck.folder = folder;
     if (!v1 && o.examDate !== undefined) deck.examDate = day(o.examDate, `${w}.examDate`);
     if (!v1 && o.kind !== undefined) {
       if (o.kind !== "terms" && o.kind !== "words") throw new Invalid(`${w}.kind`);
@@ -221,7 +224,7 @@ function validate(raw: unknown, version: number): Snapshot {
 }
 
 function parseQuiz(raw: unknown, w: string): Quiz {
-  const o = obj(raw, w, ["id", "name", "subject", "questions", "createdAt", "updatedAt", "last"], ["id", "name", "questions", "createdAt", "updatedAt"]);
+  const o = obj(raw, w, ["id", "name", "subject", "folder", "questions", "createdAt", "updatedAt", "last"], ["id", "name", "questions", "createdAt", "updatedAt"]);
   const qIds = new Set<string>();
   const quiz: Quiz = {
     id: uuid(o.id, `${w}.id`),
@@ -237,6 +240,8 @@ function parseQuiz(raw: unknown, w: string): Quiz {
   };
   const subject = optStr(o.subject, `${w}.subject`, LIMITS.labelChars);
   if (subject) quiz.subject = subject;
+  const folder = optStr(o.folder, `${w}.folder`, LIMITS.labelChars);
+  if (folder) quiz.folder = folder;
   if (o.last !== undefined) {
     const l = obj(o.last, `${w}.last`, ["points", "total", "at"], ["points", "total", "at"]);
     const total = l.total;

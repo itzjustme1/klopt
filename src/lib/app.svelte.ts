@@ -1,4 +1,4 @@
-import { APP_NAME } from "../config";
+import { APP_NAME, LIMITS } from "../config";
 import { setLang, t } from "../i18n/index.svelte";
 import { backupFileName, makeBackup, type SharedDeck } from "./backup";
 import { localDay } from "./dates";
@@ -274,6 +274,38 @@ class App {
     await this.db.deleteDeck(id);
     this.decks = this.decks.filter((d) => d.id !== id);
     this.cards = this.cards.filter((c) => c.deckId !== id);
+  }
+
+  // Folders ("mappen"): a name on lists and quizzes. A folder exists while something is in it.
+
+  folders(): { name: string; decks: Deck[]; quizzes: Quiz[] }[] {
+    const names = new Set([...this.decks.map((d) => d.folder), ...this.quizzes.map((q) => q.folder)].filter((f): f is string => !!f));
+    return [...names]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .map((name) => ({ name, decks: this.decks.filter((d) => d.folder === name), quizzes: this.quizzes.filter((q) => q.folder === name) }));
+  }
+
+  /** Puts lists and quizzes in a folder ("" takes them out). */
+  async moveToFolder(items: { decks?: readonly string[]; quizzes?: readonly string[] }, folder: string): Promise<void> {
+    const name = folder.trim().slice(0, LIMITS.labelChars);
+    for (const id of items.decks ?? []) {
+      const next = await this.db.updateDeck(id, { folder: name });
+      this.decks = this.decks.map((d) => (d.id === id ? next : d));
+    }
+    for (const id of items.quizzes ?? []) {
+      const q = this.quiz(id);
+      if (!q) continue;
+      const next: Quiz = { ...q };
+      if (name) next.folder = name;
+      else delete next.folder;
+      await this.db.saveQuiz(next);
+      this.quizzes = this.quizzes.map((x) => (x.id === id ? next : x));
+    }
+  }
+
+  async renameFolder(from: string, to: string): Promise<void> {
+    const f = this.folders().find((x) => x.name === from);
+    if (f) await this.moveToFolder({ decks: f.decks.map((d) => d.id), quizzes: f.quizzes.map((q) => q.id) }, to);
   }
 
   // Quizzes

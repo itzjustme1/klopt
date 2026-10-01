@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getLang, t, tp } from "../i18n/index.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
+  import FolderPicker from "../components/FolderPicker.svelte";
   import Icon from "../components/Icon.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
@@ -16,6 +17,12 @@
   const fmt = $derived(new Intl.NumberFormat(getLang(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
   let moreOpen = $state(false);
   let deleting = $state(false);
+  let moving = $state(false);
+  async function moveTo(folder: string) {
+    moving = false;
+    await app.moveToFolder({ quizzes: [id] }, folder);
+    app.showFlash(folder ? t("folder.moved", { name: folder }) : t("folder.removed"));
+  }
 
   function preview(q: QuizQuestion): string {
     return q.type === "cloze" ? q.text.replace(/\[[^\]\n]+\]/g, "…") : q.prompt;
@@ -62,10 +69,14 @@
     </ol>
   </section>
 
+  {#if moving}
+    <FolderPicker current={quiz.folder ?? ""} onpick={moveTo} onclose={() => (moving = false)} />
+  {/if}
   {#if moreOpen}
     <Sheet title={t("deck.more")} onclose={() => (moreOpen = false)}>
       <ul class="drawer-list">
         <li><a class="drawer-item" href={href.quizEdit(id)}><Icon name="edit" />{t("common.edit")}</a></li>
+        <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; moving = true; }}><Icon name="folder" />{t("folder.move")}{#if quiz.folder}<span class="hint">{quiz.folder}</span>{/if}</button></li>
         <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; deleting = true; }}><Icon name="trash" />{t("common.delete")}</button></li>
       </ul>
     </Sheet>
