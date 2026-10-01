@@ -5,6 +5,17 @@ export const APP_NAME = "Klopt";
 export const FILE_FORMAT = "klopt-backup";
 export const FILE_VERSION = 2;
 
+/**
+ * The Supabase project behind the optional accounts. Left empty, accounts are switched off and nothing
+ * ever leaves the device. The anon key is meant to be public: row level security in the database
+ * (supabase/schema.sql) decides what each signed-in student may read and write.
+ */
+const env = (import.meta as { env?: Record<string, string | undefined> }).env ?? {};
+export const ACCOUNT = {
+  url: env.VITE_ACCOUNT_URL ?? "",
+  anonKey: env.VITE_ACCOUNT_KEY ?? "",
+} as const;
+
 export const LIMITS = {
   /** Max cards per text import. */
   importCards: 2000,

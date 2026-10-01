@@ -8,7 +8,7 @@
   import SubjectBadge from "./SubjectBadge.svelte";
 
   /** What arrived through a link or file: a list, a quiz or a whole folder, with a button to add it. */
-  let { item, oncancel }: { item: SharedItem; oncancel: () => void } = $props();
+  let { item, oncancel, onadded }: { item: SharedItem; oncancel: () => void; onadded?: () => Promise<void> | void } = $props();
   let busy = $state(false);
 
   async function add() {
@@ -16,10 +16,12 @@
     try {
       if (item.kind === "quiz") {
         const quiz = await app.importSharedQuiz(item.data.quiz);
+        await onadded?.();
         app.showFlash(t("receive.added", { name: quiz.name }));
         location.replace(href.quiz(quiz.id));
       } else if (item.kind === "folder") {
         await app.importSharedFolder(item.data);
+        await onadded?.();
         app.showFlash(t("receive.added", { name: item.data.name }));
         location.replace(href.folder(item.data.name));
       }
@@ -31,7 +33,7 @@
 </script>
 
 {#if item.kind === "deck"}
-  <SharedPreview shared={item.data} {oncancel} />
+  <SharedPreview shared={item.data} {oncancel} {onadded} />
 {:else}
   <div class="preview">
     <div class="card card-pad head">

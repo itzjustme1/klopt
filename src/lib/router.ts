@@ -24,6 +24,10 @@ export type Route =
   | { name: "share"; payload: string }
   | { name: "quizzes" }
   | { name: "folders" }
+  | { name: "account" }
+  | { name: "inbox" }
+  | { name: "groups" }
+  | { name: "group"; id: string }
   | { name: "folder"; folder: string }
   | { name: "newFolder" }
   | { name: "quiz"; id: string; share?: boolean }
@@ -103,6 +107,16 @@ export function parseHash(hash: string): Route {
       return a ? { name: "share", payload: parts.slice(1).join("/") } : notFound;
     case "quizzen":
       return n === 1 ? { name: "quizzes" } : notFound;
+    case "account":
+      return n === 1 ? { name: "account" } : notFound;
+    case "inbox":
+      return n === 1 ? { name: "inbox" } : notFound;
+    case "groepen":
+      return n === 1 ? { name: "groups" } : notFound;
+    case "groep": {
+      const id = seg(a);
+      return n === 2 && id ? { name: "group", id } : notFound;
+    }
     case "mappen":
       // "Nieuw" lives under /mappen so a folder may be called anything, "nieuw" too.
       if (n === 2 && a === "nieuw") return { name: "newFolder" };
@@ -149,6 +163,10 @@ export const href = {
   share: (payload: string) => `#/deel/${payload}`,
   quizzes: () => "#/quizzen",
   folders: () => "#/mappen",
+  account: () => "#/account",
+  inbox: () => "#/inbox",
+  groups: () => "#/groepen",
+  group: (id: string) => `#/groep/${enc(id)}`,
   folder: (name: string) => `#/map/${enc(name)}`,
   newFolder: () => "#/mappen/nieuw",
   quizNew: () => "#/quiz/nieuw",

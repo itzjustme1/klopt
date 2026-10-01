@@ -10,7 +10,8 @@ test("the CSP blocks inline script and third-party requests, and never allows ev
   // 'wasm-unsafe-eval' only allows compiling WebAssembly (on-device OCR); JS eval stays blocked.
   expect(csp).not.toContain("'unsafe-eval'");
   expect(csp).not.toContain("unsafe-inline");
-  expect(csp).not.toMatch(/https?:/);
+  // The only outside address allowed is the account server, and only for connections.
+  expect(csp?.replace("connect-src 'self' https://klopt-test.supabase.co", "")).not.toMatch(/https?:/);
 
   const result = await page.evaluate(async () => {
     const violations: string[] = [];

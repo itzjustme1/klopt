@@ -55,7 +55,7 @@
     </PageHead>
 
     {#if share}
-      <SharePanel name={quiz.name} json={quizShareJson(quiz)} title={t("quiz.share")} onclose={() => (location.hash = href.quiz(id))} />
+      <SharePanel name={quiz.name} kind="quiz" json={quizShareJson(quiz)} title={t("quiz.share")} onclose={() => (location.hash = href.quiz(id))} />
     {/if}
 
     {#if deleting}

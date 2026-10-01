@@ -2,6 +2,8 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import ConfirmInline from "../components/ConfirmInline.svelte";
+  import Icon from "../components/Icon.svelte";
+  import { account, accountsEnabled } from "../lib/account.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Switch from "../components/Switch.svelte";
   import { app } from "../lib/app.svelte";
@@ -119,6 +121,16 @@
 
 <PageHead title={t("settings.title")} />
 <section class="settings">
+  {#if accountsEnabled}
+    <a class="card account-row" href={href.account()}>
+      <span class="avatar" aria-hidden="true">{account.profile ? account.profile.display_name.slice(0, 1).toUpperCase() : "?"}</span>
+      <span class="row-main">
+        <span class="row-title">{account.user ? (account.profile?.display_name ?? account.user.email) : t("account.signInOrUp")}</span>
+        <span class="row-sub">{account.user ? t("account.syncOn") : t("account.why")}</span>
+      </span>
+      <Icon name="chevron" size={20} />
+    </a>
+  {/if}
   <div class="card group">
     <fieldset class="fieldset-wrap">
       <legend>{t("settings.lang")}</legend>
@@ -230,6 +242,25 @@
 </section>
 
 <style>
+  .account-row {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .avatar {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--brand);
+    color: var(--on-brand);
+    font-weight: 900;
+  }
   .settings {
     display: grid;
     gap: 1rem;

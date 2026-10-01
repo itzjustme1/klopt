@@ -89,6 +89,14 @@ Taking a quiz shows the right answer after each question, gives half points for 
 - Per list: often wrong, sometimes wrong, mostly right, and not practised yet, plus the Leitner boxes.
 - **A test date per list** turns into a daily plan ("Oefen vandaag 5 woorden"). The target is fixed for the day, and upcoming tests appear on the home screen.
 
+**Accounts (optional)**
+- Without an account Klopt works exactly as before: everything stays on the device and no server is contacted.
+- With one (Supabase, EU region):
+  - your lists, cards, answers and quizzes sync between your devices, also offline-first: changes go up and come down when you are online
+  - you can send a list, quiz or folder to a classmate by username; it waits under *Gedeeld met jou*
+  - you can make a group, share its 6-character code, and share lists, quizzes and folders in it
+- Signing up asks for a username, a display name and a confirmation that you are 16 or older or have a parent's permission (AVG). You can delete your account and everything on the server; what is on the device stays.
+
 **Help:** *Instellingen → Hoe werkt Klopt?* explains the boxes, the modes, how answers are checked, test planning and your data.
 
 ## How the Leitner boxes work
@@ -146,6 +154,20 @@ le chien;de hond
 
 Netlify and Cloudflare also apply `dist/_headers`: the CSP plus `frame-ancestors 'none'`, `nosniff` and `no-referrer`. GitHub Pages only gets the CSP meta tag.
 
+## Switching accounts on
+
+1. Make a free project at supabase.com (region: EU), then run `supabase/schema.sql` in its SQL editor. It creates the tables and the row level security that decides who may see what.
+2. Under *Authentication → URL Configuration*, set the Site URL to the app's address (for example `https://itzjustme1.github.io/klopt/`) and add it to the redirect URLs.
+3. Put the project URL and the anon (publishable) key in `.env.production` (see `.env.example`) and commit it. Both values are public by design. Never use the service_role key.
+
+The build then adds the project to the CSP's `connect-src`; without these values accounts stay hidden.
+
+How sync works (`src/lib/sync.ts`):
+- Every list, card, answer and quiz is a row in one `records` table, readable only by its owner.
+- A round pushes what changed on this device since the last round and pulls what changed elsewhere. For cards and quizzes the newest edit wins; deletions travel as tombstones.
+- Answers are append-only, so both sides keep the union, and each card's box and due date are replayed from the combined answers.
+- Everything that comes down goes through the same strict validation as a backup file before it is used.
+
 ## Project layout
 
 ```
@@ -190,7 +212,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## Security and privacy
 
-- **No requests except to the app's own origin.** The fonts and the OCR engine with its language data are served by the app itself. Pronunciation only uses voices installed on the device, and the sounds are generated in the browser.
+- **No requests except to the app's own origin**, unless you sign in to an account: then only the account server (Supabase), which is the one other address in the CSP. The fonts and the OCR engine with its language data are served by the app itself. Pronunciation only uses voices installed on the device, and the sounds are generated in the browser.
 - **CSP in production:**
   - `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'`, with no third-party origins.
   - `'wasm-unsafe-eval'` only allows compiling the OCR engine's WebAssembly. JavaScript `eval` stays blocked, and a test checks that.
@@ -200,7 +222,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## How it's tested
 
-**Unit tests (Vitest, 229 tests, run with `TZ=Europe/Amsterdam`)**
+**Unit tests (Vitest, 234 tests, run with `TZ=Europe/Amsterdam`)**
 - **Scheduler:** your four table cases, every box × grade × day of 2026 against the reference implementation, DST, and the first-answer-of-the-day rule.
 - **Dates:** rollover and DST.
 - **Answer checking:** alternatives, brackets, accents, typos including swapped letters, decimal commas, hints, and the lenient options.
@@ -211,6 +233,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 - **OCR columns.**
 - **Database** (on `fake-indexeddb`): the migrations, the move to the navy default, the day stats, stars, strictly ordered logs, replay, cache rebuilds.
 - **Quizzes:** fill-in parsing, marking every type (half points, lenient accents), the grade, save checks, backup round trip, merge, and broken quizzes rejected.
+- **Sync:** two devices against a fake account: everything arrives, answers from both devices are kept and the box is replayed, the newest edit wins, deletions travel, invalid or hostile data from the server is refused, and a round never overwrites answers given while it ran.
 - **Term lists:** an explanation is never typed; the kind survives backups and sharing.
 - **Backup:** round trip, more than 25 kinds of malformed input rejected, v1 files.
 - **Share links:** gzip bomb, invalid UTF-8.
@@ -218,7 +241,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 The unit suite was also run 30 times in a row to rule out flaky tests.
 
-**End-to-end tests (Playwright, 26 tests, production build)**
+**End-to-end tests (Playwright, 27 tests, production build)**
 - **Learn, review and test by keyboard:** checks the boxes, streak, grade, persistence and offline.
 - **Session size, starred words, lenient accents, swiping flashcards.**
 - **The matching game:** two rounds and a record.
@@ -230,6 +253,7 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Sharing by link** (a list; a quiz and a folder opened in a second, empty browser), **and the backup reminder.**
 - **A term list** made from the Nieuw menu and learnt with flashcards.
 - **Pictures:** added in the editor, downscaled, stored, shown on the list and in flashcards, checked with axe.
+- **Accounts**, against a stand-in Supabase server: two phones of one student sync (a star set on one appears on the other), a list sent by username lands in the other student's inbox, a group is made, joined by code and used to share a quiz, signing out keeps the data; axe on the account, inbox and group screens.
 - **Folders:** made from the Nieuw menu, a list moved in, renamed, removed.
 - **A quiz** with all four question types: made, saved, taken by tap and keyboard, graded (half points for a fill-in), and the grade kept after a reload.
 - **Accessibility:**

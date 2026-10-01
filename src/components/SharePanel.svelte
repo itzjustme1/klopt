@@ -5,10 +5,48 @@
   import { downloadText } from "../lib/files";
   import { href } from "../lib/router";
   import { encodeJson } from "../lib/share";
+  import { account, accountsEnabled, type Group } from "../lib/account.svelte";
+  import { app } from "../lib/app.svelte";
   import type { Card } from "../lib/types";
 
   /** Share a list, quiz or folder: `json` is its share file; `cards` (a list) also offers a plain-text export. */
-  let { name, json, cards = [], title, onclose }: { name: string; json: string; cards?: Card[]; title?: string; onclose: () => void } = $props();
+  let {
+    name,
+    json,
+    kind = "deck",
+    cards = [],
+    title,
+    onclose,
+  }: { name: string; json: string; kind?: "deck" | "quiz" | "folder"; cards?: Card[]; title?: string; onclose: () => void } = $props();
+
+  // Signed in: send it straight to a classmate's account, or put it in one of your groups.
+  let to = $state("");
+  let sendState = $state<"" | "busy" | "sent" | "unknown" | "failed">("");
+  let groups = $state.raw<Group[]>([]);
+  $effect(() => {
+    if (account.user) void account.groups().then((g) => (groups = g)).catch(() => {});
+  });
+  async function sendTo(e: SubmitEvent) {
+    e.preventDefault();
+    sendState = "busy";
+    try {
+      const person = await account.findUser(to.replace(/^@/, ""));
+      if (!person) return void (sendState = "unknown");
+      await account.send(person.id, kind, name, json);
+      sendState = "sent";
+      to = "";
+    } catch {
+      sendState = "failed";
+    }
+  }
+  async function toGroup(g: Group) {
+    try {
+      await account.addToGroup(g.id, kind, name, json);
+      app.showFlash(t("groups.addedTo", { name: g.name }));
+    } catch {
+      app.showFlash(t("account.failed"));
+    }
+  }
 
   let link = $state<string | null | undefined>(undefined);
   let copied = $state<"" | "ok" | "failed">("");
@@ -100,6 +138,26 @@
       <button type="button" class={link === null && !canNativeShare ? "btn btn-primary" : "btn"} onclick={download}>{t("share.file")}</button>
     </div>
 
+    {#if accountsEnabled && account.user}
+      <form class="person" onsubmit={sendTo}>
+        <div class="field">
+          <label for="share-to">{t("share.toPerson")}</label>
+          <input id="share-to" type="text" bind:value={to} placeholder="@gebruikersnaam" autocapitalize="off" spellcheck="false" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn btn-primary" disabled={!to.trim() || sendState === "busy"}>{t("share.send")}</button>
+        <p class="small" aria-live="polite">
+          {#if sendState === "sent"}{t("share.sent")}{:else if sendState === "unknown"}<span class="error">{t("share.unknownUser")}</span>{:else if sendState === "failed"}<span class="error">{t("account.failed")}</span>{/if}
+        </p>
+      </form>
+      {#if groups.length}
+        <div class="row">
+          {#each groups as g (g.id)}
+            <button type="button" class="btn" onclick={() => toGroup(g)}>{t("share.toGroup", { name: g.name })}</button>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+
     {#if cards.length}<div class="export">
       <h3>{t("share.export")}</h3>
       <p class="small muted">{t("share.exportIntro")}</p>
@@ -128,6 +186,15 @@
     gap: 0.5rem;
     padding-top: 1rem;
     border-top: 1px solid var(--line);
+  }
+  .person {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+  .person .btn {
+    justify-self: start;
   }
   .close {
     justify-self: start;

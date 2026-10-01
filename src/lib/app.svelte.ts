@@ -12,6 +12,7 @@ import { parseHash, type Count, type Route, type Which } from "./router";
 import { buildSession } from "./session";
 import type { Box, Card, DayStat, Deck, Grade, Lang, Mode, Quiz, Settings, Theme } from "./types";
 import { getSelection } from "./selection";
+import { account } from "./account.svelte";
 
 export type BoxCounts = [number, number, number, number, number];
 export type DiffCounts = Record<Difficulty, number>;
@@ -63,6 +64,8 @@ class App {
       setLang(this.settings.uiLang);
       await this.reload();
       this.ready = true;
+      // Accounts are optional; this does nothing unless someone signed in on this device before.
+      void account.init().then(() => this.syncAccount());
     } catch (e) {
       console.error(e);
       this.failed = true;
@@ -76,6 +79,18 @@ class App {
     this.cards = cards;
     this.days = days;
     this.settings = await this.db.getSettings(navigator.language);
+  }
+
+  /** Syncs with the account, if signed in. Safe to call often: rounds never overlap. */
+  async syncAccount(): Promise<void> {
+    if (!account.user) return;
+    await account.sync(
+      () => this.db.snapshot(),
+      async (merged) => {
+        await this.db.replaceAll(merged);
+        await this.reload();
+      },
+    );
   }
 
   showFlash(message: string): void {
@@ -318,11 +333,13 @@ class App {
   async saveQuiz(input: Pick<Quiz, "name" | "questions"> & Partial<Pick<Quiz, "id" | "subject">>): Promise<Quiz> {
     const now = new Date().toISOString();
     const existing = input.id ? this.quiz(input.id) : undefined;
-    const quiz: Quiz = { ...existing, id: existing?.id ?? newId(), name: input.name, questions: input.questions, createdAt: existing?.createdAt ?? now, updatedAt: now };
+    // A plain copy: reactive proxies can't be stored in IndexedDB.
+    const questions = JSON.parse(JSON.stringify(input.questions)) as Quiz["questions"];
+    const quiz: Quiz = { ...existing, id: existing?.id ?? newId(), name: input.name, questions, createdAt: existing?.createdAt ?? now, updatedAt: now };
     if (input.subject) quiz.subject = input.subject;
     else delete quiz.subject;
     // Changed questions make an old score meaningless.
-    if (existing && JSON.stringify(existing.questions) !== JSON.stringify(input.questions)) delete quiz.last;
+    if (existing && JSON.stringify(existing.questions) !== JSON.stringify(questions)) delete quiz.last;
     await this.db.saveQuiz(quiz);
     this.quizzes = existing ? this.quizzes.map((q) => (q.id === quiz.id ? quiz : q)) : [...this.quizzes, quiz];
     return quiz;

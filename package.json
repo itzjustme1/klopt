@@ -11,12 +11,13 @@
     "lint": "eslint .",
     "test": "TZ=Europe/Amsterdam vitest run",
     "check": "npm run typecheck && npm run lint && npm run test",
-    "e2e": "npm run build && playwright test",
+    "e2e": "VITE_ACCOUNT_URL=https://klopt-test.supabase.co VITE_ACCOUNT_KEY=test-anon-key npm run build && playwright test",
     "predev": "node scripts/copy-ocr.mjs",
     "prebuild": "node scripts/copy-ocr.mjs"
   },
   "dependencies": {
     "@fontsource-variable/gabarito": "^5.3.0",
+    "@supabase/supabase-js": "^2.117.2",
     "@tesseract.js-data/deu": "^1.0.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "@tesseract.js-data/fra": "^1.0.0",

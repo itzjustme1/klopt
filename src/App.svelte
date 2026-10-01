@@ -5,6 +5,11 @@
   import type { StringKey } from "./i18n/types";
   import { app } from "./lib/app.svelte";
   import { applyUpdate, pwa } from "./lib/pwa.svelte";
+  import { account } from "./lib/account.svelte";
+  import Account from "./routes/Account.svelte";
+  import Inbox from "./routes/Inbox.svelte";
+  import Groups from "./routes/Groups.svelte";
+  import GroupPage from "./routes/GroupPage.svelte";
   import { href } from "./lib/router";
   import Icon, { type IconName } from "./components/Icon.svelte";
   import Logo from "./components/Logo.svelte";
@@ -36,7 +41,7 @@
     { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
     { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
-    { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help"] },
+    { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help", "account", "inbox", "groups", "group"] },
   ];
 
   const titles: Record<string, StringKey> = {
@@ -60,6 +65,10 @@
     folders: "folder.title",
     folder: "folder.title",
     newFolder: "folder.new",
+    account: "account.title",
+    inbox: "inbox.title",
+    groups: "groups.title",
+    group: "groups.title",
   };
 
   let main: HTMLElement | undefined = $state();
@@ -89,6 +98,23 @@
   /** Making a list has its own save bar at the bottom, so the tab bar steps aside (as in StudyGo). */
   const hideNav = $derived(focusMode || app.route.name === "editor" || app.route.name === "quizEditor");
   let newOpen = $state(false);
+
+  // Signed in: sync a few seconds after something changes here, and when the connection comes back.
+  let syncTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => {
+    void app.decks;
+    void app.cards;
+    void app.quizzes;
+    if (!account.user) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => void app.syncAccount(), 4000);
+    return () => clearTimeout(syncTimer);
+  });
+  $effect(() => {
+    const online = () => void app.syncAccount();
+    window.addEventListener("online", online);
+    return () => window.removeEventListener("online", online);
+  });
   // Phones: Vandaag, Lijsten, [Nieuw], Voortgang, Instellingen.
   const navStart = nav.slice(0, 2);
   const navEnd = nav.slice(2);
@@ -173,6 +199,14 @@
       {#key app.route.id}<QuizView id={app.route.id} share={app.route.share ?? false} />{/key}
     {:else if app.route.name === "quizEditor"}
       {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+    {:else if app.route.name === "account"}
+      <Account />
+    {:else if app.route.name === "inbox"}
+      <Inbox />
+    {:else if app.route.name === "groups"}
+      <Groups />
+    {:else if app.route.name === "group"}
+      {#key app.route.id}<GroupPage id={app.route.id} />{/key}
     {:else if app.route.name === "folders"}
       <Folders />
     {:else if app.route.name === "folder"}

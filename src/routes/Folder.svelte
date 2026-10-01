@@ -51,7 +51,7 @@
     </PageHead>
 
     {#if sharing}
-      <SharePanel name={name} json={folderShareJson(name, folder.decks, app.cards, folder.quizzes)} title={t("folder.share")} onclose={() => (sharing = false)} />
+      <SharePanel name={name} kind="folder" json={folderShareJson(name, folder.decks, app.cards, folder.quizzes)} title={t("folder.share")} onclose={() => (sharing = false)} />
     {/if}
 
     {#if dissolving}

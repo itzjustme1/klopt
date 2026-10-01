@@ -6,7 +6,7 @@
   import Flag from "./Flag.svelte";
   import SubjectBadge from "./SubjectBadge.svelte";
 
-  let { shared, oncancel }: { shared: SharedDeck; oncancel: () => void } = $props();
+  let { shared, oncancel, onadded }: { shared: SharedDeck; oncancel: () => void; onadded?: () => Promise<void> | void } = $props();
 
   const SHOW = 20;
   let busy = $state(false);
@@ -17,6 +17,7 @@
     busy = true;
     try {
       const deck = await app.importShared(shared);
+      await onadded?.();
       app.showFlash(t("receive.added", { name: deck.name }));
       location.replace(href.deck(deck.id));
     } catch {

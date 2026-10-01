@@ -5,6 +5,25 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { VitePWA } from "vite-plugin-pwa";
 import { APP_NAME } from "./src/config.ts";
 
+/** The account server from .env (VITE_ACCOUNT_URL); empty means accounts are off. */
+const ACCOUNT_URL = process.env.VITE_ACCOUNT_URL ?? loadEnvFile().VITE_ACCOUNT_URL ?? "";
+
+function loadEnvFile(): Record<string, string> {
+  const mode = process.env.NODE_ENV === "production" || process.argv.includes("build") ? "production" : "development";
+  const out: Record<string, string> = {};
+  for (const name of [".env", `.env.${mode}`]) {
+    try {
+      for (const line of readFileSync(name, "utf8").split("\n")) {
+        const m = line.match(/^\s*([A-Z_]+)\s*=\s*(.*?)\s*$/);
+        if (m) out[m[1]!] = m[2]!.replace(/^["']|["']$/g, "");
+      }
+    } catch {
+      // No such file.
+    }
+  }
+  return out;
+}
+
 export const CSP = [
   "default-src 'self'",
   // WebAssembly compilation only (on-device OCR). This is not 'unsafe-eval': JS eval and new Function stay blocked.
@@ -12,7 +31,8 @@ export const CSP = [
   "style-src 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // Only the app itself, plus the account server when accounts are switched on.
+  `connect-src 'self'${ACCOUNT_URL ? ` ${new URL(ACCOUNT_URL).origin}` : ""}`,
   "worker-src 'self'",
   "manifest-src 'self'",
   "object-src 'none'",
