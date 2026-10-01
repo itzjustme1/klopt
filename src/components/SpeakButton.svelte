@@ -13,7 +13,7 @@
   });
 </script>
 
-{#if available}
+{#if available && text}
   <button type="button" class="icon-btn speak" aria-label={label ?? `${t("common.speak")}: ${text}`} onclick={() => speak(text, lang)}>
     <Icon name="speaker" {size} />
   </button>

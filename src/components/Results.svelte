@@ -48,7 +48,7 @@
       <ul>
         {#each engine.mistakes as m (m.card.id)}
           <li>
-            <span class="m-prompt">{m.prompt}</span>
+            <span class="m-prompt">{#if m.card.image && !m.prompt}<img class="m-img" src={m.card.image} alt={t("practice.picture")} />{:else}{m.prompt}{/if}</span>
             <span class="m-answer">{m.answer}</span>
             {#if m.given}<span class="m-given small">{t("result.yours", { given: m.given })}</span>{/if}
           </li>
@@ -129,6 +129,12 @@
     padding: 0.75rem 0;
     border-top: 1px solid var(--line);
     overflow-wrap: anywhere;
+  }
+  .m-img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: var(--r-xs);
   }
   .m-prompt {
     font-weight: 700;

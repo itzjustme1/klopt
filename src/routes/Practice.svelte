@@ -378,11 +378,13 @@
               }}
             >
               <div class="face front">
-                {#if q.promptLang !== "xx"}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
+                {#if q.image?.with === "prompt"}<img class="q-img" src={q.image.src} alt={t("practice.picture")} />{/if}
+                {#if q.promptLang !== "xx" && q.prompt}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
                 <p class="prompt" class:long={q.prompt.length > 60} lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
                 <span class="small muted">{t("practice.flipHint")}</span>
               </div>
               <div class="face back">
+                {#if q.image?.with === "answer"}<img class="q-img" src={q.image.src} alt={t("practice.picture")} />{/if}
                 {#if q.answerLang !== "xx"}<span class="lang-label caption">{langName(q.answerLang)}</span>{/if}
                 <p class="prompt answer" class:long={q.answer.length > 60} lang={q.answerLang === "xx" ? undefined : q.answerLang}>{q.answer}</p>
                 <span class="small muted">{q.prompt}</span>
@@ -392,13 +394,14 @@
             {#if flipped}<p class="swipe-hint small muted">{t("practice.swipeHint")}</p>{/if}
           {:else}
             <div class="ask">
+              {#if q.image?.with === "prompt"}<img class="q-img" id="prompt-img-{q.key}" src={q.image.src} alt={t("practice.picture")} />{/if}
               {#if q.kind === "dictee"}
                 <p class="prompt-sm">{t("practice.listen")}</p>
                 <button type="button" class="play" aria-label={t("practice.playAgain")} onclick={() => speak(q.prompt, q.promptLang)}>
                   <Icon name="speaker" size={34} />
                 </button>
               {:else}
-                {#if q.promptLang !== "xx"}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
+                {#if q.promptLang !== "xx" && q.prompt}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
                 <div class="prompt-row">
                   <p class="prompt" class:long={q.prompt.length > 60} id="prompt-{q.key}" lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
                   {#if q.promptLang !== "xx" && canSpeak(q.promptLang)}
@@ -442,7 +445,7 @@
               </form>
             {:else if q.kind === "mc" && q.options}
               <p class="caption muted">{t("practice.chooseAnswer")}</p>
-              <div class="options" role="group" aria-labelledby="prompt-{q.key}" bind:this={optionsEl}>
+              <div class="options" role="group" aria-labelledby={q.prompt ? `prompt-${q.key}` : `prompt-img-${q.key}`} bind:this={optionsEl}>
                 {#each q.options as opt, i (i)}
                   <button
                     type="button"
@@ -801,6 +804,12 @@
   .mt-ic {
     width: 24px;
     height: 24px;
+  }
+  .q-img {
+    max-width: 100%;
+    max-height: 14rem;
+    border-radius: var(--r-sm);
+    object-fit: contain;
   }
   .qstar.on {
     color: #f5a524;

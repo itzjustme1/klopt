@@ -53,7 +53,7 @@ export function defaultSettings(navLang?: string): Settings {
   };
 }
 
-export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic">>;
+export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic" | "image">>;
 export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate" | "kind" | "folder">>;
 
 /**
@@ -77,6 +77,7 @@ export function makeCard(deckId: string, input: NewCard, now: Date = new Date())
   const iso = now.toISOString();
   const card: Card = { id: newId(), deckId, front: input.front, back: input.back, box: 1, due: localDay(now), createdAt: iso, updatedAt: iso };
   if (input.topic) card.topic = input.topic;
+  if (input.image) card.image = input.image;
   return card;
 }
 
@@ -278,10 +279,12 @@ export class Store {
       const old = row.id ? existing.get(row.id) : undefined;
       if (old) {
         keep.add(old.id);
-        if (old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "")) {
+        if (old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "") || (old.image ?? "") !== (row.image ?? "")) {
           const next: Card = { ...old, front: row.front, back: row.back, updatedAt: now.toISOString() };
           if (row.topic) next.topic = row.topic;
           else delete next.topic;
+          if (row.image) next.image = row.image;
+          else delete next.image;
           await cards.put(next);
           updated++;
         }

@@ -43,6 +43,8 @@ export interface Card {
   lastDay?: string;
   /** Marked by the student to practise on purpose. */
   starred?: boolean;
+  /** A picture for the front, as a small JPEG data URL. With a picture the front text may be empty. */
+  image?: string;
 }
 
 /** Append-only. Never edited. */

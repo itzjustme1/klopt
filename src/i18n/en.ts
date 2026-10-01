@@ -545,4 +545,10 @@ export const en: Messages = {
   "folder.dissolveYes": "Yes, remove",
   "folder.dissolved": "Folder removed.",
   "new.folder": "Folder",
+  "editor.image": "Picture",
+  "editor.addImage": "Add a picture to row {n}",
+  "editor.replaceImage": "Replace the picture of row {n}",
+  "editor.removeImage": "Remove picture",
+  "editor.imageFailed": "This picture could not be read.",
+  "practice.picture": "Picture for the question",
 };

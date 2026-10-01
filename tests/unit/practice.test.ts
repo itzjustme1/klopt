@@ -213,3 +213,31 @@ describe("term lists", () => {
     expect(new Practice(plain, { mode: "typen", direction: "front" }, seeded(3)).current?.kind).toBe("type");
   });
 });
+
+describe("pictures", () => {
+  const pic = "data:image/jpeg;base64,AAAA";
+  const cards: PracticeCard[] = [
+    { id: "p0", front: "", back: "de hond", langFront: "fr", langBack: "nl", image: pic },
+    { id: "p1", front: "le chat", back: "de kat", langFront: "fr", langBack: "nl", image: pic },
+    ...words,
+  ];
+  it("asks a picture-only card from its picture in any direction, and shows a picture with the right side", () => {
+    const p = new Practice(cards, { mode: "flashcards", direction: "back" }, seeded(5));
+    const seen = new Map<string, NonNullable<Practice["current"]>>();
+    run(p, (q) => {
+      seen.set(q.card.id, q);
+      return "goed";
+    });
+    expect(seen.get("p0")).toMatchObject({ prompt: "", answer: "de hond", image: { with: "prompt" } });
+    // Asked from the back, the picture belongs to the answer.
+    expect(seen.get("p1")).toMatchObject({ prompt: "de kat", answer: "le chat", image: { with: "answer" } });
+    expect(seen.get("c0")?.image).toBeUndefined();
+  });
+  it("never offers an empty front as a multiple-choice option", () => {
+    const p = new Practice(cards, { mode: "meerkeuze", direction: "back" }, seeded(6));
+    run(p, (q) => {
+      expect(q.options ?? []).not.toContain("");
+      return "goed";
+    });
+  });
+});

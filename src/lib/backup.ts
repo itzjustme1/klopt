@@ -125,6 +125,12 @@ function grade(v: unknown, where: string): Grade {
   return v;
 }
 
+/** Only small JPEG, PNG or WebP data URLs: no links to elsewhere, nothing that could run. */
+function image(v: unknown, where: string): string {
+  if (typeof v !== "string" || v.length > LIMITS.imageChars || !/^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(v)) throw new Invalid(where);
+  return v;
+}
+
 function arr(v: unknown, where: string, max: number): unknown[] {
   if (!Array.isArray(v) || v.length > max) throw new Invalid(where);
   return v;
@@ -160,14 +166,15 @@ function validate(raw: unknown, version: number): Snapshot {
   });
 
   const cardBoxes = new Map<string, Box>();
-  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay", "starred"])];
+  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay", "starred", "image"])];
   const cards: Card[] = arr(root.cards, "cards", LIMITS.backupCards).map((c, i) => {
     const w = `cards[${i}]`;
     const o = obj(c, w, cardKeys, ["id", "deckId", "front", "back", "box", "due", "createdAt", "updatedAt"]);
     const card: Card = {
       id: uuid(o.id, `${w}.id`),
       deckId: uuid(o.deckId, `${w}.deckId`),
-      front: str(o.front, `${w}.front`, LIMITS.sideChars),
+      // A card with a picture may have no front text.
+      front: str(o.front, `${w}.front`, LIMITS.sideChars, o.image === undefined ? 1 : 0),
       back: str(o.back, `${w}.back`, LIMITS.sideChars),
       box: box(o.box, `${w}.box`),
       due: day(o.due, `${w}.due`),
@@ -176,6 +183,7 @@ function validate(raw: unknown, version: number): Snapshot {
     };
     const topic = optStr(o.topic, `${w}.topic`, LIMITS.labelChars);
     if (topic) card.topic = topic;
+    if (o.image !== undefined) card.image = image(o.image, `${w}.image`);
     // Caches are validated but not trusted: they are rebuilt from the review log on import.
     if (o.hist !== undefined && (typeof o.hist !== "string" || !/^[gtf]{0,8}$/.test(o.hist))) throw new Invalid(`${w}.hist`);
     if (o.lastDay !== undefined) day(o.lastDay, `${w}.lastDay`);
@@ -310,7 +318,7 @@ export function parseBackup(text: string): Parsed<Snapshot> {
 
 export interface SharedDeck {
   deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject" | "examDate" | "kind">;
-  cards: { front: string; back: string; topic?: string }[];
+  cards: { front: string; back: string; topic?: string; image?: string }[];
 }
 
 /** A shared deck must hold exactly one deck. Progress in it is ignored. */
@@ -332,6 +340,7 @@ export function parseShared(text: string): Parsed<SharedDeck> {
       cards: cards.map((c) => {
         const out: SharedDeck["cards"][number] = { front: c.front, back: c.back };
         if (c.topic) out.topic = c.topic;
+        if (c.image) out.image = c.image;
         return out;
       }),
     },

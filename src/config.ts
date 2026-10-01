@@ -18,6 +18,10 @@ export const LIMITS = {
   shareInflatedBytes: 2_000_000,
   /** Max backup file size in bytes. */
   backupBytes: 50_000_000,
+  /** Max length of a card picture (a JPEG data URL, about 300 kB). */
+  imageChars: 400_000,
+  /** Longest side of a card picture after downscaling, in pixels. */
+  imagePixels: 640,
   /** Max deck name length. */
   deckNameChars: 120,
   /** Max subject / topic length. */

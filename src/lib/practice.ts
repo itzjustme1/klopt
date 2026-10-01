@@ -17,6 +17,8 @@ export interface PracticeCard {
   langBack: ContentLang;
   /** From a term list: its back is an explanation, which is never typed. */
   terms?: boolean;
+  /** A picture that belongs to the front; a card with a picture may have no front text. */
+  image?: string;
 }
 
 export interface Question {
@@ -29,6 +31,8 @@ export interface Question {
   answer: string;
   answerLang: ContentLang;
   options?: string[];
+  /** Where the card's picture shows: with the question (front asked) or with the answer (front is the answer). */
+  image?: { src: string; with: "prompt" | "answer" };
   /** 1 for the first time this card is asked in the session. */
   attempt: number;
 }
@@ -99,8 +103,8 @@ export class Practice {
     this.mode = config.mode;
     const usable = config.mode === "dictee" ? cards.filter((c) => this.dicteeSide(c) !== null) : cards;
     this.total = usable.length;
-    this.pool = { front: uniq(cards.map((c) => c.front)), back: uniq(cards.map((c) => c.back)) };
-    const items = usable.map((card) => ({ card, ask: this.pickSide(), level: 0, attempts: 0 }));
+    this.pool = { front: uniq(cards.map((c) => c.front).filter(Boolean)), back: uniq(cards.map((c) => c.back)) };
+    const items = usable.map((card) => ({ card, ask: this.pickSide(card), level: 0, attempts: 0 }));
     this.queue = config.keepOrder ? items : shuffle(items, rng);
     this.next();
   }
@@ -231,6 +235,7 @@ export class Practice {
 
     const q: Question = { key: ++this.key, card, kind, prompt, promptLang, answer, answerLang, attempt: item.attempts + 1 };
     if (kind === "mc") q.options = this.options(answer, answerSide);
+    if (card.image && kind !== "dictee") q.image = { src: card.image, with: item.ask === "front" ? "prompt" : "answer" };
     return q;
   }
 
@@ -263,7 +268,9 @@ export class Practice {
     return shuffle([answer, ...distractors], this.rng);
   }
 
-  private pickSide(): "front" | "back" {
+  private pickSide(card: PracticeCard): "front" | "back" {
+    // A picture-only card is always asked from its picture.
+    if (!card.front) return "front";
     if (this.config.direction === "mixed") return this.rng() < 0.5 ? "front" : "back";
     return this.config.direction;
   }

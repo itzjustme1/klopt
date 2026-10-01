@@ -197,6 +197,7 @@
           {@const sel = selectedSet.has(card.id)}
           <li class="word" class:sel>
             <SpeakButton text={card.front} lang={deck.langFront} size={20} />
+            {#if card.image}<img class="w-img" src={card.image} alt="" />{/if}
             <span class="w-text">
               <span class="w-front" lang={deck.langFront === "xx" ? undefined : deck.langFront}>{card.front}</span>
               <span class="w-back" lang={deck.langBack === "xx" ? undefined : deck.langBack}>{card.back}</span>
@@ -373,6 +374,13 @@
     flex: 1;
     min-width: 0;
     padding: 0.375rem 0;
+  }
+  .w-img {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    object-fit: cover;
+    border-radius: var(--r-xs);
   }
   .w-front {
     font-weight: 700;

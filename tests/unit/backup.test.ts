@@ -230,3 +230,31 @@ describe("folders", () => {
     expect(parseBackup(JSON.stringify(bad))).toMatchObject({ ok: false, error: { where: "decks[0].folder" } });
   });
 });
+
+describe("card pictures", () => {
+  const jpeg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAg=";
+  it("accepts a small picture, also as the whole question, and rejects anything else", () => {
+    const ok = good();
+    ok.cards[0].image = jpeg;
+    ok.cards[0].front = "";
+    const parsed = parseBackup(JSON.stringify(ok));
+    expect(parsed.ok && parsed.data.cards[0]!.image).toBe(jpeg);
+
+    const noPicture = good();
+    noPicture.cards[0].front = "";
+    expect(parseBackup(JSON.stringify(noPicture))).toMatchObject({ ok: false, error: { where: "cards[0].front" } });
+
+    for (const bad of [
+      "https://example.com/x.jpg",
+      "javascript:alert(1)",
+      "data:image/svg+xml;base64,PHN2Zz4=",
+      "data:text/html;base64,PGI+",
+      `data:image/jpeg;base64,${"A".repeat(LIMITS.imageChars)}`,
+      'data:image/png;base64,AAAA"><script>',
+    ]) {
+      const f = good();
+      f.cards[0].image = bad;
+      expect(parseBackup(JSON.stringify(f)), bad.slice(0, 30)).toMatchObject({ ok: false, error: { where: "cards[0].image" } });
+    }
+  });
+});

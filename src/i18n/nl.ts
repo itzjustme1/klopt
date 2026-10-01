@@ -546,4 +546,10 @@ export const nl = {
   "folder.dissolveYes": "Ja, opheffen",
   "folder.dissolved": "Map opgeheven.",
   "new.folder": "Map",
+  "editor.image": "Plaatje",
+  "editor.addImage": "Plaatje toevoegen aan rij {n}",
+  "editor.replaceImage": "Plaatje van rij {n} vervangen",
+  "editor.removeImage": "Plaatje weghalen",
+  "editor.imageFailed": "Dit plaatje kan niet worden gelezen.",
+  "practice.picture": "Plaatje bij de vraag",
 } as const;

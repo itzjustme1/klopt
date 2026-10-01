@@ -41,7 +41,8 @@
   }
 
   function start() {
-    game = new MatchGame(app.practiceCards(scope, which, count));
+    // Tiles are text: picture-only cards sit this game out.
+    game = new MatchGame(app.practiceCards(scope, which, count).filter((c) => c.front));
     version++;
     elapsed = 0;
     startedAt = 0;

@@ -32,6 +32,7 @@ npm run e2e
 - A subject badge per list.
 - An optional test date per list.
 - Search, sort and a subject filter across lists; search within a list of more than 20 words.
+- **Pictures on cards:** add a picture to any row in the editor (it is shrunk to a small JPEG on the device). With a picture the front may stay empty, so the picture is the question, as in biology or geography.
 - **Folders (mappen):** put lists and quizzes that belong together in a folder, from *Nieuw → Map* or a list's ⋮ menu. Rename or remove a folder; removing keeps what was in it. Folders are kept in backups but never in a shared list.
 - Copy, delete and print a list. Select words (or "Lastige" / "Gemarkeerd") and practise only those.
 - Share a list as a link, a file or through the phone's share sheet; export it as text for Quizlet or Excel.
@@ -179,7 +180,7 @@ scripts/               OCR copy, icon rendering, screenshots
 ## Data model
 
 - `Deck`: name, subject, `langFront`, `langBack`, optional `examDate`.
-- `Card`: text, box, a `due` local date, and optional `starred`. It also holds caches rebuilt from the log: `hist` (last results) and `lastDay`.
+- `Card`: text, box, a `due` local date, optional `starred` and an optional `image` (a JPEG data URL; then `front` may be empty). It also holds caches rebuilt from the log: `hist` (last results) and `lastDay`.
 - `Review`: an append-only log with `at`, local `day`, `grade`, `fromBox`, `toBox`, `mode` and `counts`. Timestamps are kept strictly increasing, so the order is never ambiguous.
 - `DayStat`: answers per day, a cache for the streak and daily goal.
 - `Deck.kind`: `"terms"` for a term list (absent for word lists). `Deck.folder` / `Quiz.folder`: the folder name; a folder exists while something is in it.
@@ -199,7 +200,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## How it's tested
 
-**Unit tests (Vitest, 225 tests, run with `TZ=Europe/Amsterdam`)**
+**Unit tests (Vitest, 228 tests, run with `TZ=Europe/Amsterdam`)**
 - **Scheduler:** your four table cases, every box × grade × day of 2026 against the reference implementation, DST, and the first-answer-of-the-day rule.
 - **Dates:** rollover and DST.
 - **Answer checking:** alternatives, brackets, accents, typos including swapped letters, decimal commas, hints, and the lenient options.
@@ -217,7 +218,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 The unit suite was also run 30 times in a row to rule out flaky tests.
 
-**End-to-end tests (Playwright, 24 tests, production build)**
+**End-to-end tests (Playwright, 25 tests, production build)**
 - **Learn, review and test by keyboard:** checks the boxes, streak, grade, persistence and offline.
 - **Session size, starred words, lenient accents, swiping flashcards.**
 - **The matching game:** two rounds and a record.
@@ -228,6 +229,7 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link, and the backup reminder.**
 - **A term list** made from the Nieuw menu and learnt with flashcards.
+- **Pictures:** added in the editor, downscaled, stored, shown on the list and in flashcards, checked with axe.
 - **Folders:** made from the Nieuw menu, a list moved in, renamed, removed.
 - **A quiz** with all four question types: made, saved, taken by tap and keyboard, graded (half points for a fill-in), and the grade kept after a reload.
 - **Accessibility:**

@@ -7,6 +7,7 @@
   import Icon from "../components/Icon.svelte";
   import PageHead from "../components/PageHead.svelte";
   import { insertAtCaret } from "../lib/accents";
+  import { cardImage } from "../lib/image";
   import { app } from "../lib/app.svelte";
   import { SUBJECTS } from "../lib/subjects";
   import { isValidDay } from "../lib/dates";
@@ -15,7 +16,7 @@
 
   let { id, terms = false }: { id?: string; terms?: boolean } = $props();
 
-  type Row = { key: number; id?: string; front: string; back: string };
+  type Row = { key: number; id?: string; front: string; back: string; image?: string };
 
   const existing = untrack(() => (id ? app.deck(id) : undefined));
   let nextKey = 0;
@@ -37,7 +38,7 @@
   });
   let rows = $state<Row[]>(
     untrack(() =>
-      existing ? [...app.sortedCards(existing.id).map((c) => ({ key: nextKey++, id: c.id, front: c.front, back: c.back })), blank()] : [blank(), blank(), blank(), blank(), blank()],
+      existing ? [...app.sortedCards(existing.id).map((c) => ({ key: nextKey++, id: c.id, front: c.front, back: c.back, ...(c.image ? { image: c.image } : {}) })), blank()] : [blank(), blank(), blank(), blank(), blank()],
     ),
   );
   let errors = $state<string[]>([]);
@@ -54,7 +55,7 @@
   // Always keep one empty row at the end to type into.
   $effect(() => {
     const last = rows[rows.length - 1];
-    if (!last || last.front.trim() || last.back.trim()) rows.push(blank());
+    if (!last || last.front.trim() || last.back.trim() || last.image) rows.push(blank());
   });
 
   function input(row: number, side: "front" | "back"): HTMLInputElement | HTMLTextAreaElement | null {
@@ -100,6 +101,25 @@
     void focusCell(Math.min(r, rows.length - 1), "front");
   }
 
+  // One hidden file input serves every row's picture button.
+  let fileInput: HTMLInputElement | undefined = $state();
+  let pickFor = -1;
+  function pickImage(i: number) {
+    pickFor = i;
+    fileInput?.click();
+  }
+  async function onImage() {
+    const file = fileInput?.files?.[0];
+    if (fileInput) fileInput.value = "";
+    const row = rows[pickFor];
+    if (!file || !row) return;
+    try {
+      row.image = await cardImage(file);
+    } catch {
+      app.showFlash(t("editor.imageFailed"));
+    }
+  }
+
   function removeRow(i: number) {
     rows.splice(i, 1);
     if (!rows.length) rows.push(blank());
@@ -126,14 +146,15 @@
     if (!n) problems.push(t("editor.nameRequired"));
     if (examDate && (!isValidDay(examDate) || examDate < app.today) && examDate !== existing?.examDate) problems.push(t("editor.examPast"));
     else if (n.length > LIMITS.deckNameChars) problems.push(t("editor.nameTooLong", { n: LIMITS.deckNameChars }));
-    const clean: { id?: string; front: string; back: string }[] = [];
+    const clean: { id?: string; front: string; back: string; image?: string }[] = [];
     rows.forEach((r, i) => {
       const f = r.front.trim();
       const b = r.back.trim();
-      if (!f && !b) return;
-      if (!f || !b) problems.push(t("editor.rowIncomplete", { n: i + 1 }));
+      if (!f && !b && !r.image) return;
+      // With a picture the front may stay empty: the picture is the question.
+      if ((!f && !r.image) || !b) problems.push(t("editor.rowIncomplete", { n: i + 1 }));
       else if (f.length > LIMITS.sideChars || b.length > LIMITS.sideChars) problems.push(t("editor.rowTooLong", { n: i + 1, max: LIMITS.sideChars }));
-      else clean.push(r.id ? { id: r.id, front: f, back: b } : { front: f, back: b });
+      else clean.push({ ...(r.id ? { id: r.id } : {}), front: f, back: b, ...(r.image ? { image: r.image } : {}) });
     });
     if (!clean.length && !problems.length) problems.push(t("editor.noRows"));
     errors = problems;
@@ -217,57 +238,69 @@
       {#each rows as row, i (row.key)}
         <li class="erow" class:term={isTerms}>
           <span class="rownum caption num" aria-hidden="true">{i + 1}</span>
-          <input
-            type="text"
-            aria-label="{t('editor.row', { n: i + 1 })}, {isTerms ? t('editor.term') : t('editor.front')}"
-            placeholder={i === 0 || isTerms ? (isTerms ? t("editor.term") : t("editor.front")) : ""}
-            lang={langFront === "xx" ? undefined : langFront}
-            data-row={i}
-            data-side="front"
-            bind:value={row.front}
-            maxlength={LIMITS.sideChars}
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            onfocus={() => (focused = { row: i, side: "front" })}
-            onkeydown={(e) => onkeydown(e, i, "front")}
-            onpaste={(e) => onpaste(e, i, "front")}
-          />
-          {#if isTerms}
-            <textarea
-              rows="2"
-              aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.explanation')}"
-              placeholder={t("editor.explanation")}
-              data-row={i}
-              data-side="back"
-              bind:value={row.back}
-              maxlength={LIMITS.sideChars}
-              onfocus={() => (focused = { row: i, side: "back" })}
-              onkeydown={(e) => onkeydown(e, i, "back")}
-              onpaste={(e) => onpaste(e, i, "back")}
-            ></textarea>
-          {:else}
+          <div class="cells">
             <input
               type="text"
-              aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.back')}"
-              placeholder={i === 0 ? t("editor.back") : ""}
-              lang={langBack === "xx" ? undefined : langBack}
+              aria-label="{t('editor.row', { n: i + 1 })}, {isTerms ? t('editor.term') : t('editor.front')}"
+              placeholder={i === 0 || isTerms ? (isTerms ? t("editor.term") : t("editor.front")) : ""}
+              lang={langFront === "xx" ? undefined : langFront}
               data-row={i}
-              data-side="back"
-              bind:value={row.back}
+              data-side="front"
+              bind:value={row.front}
               maxlength={LIMITS.sideChars}
               autocomplete="off"
               autocapitalize="off"
               spellcheck="false"
-              onfocus={() => (focused = { row: i, side: "back" })}
-              onkeydown={(e) => onkeydown(e, i, "back")}
-              onpaste={(e) => onpaste(e, i, "back")}
+              onfocus={() => (focused = { row: i, side: "front" })}
+              onkeydown={(e) => onkeydown(e, i, "front")}
+              onpaste={(e) => onpaste(e, i, "front")}
             />
-          {/if}
-          <button type="button" class="icon-btn" aria-label={t("editor.removeRow", { n: i + 1 })} onclick={() => removeRow(i)}><Icon name="x" size={20} /></button>
+            {#if isTerms}
+              <textarea
+                rows="2"
+                aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.explanation')}"
+                placeholder={t("editor.explanation")}
+                data-row={i}
+                data-side="back"
+                bind:value={row.back}
+                maxlength={LIMITS.sideChars}
+                onfocus={() => (focused = { row: i, side: "back" })}
+                onkeydown={(e) => onkeydown(e, i, "back")}
+                onpaste={(e) => onpaste(e, i, "back")}
+              ></textarea>
+            {:else}
+              <input
+                type="text"
+                aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.back')}"
+                placeholder={i === 0 ? t("editor.back") : ""}
+                lang={langBack === "xx" ? undefined : langBack}
+                data-row={i}
+                data-side="back"
+                bind:value={row.back}
+                maxlength={LIMITS.sideChars}
+                autocomplete="off"
+                autocapitalize="off"
+                spellcheck="false"
+                onfocus={() => (focused = { row: i, side: "back" })}
+                onkeydown={(e) => onkeydown(e, i, "back")}
+                onpaste={(e) => onpaste(e, i, "back")}
+              />
+            {/if}
+            {#if row.image}
+              <div class="pic">
+                <img src={row.image} alt="" />
+                <button type="button" class="btn btn-quiet" onclick={() => (row.image = undefined)}>{t("editor.removeImage")}</button>
+              </div>
+            {/if}
+          </div>
+          <div class="tools">
+            <button type="button" class="icon-btn" aria-label={row.image ? t("editor.replaceImage", { n: i + 1 }) : t("editor.addImage", { n: i + 1 })} title={t("editor.image")} onclick={() => pickImage(i)}><Icon name="image" size={20} /></button>
+            <button type="button" class="icon-btn" aria-label={t("editor.removeRow", { n: i + 1 })} onclick={() => removeRow(i)}><Icon name="x" size={20} /></button>
+          </div>
         </li>
       {/each}
     </ol>
+    <input class="visually-hidden" type="file" accept="image/*" tabindex="-1" aria-hidden="true" bind:this={fileInput} onchange={onImage} />
     <button type="button" class="btn btn-quiet add" onclick={() => { rows.push(blank()); void focusCell(rows.length - 1, "front"); }}>
       <Icon name="plus" size={20} />{t("editor.addRow")}
     </button>
@@ -341,11 +374,12 @@
   .thead,
   .erow {
     display: grid;
-    grid-template-columns: 1.75rem 1fr 1fr var(--tap);
+    grid-template-columns: 1.75rem 1fr auto;
     gap: 0.5rem;
-    align-items: center;
+    align-items: start;
   }
   .thead {
+    grid-template-columns: 1.75rem 1fr 1fr calc(var(--tap) * 2 + 0.25rem);
     padding: 0.5rem 0 0.25rem;
     color: var(--ink-2);
   }
@@ -356,64 +390,61 @@
     padding: 0;
     list-style: none;
   }
-  /* A term above its explanation, at every width. */
-  .erow.term {
-    grid-template-columns: 1.75rem 1fr var(--tap);
-  }
-  .erow.term > :is(input, textarea) {
-    grid-column: 2;
-  }
-  .erow.term .icon-btn {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
-  .erow.term .rownum {
-    grid-row: 1 / span 2;
-    align-self: start;
-    padding-top: 0.875rem;
-  }
-  .kind {
-    grid-column: 1 / -1;
-  }
   .rownum {
     color: var(--ink-2);
     text-align: right;
+    padding-top: 0.875rem;
   }
-  .erow input,
-  .erow textarea {
+  /* Word and translation side by side; a term above its explanation. */
+  .cells {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
     min-width: 0;
+  }
+  .term .cells {
+    grid-template-columns: 1fr;
+  }
+  .cells :is(input, textarea) {
+    min-width: 0;
+  }
+  .pic {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .pic img {
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: var(--r-sm);
+  }
+  .tools {
+    display: flex;
+    gap: 0.25rem;
+  }
+  .kind {
+    grid-column: 1 / -1;
   }
   .add {
     margin-top: 0.5rem;
   }
   @media (max-width: 520px) {
-    .thead {
-      display: none;
-    }
-    .erow {
-      grid-template-columns: 1fr var(--tap);
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--line);
-    }
+    .thead,
     .rownum {
       display: none;
     }
-    .erow input:nth-of-type(2) {
-      grid-column: 1;
+    .erow {
+      grid-template-columns: 1fr auto;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--line);
     }
-    .erow .icon-btn {
-      grid-row: 1 / span 2;
-      grid-column: 2;
+    .cells {
+      grid-template-columns: 1fr;
     }
-  }  @media (max-width: 520px) {
-    .erow.term {
-      grid-template-columns: 1fr var(--tap);
-    }
-    .erow.term > :is(input, textarea) {
-      grid-column: 1;
-    }
-    .erow.term .icon-btn {
-      grid-column: 2;
+    .tools {
+      flex-direction: column;
     }
   }
 
