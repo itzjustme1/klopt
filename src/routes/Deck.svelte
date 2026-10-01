@@ -67,9 +67,11 @@
   });
 
   const sameLang = $derived(!deck || deck.langFront === deck.langBack || deck.langFront === "xx" || deck.langBack === "xx");
+  const isTerms = $derived(deck?.kind === "terms");
   const dirLabel = $derived.by(() => {
     if (!deck) return "";
     if (dir === "mixed") return t("deck.mixed");
+    if (isTerms) return dir === "front" ? t("deck.termToExplanation") : t("deck.explanationToTerm");
     if (sameLang) return dir === "front" ? t("deck.leftToRight") : t("deck.rightToLeft");
     const a = t(`lang.${deck.langFront}`);
     const b = t(`lang.${deck.langBack}`);
@@ -79,7 +81,11 @@
     dir = dir === "front" ? "back" : dir === "back" ? "mixed" : "front";
   }
 
-  const modes: Exclude<Mode, "herhalen">[] = ["leren", "toets", "flashcards", "meerkeuze", "typen", "dictee", "koppelen"];
+  // Terms are learnt mostly by flipping cards; dictation makes no sense for them.
+  const modes = $derived<Exclude<Mode, "herhalen">[]>(
+    isTerms ? ["flashcards", "leren", "meerkeuze", "toets", "typen", "koppelen"] : ["leren", "toets", "flashcards", "meerkeuze", "typen", "dictee", "koppelen"],
+  );
+  const recommended = $derived(isTerms ? "flashcards" : "leren");
   const which = $derived(selected.length ? "selectie" : "all");
 
   function toggle(cardId: string) {
@@ -118,7 +124,7 @@
   <PageHead title={t("deck.notFound")} back={{ href: href.lists(), label: t("nav.lists") }} />
 {:else}
   <section class="deck">
-    <PageHead title={deck.name} subtitle={[deck.subject, tp("common.wordsCount", cards.length)].filter(Boolean).join(" · ")} back={{ href: href.lists(), label: t("nav.lists") }}>
+    <PageHead title={deck.name} subtitle={[deck.subject, tp(isTerms ? "common.termsCount" : "common.wordsCount", cards.length)].filter(Boolean).join(" · ")} back={{ href: href.lists(), label: t("nav.lists") }}>
       {#snippet mark()}<SubjectBadge subject={deck.subject} lang={deck.langFront} size={32} />{/snippet}
       {#snippet actions()}
         <button type="button" class="icon-btn" aria-haspopup="dialog" aria-label={t("deck.more")} title={t("deck.more")} onclick={() => (moreOpen = true)}><Icon name="more" /></button>
@@ -128,7 +134,7 @@
           <a class="when-link" href={href.edit(id)}><Icon name="calendar" size={20} />{t("deck.whenTest")}</a>
         {/if}
         <button type="button" class="btn btn-primary btn-lg practice-btn" aria-haspopup="dialog" onclick={() => (practiceOpen = true)}>
-          <Icon name="play" size={18} />{selected.length ? tp("deck.practiceSelection", selected.length) : t("deck.practiceAll")}
+          <Icon name="play" size={18} />{selected.length ? tp("deck.practiceSelection", selected.length) : isTerms ? t("deck.practiceAllTerms") : t("deck.practiceAll")}
         </button>
         <button type="button" class="dir" onclick={nextDir} aria-label={t("deck.directionNow", { dir: dirLabel })}><Icon name="swap" size={18} />{dirLabel}</button>
       {/if}
@@ -159,7 +165,7 @@
       {/if}
 
       <div class="words-head">
-        <h2>{t("deck.words")}</h2>
+        <h2>{isTerms ? t("deck.terms") : t("deck.words")}</h2>
         <div class="pick">
           {#if hardIds.length}<button type="button" class="chip" aria-pressed={hardIds.length === selected.length && hardIds.every((x) => selectedSet.has(x))} onclick={() => selectOnly(hardIds)}>{t("deck.hardWords", { n: hardIds.length })}</button>{/if}
           {#if starredIds.length}<button type="button" class="chip" aria-pressed={starredIds.length === selected.length && starredIds.every((x) => selectedSet.has(x))} onclick={() => selectOnly(starredIds)}>{t("deck.starredWords", { n: starredIds.length })}</button>{/if}
@@ -247,7 +253,7 @@
             {:else}
               <a class="drawer-item" href={href.practice(id, m, dir, which, selected.length ? "all" : countValue)}>
                 <Icon name={MODE_ICON[m]} />{t(`mode.${m}`)}
-                {#if m === "leren"}<span class="tag">{t("deck.recommended")}</span>{/if}
+                {#if m === recommended}<span class="tag">{t("deck.recommended")}</span>{/if}
               </a>
             {/if}
           </li>

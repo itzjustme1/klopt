@@ -190,3 +190,27 @@ describe("version 1 files", () => {
     expect(parseBackup(JSON.stringify(french))).toEqual({ ok: false, error: { code: "invalid", where: "decks[0].lang" } });
   });
 });
+
+describe("term lists", () => {
+  it("keeps the kind of a term list through backup and sharing, and rejects unknown kinds", async () => {
+    const terms = good();
+    terms.decks[0].kind = "terms";
+    const parsed = parseBackup(JSON.stringify(terms));
+    expect(parsed.ok && parsed.data.decks[0]!.kind).toBe("terms");
+    const words = good();
+    words.decks[0].kind = "words";
+    const w = parseBackup(JSON.stringify(words));
+    expect(w.ok && "kind" in w.data.decks[0]!).toBe(false);
+    const bad = good();
+    bad.decks[0].kind = "quiz";
+    expect(parseBackup(JSON.stringify(bad))).toMatchObject({ ok: false, error: { where: "decks[0].kind" } });
+
+    const store = await Store.open("terms-share");
+    const deck = await store.createDeck({ name: "WO2", langFront: "xx", langBack: "xx", kind: "terms" });
+    const cards = await store.addCards(deck.id, [{ front: "Verzet", back: "Strijd tegen de bezetter." }]);
+    const shared = parseShared(JSON.stringify(makeShareFile(deck, cards)));
+    expect(shared.ok && shared.data.deck.kind).toBe("terms");
+    // Turning it back into words drops the field.
+    expect(await store.updateDeck(deck.id, { kind: "words" })).not.toHaveProperty("kind");
+  });
+});

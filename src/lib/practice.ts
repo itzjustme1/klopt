@@ -15,6 +15,8 @@ export interface PracticeCard {
   back: string;
   langFront: ContentLang;
   langBack: ContentLang;
+  /** From a term list: its back is an explanation, which is never typed. */
+  terms?: boolean;
 }
 
 export interface Question {
@@ -233,7 +235,8 @@ export class Practice {
   }
 
   private kindFor(item: Item, answer: string): Kind {
-    const typeable = isTypeable(answer);
+    // An explanation is checked by flipping, however short; the term itself can still be typed.
+    const typeable = isTypeable(answer) && !(item.card.terms && item.ask === "front");
     const mcPossible = this.pool[item.ask === "front" ? "back" : "front"].length >= 4;
     switch (this.mode) {
       case "flashcards":

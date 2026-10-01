@@ -117,8 +117,8 @@
     {:else if app.route.name === "new"}
       <NewList />
     {:else if app.route.name === "editor"}
-      {#key app.route.id}
-        <Editor id={app.route.id} />
+      {#key `${app.route.id}/${app.route.terms}`}
+        <Editor id={app.route.id} terms={app.route.terms ?? false} />
       {/key}
     {:else if app.route.name === "deck"}
       {#key app.route.id}

@@ -41,7 +41,7 @@
     busy = true;
     try {
       const lang = getLang();
-      for (const { deck, cards } of demoLists(lang, { french: t("demo.french"), economics: t("demo.economics") })) {
+      for (const { deck, cards } of demoLists(lang, { french: t("demo.french"), economics: t("demo.economics"), history: t("demo.history") })) {
         const d = await app.createDeck(deck);
         await app.addCards(d.id, cards);
       }

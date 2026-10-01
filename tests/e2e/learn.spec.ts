@@ -11,7 +11,7 @@ test("make a list, learn it with the keyboard, persist, work offline", async ({ 
   // Leren: multiple choice first, then typing. "le chien" is answered wrong once and has to come back.
   await practise(page, /^Leren/);
   const seen = new Map<string, number>();
-  for (let step = 0; step < 30; step++) {
+  for (let step = 0; step < 40; step++) {
     if (await page.getByRole("heading", { name: "Klaar!" }).isVisible()) break;
     const prompt = (await page.locator(".prompt").first().textContent())!.trim();
     const n = (seen.get(prompt) ?? 0) + 1;
@@ -75,7 +75,8 @@ test("review the daily queue by keyboard, typing short answers and self-checking
   const check = await guard(page);
   await page.goto("/");
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
-  await expect(page.locator(".hero-num")).toHaveText("11");
+  // 8 French words, 3 economics terms and 8 history terms.
+  await expect(page.locator(".hero-num")).toHaveText("19");
   await page.getByRole("link", { name: "Start herhalen" }).click();
 
   const french: Record<string, string> = {
@@ -90,7 +91,7 @@ test("review the daily queue by keyboard, typing short answers and self-checking
   };
   let typed = 0;
   let flipped = 0;
-  for (let step = 0; step < 30; step++) {
+  for (let step = 0; step < 40; step++) {
     // Wait for the next question (or the end) to be on screen before reading it.
     await expect(page.locator(".flip:not(.flipped), .answer-input:not([readonly]), .results").first()).toBeVisible();
     if (await page.locator(".results").isVisible()) break;
@@ -112,7 +113,7 @@ test("review the daily queue by keyboard, typing short answers and self-checking
     }
   }
   expect(typed).toBe(8);
-  expect(flipped).toBe(3);
+  expect(flipped).toBe(11);
   await expect(page.getByText("Alles in één keer goed. Sterk.")).toBeVisible();
   await page.getByRole("link", { name: "Terug naar Vandaag" }).click();
   await expect(page.getByText("Alles herhaald voor vandaag.")).toBeVisible();

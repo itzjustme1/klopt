@@ -11,9 +11,9 @@
   import { SUBJECTS } from "../lib/subjects";
   import { isValidDay } from "../lib/dates";
   import { href } from "../lib/router";
-  import { CONTENT_LANGS, type ContentLang } from "../lib/types";
+  import { CONTENT_LANGS, type ContentLang, type DeckKind } from "../lib/types";
 
-  let { id }: { id?: string } = $props();
+  let { id, terms = false }: { id?: string; terms?: boolean } = $props();
 
   type Row = { key: number; id?: string; front: string; back: string };
 
@@ -24,8 +24,17 @@
   let name = $state(existing?.name ?? "");
   let subject = $state(existing?.subject ?? "");
   let examDate = $state(existing?.examDate ?? "");
-  let langFront = $state<ContentLang>(existing?.langFront ?? "en");
-  let langBack = $state<ContentLang>(existing?.langBack ?? getLang());
+  /** Terms (history, biology): a term and its explanation, no languages. */
+  let kind = $state<DeckKind>(untrack(() => existing?.kind ?? (terms ? "terms" : "words")));
+  const isTerms = $derived(kind === "terms");
+  let langFront = $state<ContentLang>(untrack(() => existing?.langFront ?? (terms ? "xx" : "en")));
+  let langBack = $state<ContentLang>(untrack(() => existing?.langBack ?? (terms ? "xx" : getLang())));
+  // Switching a new list to terms drops the languages; back to words restores the usual pair.
+  $effect(() => {
+    if (existing) return;
+    if (kind === "terms") [langFront, langBack] = ["xx", "xx"];
+    else if (untrack(() => langFront === "xx" && langBack === "xx")) [langFront, langBack] = ["en", getLang()];
+  });
   let rows = $state<Row[]>(
     untrack(() =>
       existing ? [...app.sortedCards(existing.id).map((c) => ({ key: nextKey++, id: c.id, front: c.front, back: c.back })), blank()] : [blank(), blank(), blank(), blank(), blank()],
@@ -48,8 +57,8 @@
     if (!last || last.front.trim() || last.back.trim()) rows.push(blank());
   });
 
-  function input(row: number, side: "front" | "back"): HTMLInputElement | null {
-    return table?.querySelector<HTMLInputElement>(`[data-row="${row}"][data-side="${side}"]`) ?? null;
+  function input(row: number, side: "front" | "back"): HTMLInputElement | HTMLTextAreaElement | null {
+    return table?.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-row="${row}"][data-side="${side}"]`) ?? null;
   }
 
   async function focusCell(row: number, side: "front" | "back") {
@@ -131,7 +140,7 @@
     if (problems.length) return;
     busy = true;
     try {
-      const deckInput = { name: n, langFront, langBack, subject: subject.trim().slice(0, LIMITS.labelChars), examDate: isValidDay(examDate) ? examDate : "" };
+      const deckInput = { name: n, langFront, langBack, kind, subject: subject.trim().slice(0, LIMITS.labelChars), examDate: isValidDay(examDate) ? examDate : "" };
       let deckId = existing?.id;
       if (deckId) await app.updateDeck(deckId, deckInput);
       else deckId = (await app.createDeck(deckInput)).id;
@@ -148,13 +157,22 @@
   const focusedLang = $derived(focused ? (focused.side === "front" ? langFront : langBack) : null);
 </script>
 
-<PageHead title={existing ? t("editor.editTitle") : t("editor.newTitle")} subtitle={existing?.name} back={{ href: existing ? href.deck(existing.id) : href.newList(), label: t("common.back") }} />
+<PageHead title={existing ? t("editor.editTitle") : isTerms ? t("editor.newTermsTitle") : t("editor.newTitle")} subtitle={existing?.name} back={{ href: existing ? href.deck(existing.id) : href.newList(), label: t("common.back") }} />
 <form class="editor" onsubmit={save} novalidate>
 
   <div class="card card-pad meta">
+    {#if !existing}
+      <fieldset class="fieldset-wrap kind">
+        <legend>{t("editor.kind")}</legend>
+        <div class="segmented">
+          <label><input type="radio" name="kind" value="words" bind:group={kind} />{t("editor.kindWords")}</label>
+          <label><input type="radio" name="kind" value="terms" bind:group={kind} />{t("editor.kindTerms")}</label>
+        </div>
+      </fieldset>
+    {/if}
     <div class="field name">
       <label for="list-name">{t("editor.name")}</label>
-      <input id="list-name" type="text" bind:value={name} bind:this={nameInput} maxlength={LIMITS.deckNameChars} placeholder={t("editor.namePlaceholder")} autocomplete="off" />
+      <input id="list-name" type="text" bind:value={name} bind:this={nameInput} maxlength={LIMITS.deckNameChars} placeholder={isTerms ? t("editor.termsPlaceholder") : t("editor.namePlaceholder")} autocomplete="off" />
     </div>
     <div class="field">
       <label for="list-subject">{t("editor.subject")}</label>
@@ -168,7 +186,7 @@
       <input id="list-exam" type="date" bind:value={examDate} min={app.today} aria-describedby="exam-help" />
       <span id="exam-help" class="small muted">{t("editor.examHelp")}</span>
     </div>
-    <div class="langs">
+    <div class="langs" hidden={isTerms}>
       <div class="field">
         <label for="lang-front">{t("editor.langFront")}</label>
         <div class="lang-select">
@@ -192,17 +210,17 @@
   </div>
 
   <div class="table card" bind:this={table}>
-    <div class="thead" aria-hidden="true">
+    <div class="thead" aria-hidden="true" hidden={isTerms}>
       <span></span><span class="caption">{t(`lang.${langFront}`)}</span><span class="caption">{t(`lang.${langBack}`)}</span><span></span>
     </div>
-    <ol class="rows">
+    <ol class="erows">
       {#each rows as row, i (row.key)}
-        <li class="erow">
+        <li class="erow" class:term={isTerms}>
           <span class="rownum caption num" aria-hidden="true">{i + 1}</span>
           <input
             type="text"
-            aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.front')}"
-            placeholder={i === 0 ? t("editor.front") : ""}
+            aria-label="{t('editor.row', { n: i + 1 })}, {isTerms ? t('editor.term') : t('editor.front')}"
+            placeholder={i === 0 || isTerms ? (isTerms ? t("editor.term") : t("editor.front")) : ""}
             lang={langFront === "xx" ? undefined : langFront}
             data-row={i}
             data-side="front"
@@ -215,22 +233,37 @@
             onkeydown={(e) => onkeydown(e, i, "front")}
             onpaste={(e) => onpaste(e, i, "front")}
           />
-          <input
-            type="text"
-            aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.back')}"
-            placeholder={i === 0 ? t("editor.back") : ""}
-            lang={langBack === "xx" ? undefined : langBack}
-            data-row={i}
-            data-side="back"
-            bind:value={row.back}
-            maxlength={LIMITS.sideChars}
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            onfocus={() => (focused = { row: i, side: "back" })}
-            onkeydown={(e) => onkeydown(e, i, "back")}
-            onpaste={(e) => onpaste(e, i, "back")}
-          />
+          {#if isTerms}
+            <textarea
+              rows="2"
+              aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.explanation')}"
+              placeholder={t("editor.explanation")}
+              data-row={i}
+              data-side="back"
+              bind:value={row.back}
+              maxlength={LIMITS.sideChars}
+              onfocus={() => (focused = { row: i, side: "back" })}
+              onkeydown={(e) => onkeydown(e, i, "back")}
+              onpaste={(e) => onpaste(e, i, "back")}
+            ></textarea>
+          {:else}
+            <input
+              type="text"
+              aria-label="{t('editor.row', { n: i + 1 })}, {t('editor.back')}"
+              placeholder={i === 0 ? t("editor.back") : ""}
+              lang={langBack === "xx" ? undefined : langBack}
+              data-row={i}
+              data-side="back"
+              bind:value={row.back}
+              maxlength={LIMITS.sideChars}
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              onfocus={() => (focused = { row: i, side: "back" })}
+              onkeydown={(e) => onkeydown(e, i, "back")}
+              onpaste={(e) => onpaste(e, i, "back")}
+            />
+          {/if}
           <button type="button" class="icon-btn" aria-label={t("editor.removeRow", { n: i + 1 })} onclick={() => removeRow(i)}><Icon name="x" size={20} /></button>
         </li>
       {/each}
@@ -316,18 +349,38 @@
     padding: 0.5rem 0 0.25rem;
     color: var(--ink-2);
   }
-  .rows {
+  .erows {
     display: grid;
     gap: 0.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
+  /* A term above its explanation, at every width. */
+  .erow.term {
+    grid-template-columns: 1.75rem 1fr var(--tap);
+  }
+  .erow.term > :is(input, textarea) {
+    grid-column: 2;
+  }
+  .erow.term .icon-btn {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+  .erow.term .rownum {
+    grid-row: 1 / span 2;
+    align-self: start;
+    padding-top: 0.875rem;
+  }
+  .kind {
+    grid-column: 1 / -1;
+  }
   .rownum {
     color: var(--ink-2);
     text-align: right;
   }
-  .erow input {
+  .erow input,
+  .erow textarea {
     min-width: 0;
   }
   .add {
@@ -352,7 +405,18 @@
       grid-row: 1 / span 2;
       grid-column: 2;
     }
+  }  @media (max-width: 520px) {
+    .erow.term {
+      grid-template-columns: 1fr var(--tap);
+    }
+    .erow.term > :is(input, textarea) {
+      grid-column: 1;
+    }
+    .erow.term .icon-btn {
+      grid-column: 2;
+    }
   }
+
   .errors {
     margin: 0;
     padding-left: 1.25rem;

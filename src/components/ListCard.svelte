@@ -16,7 +16,7 @@
   <SubjectBadge subject={deck.subject} lang={deck.langFront} />
   <span class="row-main">
     <span class="row-title">{deck.name}</span>
-    <span class="row-sub">{tp("common.wordsCount", count)}</span>
+    <span class="row-sub">{tp(deck.kind === "terms" ? "common.termsCount" : "common.wordsCount", count)}</span>
   </span>
   {#if due > 0}<span class="row-end">{tp("lists.due", due)}</span>{/if}
 </a>

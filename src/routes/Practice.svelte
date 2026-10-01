@@ -378,13 +378,13 @@
               }}
             >
               <div class="face front">
-                <span class="lang-label caption">{langName(q.promptLang)}</span>
-                <p class="prompt" lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
+                {#if q.promptLang !== "xx"}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
+                <p class="prompt" class:long={q.prompt.length > 60} lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
                 <span class="small muted">{t("practice.flipHint")}</span>
               </div>
               <div class="face back">
-                <span class="lang-label caption">{langName(q.answerLang)}</span>
-                <p class="prompt answer" lang={q.answerLang === "xx" ? undefined : q.answerLang}>{q.answer}</p>
+                {#if q.answerLang !== "xx"}<span class="lang-label caption">{langName(q.answerLang)}</span>{/if}
+                <p class="prompt answer" class:long={q.answer.length > 60} lang={q.answerLang === "xx" ? undefined : q.answerLang}>{q.answer}</p>
                 <span class="small muted">{q.prompt}</span>
               </div>
             </div>
@@ -398,9 +398,9 @@
                   <Icon name="speaker" size={34} />
                 </button>
               {:else}
-                <span class="lang-label caption">{langName(q.promptLang)}</span>
+                {#if q.promptLang !== "xx"}<span class="lang-label caption">{langName(q.promptLang)}</span>{/if}
                 <div class="prompt-row">
-                  <p class="prompt" id="prompt-{q.key}" lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
+                  <p class="prompt" class:long={q.prompt.length > 60} id="prompt-{q.key}" lang={q.promptLang === "xx" ? undefined : q.promptLang}>{q.prompt}</p>
                   {#if q.promptLang !== "xx" && canSpeak(q.promptLang)}
                     <button type="button" class="icon-btn speak" aria-label={t("common.speak")} onclick={() => speak(q.prompt, q.promptLang)}><Icon name="speaker" /></button>
                   {/if}
@@ -635,11 +635,19 @@
   }
   .prompt {
     font-size: clamp(1.75rem, 7vw, var(--fs-prompt));
-    font-weight: 800;
+    font-weight: 900;
     line-height: 1.15;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
+  }
+  /* A definition is read, not shouted. */
+  .prompt.long {
+    font-size: var(--fs-lead);
+    font-weight: 700;
+    line-height: 1.45;
+    letter-spacing: 0;
+    text-align: left;
   }
   .prompt-sm {
     font-size: var(--fs-section);

@@ -196,3 +196,20 @@ describe("continuing a session", () => {
     expect(Practice.restore([], { mode: "typen", direction: "front" }, snap)).toBeNull();
   });
 });
+
+describe("term lists", () => {
+  const terms: PracticeCard[] = [
+    ["Verzet", "Strijd tegen de bezetter."],
+    ["Blitzkrieg", "Snelle aanval."],
+  ].map(([front, back], i) => ({ id: `t${i}`, front: front!, back: back!, langFront: "xx", langBack: "xx", terms: true }));
+
+  it("never asks to type an explanation, however short, but lets you type the term", () => {
+    const toExplanation = new Practice(terms, { mode: "typen", direction: "front" }, seeded(3));
+    expect(toExplanation.current?.kind).toBe("flash");
+    const toTerm = new Practice(terms, { mode: "typen", direction: "back" }, seeded(3));
+    expect(toTerm.current?.kind).toBe("type");
+    // The same short answers in a word list are typed.
+    const plain = terms.map(({ terms: _, ...c }) => c);
+    expect(new Practice(plain, { mode: "typen", direction: "front" }, seeded(3)).current?.kind).toBe("type");
+  });
+});
