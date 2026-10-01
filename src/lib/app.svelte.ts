@@ -185,7 +185,7 @@ class App {
     const langs = new Map(this.decks.map((d) => [d.id, d]));
     return chosen.flatMap((c) => {
       const d = langs.get(c.deckId);
-      return d ? [{ id: c.id, front: c.front, back: c.back, langFront: d.langFront, langBack: d.langBack, ...(d.kind === "terms" ? { terms: true } : {}), ...(c.image ? { image: c.image } : {}) }] : [];
+      return d ? [{ id: c.id, front: c.front, back: c.back, langFront: d.langFront, langBack: d.langBack, ...(d.kind === "terms" ? { terms: true } : {}), ...(c.image ? { image: c.image } : {}), ...(c.forms ? { forms: c.forms } : {}) }] : [];
     });
   }
 

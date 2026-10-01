@@ -5,7 +5,7 @@ export type ContentLang = "nl" | "en" | "fr" | "de" | "es" | "it" | "la" | "xx";
 export type Grade = "fout" | "twijfel" | "goed";
 export type Box = 1 | 2 | 3 | 4 | 5;
 export type Theme = "system" | "light" | "dark";
-export type Mode = "herhalen" | "leren" | "flashcards" | "meerkeuze" | "typen" | "dictee" | "toets" | "koppelen";
+export type Mode = "herhalen" | "leren" | "flashcards" | "meerkeuze" | "typen" | "dictee" | "toets" | "koppelen" | "vervoegen" | "spelling";
 
 export interface Deck {
   id: string;
@@ -21,10 +21,13 @@ export interface Deck {
   kind?: DeckKind;
   /** The folder ("map") this list is in, by name. */
   folder?: string;
+  /** For a forms list: the column labels, 1 to 8 (je, tu, il/elle/on…). */
+  columns?: string[];
   createdAt: string;
 }
 
-export type DeckKind = "words" | "terms";
+/** "forms": conjugations and other rijtjes, with a form per column (je, tu, il… or past simple, past participle). */
+export type DeckKind = "words" | "terms" | "forms";
 
 export interface Card {
   id: string;
@@ -45,6 +48,8 @@ export interface Card {
   starred?: boolean;
   /** A picture for the front, as a small JPEG data URL. With a picture the front text may be empty. */
   image?: string;
+  /** For a forms list: one form per column of the list; "" where a column doesn't apply. */
+  forms?: string[];
 }
 
 /** Append-only. Never edited. */
@@ -102,7 +107,7 @@ export interface Settings {
 export const GRADES: readonly Grade[] = ["fout", "twijfel", "goed"];
 export const BOXES: readonly Box[] = [1, 2, 3, 4, 5];
 export const CONTENT_LANGS: readonly ContentLang[] = ["nl", "en", "fr", "de", "es", "it", "la", "xx"];
-export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets", "koppelen"];
+export const MODES: readonly Mode[] = ["herhalen", "leren", "flashcards", "meerkeuze", "typen", "dictee", "toets", "koppelen", "vervoegen", "spelling"];
 
 /**
  * A question in a quiz. Fill-in text marks each blank with square brackets:

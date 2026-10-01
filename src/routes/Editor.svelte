@@ -16,11 +16,11 @@
 
   let { id, terms = false }: { id?: string; terms?: boolean } = $props();
 
-  type Row = { key: number; id?: string; front: string; back: string; image?: string };
+  type Row = { key: number; id?: string; front: string; back: string; image?: string; forms: string[] };
 
   const existing = untrack(() => (id ? app.deck(id) : undefined));
   let nextKey = 0;
-  const blank = (): Row => ({ key: nextKey++, front: "", back: "" });
+  const blank = (): Row => ({ key: nextKey++, front: "", back: "", forms: [] });
 
   let name = $state(existing?.name ?? "");
   let subject = $state(existing?.subject ?? "");
@@ -28,6 +28,9 @@
   /** Terms (history, biology): a term and its explanation, no languages. */
   let kind = $state<DeckKind>(untrack(() => existing?.kind ?? (terms ? "terms" : "words")));
   const isTerms = $derived(kind === "terms");
+  const isForms = $derived(kind === "forms");
+  /** Forms lists: the column names (je, tu, il/elle…), 1 to LIMITS.formColumns. */
+  let columns = $state<string[]>(untrack(() => existing?.columns ?? ["", ""]));
   let langFront = $state<ContentLang>(untrack(() => existing?.langFront ?? (terms ? "xx" : "en")));
   let langBack = $state<ContentLang>(untrack(() => existing?.langBack ?? (terms ? "xx" : getLang())));
   // Switching a new list to terms drops the languages; back to words restores the usual pair.
@@ -38,7 +41,7 @@
   });
   let rows = $state<Row[]>(
     untrack(() =>
-      existing ? [...app.sortedCards(existing.id).map((c) => ({ key: nextKey++, id: c.id, front: c.front, back: c.back, ...(c.image ? { image: c.image } : {}) })), blank()] : [blank(), blank(), blank(), blank(), blank()],
+      existing ? [...app.sortedCards(existing.id).map((c) => ({ key: nextKey++, id: c.id, front: c.front, back: c.back, ...(c.image ? { image: c.image } : {}), forms: [...(c.forms ?? [])] })), blank()] : [blank(), blank(), blank(), blank(), blank()],
     ),
   );
   let errors = $state<string[]>([]);
@@ -154,14 +157,22 @@
       // With a picture the front may stay empty: the picture is the question.
       if ((!f && !r.image) || !b) problems.push(t("editor.rowIncomplete", { n: i + 1 }));
       else if (f.length > LIMITS.sideChars || b.length > LIMITS.sideChars) problems.push(t("editor.rowTooLong", { n: i + 1, max: LIMITS.sideChars }));
-      else clean.push({ ...(r.id ? { id: r.id } : {}), front: f, back: b, ...(r.image ? { image: r.image } : {}) });
+      else {
+        const forms = isForms ? columns.map((_, k) => (r.forms[k] ?? "").trim()) : [];
+        clean.push({ ...(r.id ? { id: r.id } : {}), front: f, back: b, ...(r.image ? { image: r.image } : {}), ...(forms.some(Boolean) ? { forms } : {}) });
+      }
     });
     if (!clean.length && !problems.length) problems.push(t("editor.noRows"));
     errors = problems;
     if (problems.length) return;
     busy = true;
     try {
-      const deckInput = { name: n, langFront, langBack, kind, subject: subject.trim().slice(0, LIMITS.labelChars), examDate: isValidDay(examDate) ? examDate : "" };
+      const cols = columns.map((c) => c.trim().slice(0, LIMITS.columnChars));
+      if (isForms && cols.some((c) => !c)) {
+        errors = [t("editor.columnNames")];
+        return;
+      }
+      const deckInput = { name: n, langFront, langBack, kind, ...(isForms ? { columns: cols } : {}), subject: subject.trim().slice(0, LIMITS.labelChars), examDate: isValidDay(examDate) ? examDate : "" };
       let deckId = existing?.id;
       if (deckId) await app.updateDeck(deckId, deckInput);
       else deckId = (await app.createDeck(deckInput)).id;
@@ -188,6 +199,7 @@
         <div class="segmented">
           <label><input type="radio" name="kind" value="words" bind:group={kind} />{t("editor.kindWords")}</label>
           <label><input type="radio" name="kind" value="terms" bind:group={kind} />{t("editor.kindTerms")}</label>
+          <label><input type="radio" name="kind" value="forms" bind:group={kind} />{t("editor.kindForms")}</label>
         </div>
       </fieldset>
     {/if}
@@ -207,6 +219,20 @@
       <input id="list-exam" type="date" bind:value={examDate} min={app.today} aria-describedby="exam-help" />
       <span id="exam-help" class="small muted">{t("editor.examHelp")}</span>
     </div>
+    {#if isForms}
+      <fieldset class="fieldset-wrap cols">
+        <legend>{t("editor.columns")}</legend>
+        <ol class="col-list">
+          {#each columns as _, c (c)}
+            <li>
+              <input type="text" aria-label={t("editor.column", { n: c + 1 })} placeholder={t("editor.columnExample", { n: c + 1 })} bind:value={columns[c]} maxlength={LIMITS.columnChars} autocomplete="off" />
+              {#if columns.length > 1}<button type="button" class="icon-btn" aria-label={t("editor.removeColumn", { n: c + 1 })} onclick={() => columns.splice(c, 1)}><Icon name="x" size={18} /></button>{/if}
+            </li>
+          {/each}
+        </ol>
+        {#if columns.length < LIMITS.formColumns}<button type="button" class="btn btn-quiet" onclick={() => columns.push("")}><Icon name="plus" size={18} />{t("editor.addColumn")}</button>{/if}
+      </fieldset>
+    {/if}
     <div class="langs" hidden={isTerms}>
       <div class="field">
         <label for="lang-front">{t("editor.langFront")}</label>
@@ -285,6 +311,13 @@
                 onkeydown={(e) => onkeydown(e, i, "back")}
                 onpaste={(e) => onpaste(e, i, "back")}
               />
+            {/if}
+            {#if isForms}
+              <div class="forms">
+                {#each columns as label, c (c)}
+                  <input type="text" aria-label="{t('editor.row', { n: i + 1 })}, {label || t('editor.column', { n: c + 1 })}" placeholder={label} bind:value={row.forms[c]} maxlength={LIMITS.sideChars} autocomplete="off" autocapitalize="off" spellcheck="false" lang={langFront === "xx" ? undefined : langFront} />
+                {/each}
+              </div>
             {/if}
             {#if row.image}
               <div class="pic">
@@ -423,6 +456,28 @@
   .tools {
     display: flex;
     gap: 0.25rem;
+  }
+  .cols {
+    grid-column: 1 / -1;
+  }
+  .col-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .col-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .forms {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+    gap: 0.375rem;
   }
   .kind {
     grid-column: 1 / -1;

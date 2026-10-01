@@ -152,7 +152,7 @@ function validate(raw: unknown, version: number): Snapshot {
     const w = `decks[${i}]`;
     const o = v1
       ? obj(d, w, ["id", "name", "lang", "subject", "createdAt"], ["id", "name", "lang", "createdAt"])
-      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "kind", "folder", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
+      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "kind", "folder", "columns", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
     const langFront = lang(v1 ? o.lang : o.langFront, v1 ? `${w}.lang` : `${w}.langFront`);
     const langBack = v1 ? langFront : lang(o.langBack, `${w}.langBack`);
     if (v1 && langFront !== "nl" && langFront !== "en") throw new Invalid(`${w}.lang`);
@@ -163,8 +163,14 @@ function validate(raw: unknown, version: number): Snapshot {
     if (folder) deck.folder = folder;
     if (!v1 && o.examDate !== undefined) deck.examDate = day(o.examDate, `${w}.examDate`);
     if (!v1 && o.kind !== undefined) {
-      if (o.kind !== "terms" && o.kind !== "words") throw new Invalid(`${w}.kind`);
-      if (o.kind === "terms") deck.kind = "terms";
+      if (o.kind !== "terms" && o.kind !== "words" && o.kind !== "forms") throw new Invalid(`${w}.kind`);
+      if (o.kind !== "words") deck.kind = o.kind;
+    }
+    if (!v1 && o.columns !== undefined) {
+      if (deck.kind !== "forms") throw new Invalid(`${w}.columns`);
+      const cols = arr(o.columns, `${w}.columns`, LIMITS.formColumns).map((c, k) => str(c, `${w}.columns[${k}]`, LIMITS.columnChars));
+      if (!cols.length) throw new Invalid(`${w}.columns`);
+      deck.columns = cols;
     }
     if (deckIds.has(deck.id)) throw new Invalid(`${w}.id`);
     deckIds.add(deck.id);
@@ -172,7 +178,7 @@ function validate(raw: unknown, version: number): Snapshot {
   });
 
   const cardBoxes = new Map<string, Box>();
-  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay", "starred", "image"])];
+  const cardKeys = ["id", "deckId", "front", "back", "topic", "box", "due", "createdAt", "updatedAt", ...(v1 ? [] : ["hist", "lastDay", "starred", "image", "forms"])];
   const cards: Card[] = arr(root.cards, "cards", LIMITS.backupCards).map((c, i) => {
     const w = `cards[${i}]`;
     const o = obj(c, w, cardKeys, ["id", "deckId", "front", "back", "box", "due", "createdAt", "updatedAt"]);
@@ -190,6 +196,7 @@ function validate(raw: unknown, version: number): Snapshot {
     const topic = optStr(o.topic, `${w}.topic`, LIMITS.labelChars);
     if (topic) card.topic = topic;
     if (o.image !== undefined) card.image = image(o.image, `${w}.image`);
+    if (o.forms !== undefined) card.forms = arr(o.forms, `${w}.forms`, LIMITS.formColumns).map((f, k) => str(f, `${w}.forms[${k}]`, LIMITS.sideChars, 0));
     // Caches are validated but not trusted: they are rebuilt from the review log on import.
     if (o.hist !== undefined && (typeof o.hist !== "string" || !/^[gtf]{0,8}$/.test(o.hist))) throw new Invalid(`${w}.hist`);
     if (o.lastDay !== undefined) day(o.lastDay, `${w}.lastDay`);
@@ -323,8 +330,8 @@ export function parseBackup(text: string): Parsed<Snapshot> {
 }
 
 export interface SharedDeck {
-  deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject" | "examDate" | "kind">;
-  cards: { front: string; back: string; topic?: string; image?: string }[];
+  deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject" | "examDate" | "kind" | "columns">;
+  cards: { front: string; back: string; topic?: string; image?: string; forms?: string[] }[];
 }
 
 /** A shareable quiz: the questions only, without your last grade or folder. */
@@ -405,12 +412,14 @@ function toSharedDeck(d: Deck, cards: readonly Card[]): SharedDeck {
   if (d.subject) deck.subject = d.subject;
   if (d.examDate) deck.examDate = d.examDate;
   if (d.kind) deck.kind = d.kind;
+  if (d.columns) deck.columns = d.columns;
   return {
     deck,
     cards: cards.map((c) => {
       const out: SharedDeck["cards"][number] = { front: c.front, back: c.back };
       if (c.topic) out.topic = c.topic;
       if (c.image) out.image = c.image;
+      if (c.forms) out.forms = c.forms;
       return out;
     }),
   };

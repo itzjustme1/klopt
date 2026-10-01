@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Practice, type PracticeCard } from "../../src/lib/practice";
+import { Practice, SPELL_MAX, spellTarget, type PracticeCard } from "../../src/lib/practice";
 import type { Grade } from "../../src/lib/types";
 
 function seeded(seed: number) {
@@ -239,5 +239,34 @@ describe("pictures", () => {
       expect(q.options ?? []).not.toContain("");
       return "goed";
     });
+  });
+});
+
+describe("spelling", () => {
+  it("builds tiles from the letters of the answer, shuffled, with spaces given", () => {
+    const p = new Practice(words, { mode: "spelling", direction: "back" }, seeded(3));
+    const q = p.current!;
+    expect(q.kind).toBe("spell");
+    expect(q.spell!.target).toBe(q.answer);
+    const letters = [...q.answer].filter((c) => c !== " ");
+    expect([...q.spell!.tiles].sort()).toEqual([...letters].sort());
+    expect(q.spell!.tiles.join("")).not.toBe(letters.join(""));
+  });
+
+  it("spells the first alternative without optional parts, and types long answers", () => {
+    expect(spellTarget("(de) auto / wagen")).toBe("auto");
+    expect(spellTarget("was / were, been")).toBe("was");
+    expect(spellTarget("1,5 liter")).toBe("1,5 liter");
+    const p = new Practice(long, { mode: "spelling", direction: "front" }, seeded(1));
+    expect(p.current!.kind).toBe("flash");
+    const longWord = [{ id: "x", front: "x", back: "a".repeat(SPELL_MAX + 1), langFront: "nl" as const, langBack: "nl" as const }];
+    expect(new Practice(longWord, { mode: "spelling", direction: "front" }, seeded(1)).current!.kind).toBe("type");
+  });
+
+  it("brings wrong answers back until they are right", () => {
+    const p = new Practice(words, { mode: "spelling", direction: "back" }, seeded(5));
+    let firstWrong = true;
+    const n = run(p, () => (firstWrong ? ((firstWrong = false), "fout") : "goed"));
+    expect(n).toBe(words.length + 1);
   });
 });

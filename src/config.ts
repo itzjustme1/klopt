@@ -33,6 +33,10 @@ export const LIMITS = {
   imageChars: 400_000,
   /** Longest side of a card picture after downscaling, in pixels. */
   imagePixels: 640,
+  /** Columns in a forms list (je, tu, il… is six). */
+  formColumns: 8,
+  /** Max length of a column label. */
+  columnChars: 40,
   /** Max deck name length. */
   deckNameChars: 120,
   /** Max subject / topic length. */

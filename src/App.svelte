@@ -7,6 +7,8 @@
   import { applyUpdate, pwa } from "./lib/pwa.svelte";
   import { account } from "./lib/account.svelte";
   import Account from "./routes/Account.svelte";
+  import Forms from "./routes/Forms.svelte";
+  import VerbSets from "./routes/VerbSets.svelte";
   import Inbox from "./routes/Inbox.svelte";
   import Groups from "./routes/Groups.svelte";
   import GroupPage from "./routes/GroupPage.svelte";
@@ -39,7 +41,7 @@
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
     { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
-    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder"] },
+    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder", "verbs"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
     { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help", "account", "inbox", "groups", "group"] },
   ];
@@ -66,6 +68,7 @@
     folder: "folder.title",
     newFolder: "folder.new",
     account: "account.title",
+    verbs: "verbs.title",
     inbox: "inbox.title",
     groups: "groups.title",
     group: "groups.title",
@@ -169,6 +172,8 @@
       {#key `${r.scope}/${r.mode}/${r.dir}/${r.which}/${r.count}`}
         {#if r.mode === "koppelen"}
           <Match scope={r.scope} which={r.which} count={r.count} />
+        {:else if r.mode === "vervoegen"}
+          <Forms scope={r.scope} which={r.which} count={r.count} />
         {:else}
           <Practice scope={r.scope} mode={r.mode} dir={r.dir} which={r.which} count={r.count} />
         {/if}
@@ -199,6 +204,8 @@
       {#key app.route.id}<QuizView id={app.route.id} share={app.route.share ?? false} />{/key}
     {:else if app.route.name === "quizEditor"}
       {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+    {:else if app.route.name === "verbs"}
+      <VerbSets />
     {:else if app.route.name === "account"}
       <Account />
     {:else if app.route.name === "inbox"}

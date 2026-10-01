@@ -76,6 +76,18 @@ for (const scheme of ["light", "dark"] as const) {
     await page.goto(`${base}#/oefenen/${deckHash}/typen/front/all`);
     await page.locator(".answer-input").waitFor();
     await check("type");
+    await page.goto(`${base}#/oefenen/${deckHash}/spelling/front/all`);
+    await page.locator(".tiles").waitFor();
+    await check("spelling");
+    await page.goto(base + "#/rijtjes");
+    await page.getByRole("button", { name: "Toevoegen" }).nth(1).click();
+    await page.getByRole("heading", { name: "Frans: présent" }).waitFor();
+    await check("forms list");
+    await practise(page, /^Rijtjes/);
+    await page.locator(".verb").waitFor();
+    await check("forms drill");
+    await page.goto(`${base}#/oefenen/${deckHash}/typen/front/all`);
+    await page.locator(".answer-input").waitFor();
     await page.keyboard.type("xyz");
     await page.keyboard.press("Enter");
     await page.locator(".sheet").waitFor();

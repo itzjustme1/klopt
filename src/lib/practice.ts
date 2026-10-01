@@ -7,7 +7,7 @@ import type { ContentLang, Grade, Mode } from "./types";
 import type { Rng } from "./session";
 
 export type Direction = "front" | "back" | "mixed";
-export type Kind = "flash" | "mc" | "type" | "dictee";
+export type Kind = "flash" | "mc" | "type" | "dictee" | "spell";
 
 export interface PracticeCard {
   id: string;
@@ -19,6 +19,8 @@ export interface PracticeCard {
   terms?: boolean;
   /** A picture that belongs to the front; a card with a picture may have no front text. */
   image?: string;
+  /** From a forms list: its forms, one per column. */
+  forms?: string[];
 }
 
 export interface Question {
@@ -31,6 +33,8 @@ export interface Question {
   answer: string;
   answerLang: ContentLang;
   options?: string[];
+  /** For spell: the word to build (spaces are given) and its letters in shuffled order. */
+  spell?: { target: string; tiles: string[] };
   /** Where the card's picture shows: with the question (front asked) or with the answer (front is the answer). */
   image?: { src: string; with: "prompt" | "answer" };
   /** 1 for the first time this card is asked in the session. */
@@ -147,7 +151,7 @@ export class Practice {
         this.done++;
         break;
       default:
-        // herhalen, flashcards, typen, dictee: wrong cards come back at the end until right.
+        // herhalen, flashcards, typen, dictee, spelling: wrong cards come back at the end until right.
         if (grade === "fout") this.queue.push(item);
         else this.done++;
     }
@@ -235,6 +239,7 @@ export class Practice {
 
     const q: Question = { key: ++this.key, card, kind, prompt, promptLang, answer, answerLang, attempt: item.attempts + 1 };
     if (kind === "mc") q.options = this.options(answer, answerSide);
+    if (kind === "spell") q.spell = this.tiles(answer);
     if (card.image && kind !== "dictee") q.image = { src: card.image, with: item.ask === "front" ? "prompt" : "answer" };
     return q;
   }
@@ -253,10 +258,22 @@ export class Practice {
         return typeable ? "type" : "flash";
       case "toets":
         return typeable ? "type" : mcPossible ? "mc" : "flash";
+      case "spelling":
+        if (!typeable) return "flash";
+        return spellTarget(answer).replace(/\s/g, "").length <= SPELL_MAX ? "spell" : "type";
       default:
         // herhalen, typen
         return typeable ? "type" : "flash";
     }
+  }
+
+  /** The letters of the answer, shuffled so they are not already in order (when that is possible). */
+  private tiles(answer: string): { target: string; tiles: string[] } {
+    const target = spellTarget(answer);
+    const letters = [...target].filter((ch) => !/\s/.test(ch));
+    let tiles = shuffle(letters, this.rng);
+    for (let i = 0; i < 5 && tiles.join("") === letters.join("") && new Set(letters).size > 1; i++) tiles = shuffle(letters, this.rng);
+    return { target, tiles };
   }
 
   private options(answer: string, side: "front" | "back"): string[] {
@@ -299,6 +316,15 @@ function uniq(items: string[]): string[] {
     }
   }
   return out;
+}
+
+/** Longest answer (in letters) that is built from tiles; longer ones are typed. */
+export const SPELL_MAX = 24;
+
+/** The form of an answer that is spelled: the first alternative, without optional parts in brackets. */
+export function spellTarget(answer: string): string {
+  const first = answer.split(/[/;]|(?<!\d),|,(?!\d)/).map((s) => s.trim()).find(Boolean) ?? answer;
+  return first.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim() || first.trim();
 }
 
 function shuffle<T>(items: T[], rng: Rng): T[] {

@@ -10,6 +10,7 @@
   const items: { icon: IconName; label: StringKey; href: string }[] = [
     { icon: "lists", label: "new.type", href: href.editorNew() },
     { icon: "cards", label: "new.terms", href: href.termsNew() },
+    { icon: "rows", label: "new.verbs", href: href.verbs() },
     { icon: "quiz", label: "new.quiz", href: href.quizNew() },
     { icon: "folder", label: "new.folder", href: href.newFolder() },
     { icon: "camera", label: "new.photo", href: href.photo() },

@@ -25,6 +25,7 @@ export type Route =
   | { name: "quizzes" }
   | { name: "folders" }
   | { name: "account" }
+  | { name: "verbs" }
   | { name: "inbox" }
   | { name: "groups" }
   | { name: "group"; id: string }
@@ -107,6 +108,8 @@ export function parseHash(hash: string): Route {
       return a ? { name: "share", payload: parts.slice(1).join("/") } : notFound;
     case "quizzen":
       return n === 1 ? { name: "quizzes" } : notFound;
+    case "rijtjes":
+      return n === 1 ? { name: "verbs" } : notFound;
     case "account":
       return n === 1 ? { name: "account" } : notFound;
     case "inbox":
@@ -164,6 +167,7 @@ export const href = {
   quizzes: () => "#/quizzen",
   folders: () => "#/mappen",
   account: () => "#/account",
+  verbs: () => "#/rijtjes",
   inbox: () => "#/inbox",
   groups: () => "#/groepen",
   group: (id: string) => `#/groep/${enc(id)}`,

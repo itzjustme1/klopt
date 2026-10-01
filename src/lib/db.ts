@@ -53,8 +53,8 @@ export function defaultSettings(navLang?: string): Settings {
   };
 }
 
-export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic" | "image">>;
-export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate" | "kind" | "folder">>;
+export type NewCard = Pick<Card, "front" | "back"> & Partial<Pick<Card, "topic" | "image" | "forms">>;
+export type DeckInput = Pick<Deck, "name" | "langFront" | "langBack"> & Partial<Pick<Deck, "subject" | "examDate" | "kind" | "folder" | "columns">>;
 
 /**
  * Random UUID v4. crypto.randomUUID only exists in secure contexts (https or localhost), so opening
@@ -78,6 +78,7 @@ export function makeCard(deckId: string, input: NewCard, now: Date = new Date())
   const card: Card = { id: newId(), deckId, front: input.front, back: input.back, box: 1, due: localDay(now), createdAt: iso, updatedAt: iso };
   if (input.topic) card.topic = input.topic;
   if (input.image) card.image = input.image;
+  if (input.forms?.some((f) => f)) card.forms = [...input.forms];
   return card;
 }
 
@@ -185,7 +186,8 @@ export class Store {
     const deck: Deck = { id: newId(), name: input.name, langFront: input.langFront, langBack: input.langBack, createdAt: now.toISOString() };
     if (input.subject) deck.subject = input.subject;
     if (input.examDate) deck.examDate = input.examDate;
-    if (input.kind === "terms") deck.kind = "terms";
+    if (input.kind === "terms" || input.kind === "forms") deck.kind = input.kind;
+    if (input.kind === "forms" && input.columns?.length) deck.columns = [...input.columns];
     if (input.folder) deck.folder = input.folder;
     await this.db.add("decks", deck);
     return deck;
@@ -198,7 +200,8 @@ export class Store {
     const next: Deck = { ...deck, ...patch };
     if (!next.subject) delete next.subject;
     if (!next.examDate) delete next.examDate;
-    if (next.kind !== "terms") delete next.kind;
+    if (next.kind !== "terms" && next.kind !== "forms") delete next.kind;
+    if (next.kind !== "forms" || !next.columns?.length) delete next.columns;
     if (!next.folder) delete next.folder;
     await tx.store.put(next);
     await tx.done;
@@ -279,12 +282,14 @@ export class Store {
       const old = row.id ? existing.get(row.id) : undefined;
       if (old) {
         keep.add(old.id);
-        if (old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "") || (old.image ?? "") !== (row.image ?? "")) {
+        if (old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "") || (old.image ?? "") !== (row.image ?? "") || (old.forms ?? []).join("\u0000") !== (row.forms ?? []).join("\u0000")) {
           const next: Card = { ...old, front: row.front, back: row.back, updatedAt: now.toISOString() };
           if (row.topic) next.topic = row.topic;
           else delete next.topic;
           if (row.image) next.image = row.image;
           else delete next.image;
+          if (row.forms?.some((f) => f)) next.forms = [...row.forms];
+          else delete next.forms;
           await cards.put(next);
           updated++;
         }

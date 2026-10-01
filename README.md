@@ -29,6 +29,7 @@ npm run e2e
 **Lists**
 - **Word lists** with two languages (Dutch, English, French, German, Spanish, Italian, Latin or "other").
 - **Term lists** (begrippen) for subjects like history: a term and its explanation. Flashcards are recommended for them, and an explanation is never asked to be typed.
+- **Verb lists (rijtjes):** a verb, its meaning and its forms in up to 8 columns (je, tu, il … or past simple, past participle). Make your own, or add a ready-made set from *Nieuw → Werkwoorden*: English irregular verbs (61), French présent (16), German Präsens (21) and Spanish presente (13). The *Rijtjes* mode asks the whole row at once; a row that is not fully right comes back.
 - A subject badge per list.
 - An optional test date per list.
 - Search, sort and a subject filter across lists; search within a list of more than 20 words.
@@ -53,6 +54,7 @@ npm run e2e
 | Flashcards | Flip, then say whether you knew it, or swipe right or left on a phone. What you didn't know comes back at the end. |
 | Meerkeuze (Multiple choice) | Four options. |
 | Typen (Type) | Type the answer, with hints that reveal letters. Wrong answers come back at the end. |
+| Spelling | Build the answer from its letters, shuffled into tiles (tap them or type them). Long answers are typed instead. |
 | Dictee (Dictation) | Hear the foreign word and type it. Only with a voice installed on the device. |
 | Toets (Test) | Everything once, no feedback, and a Dutch grade at the end (1 + 9 × score). |
 | Koppelen (Match) | Tap words and translations that belong together, against the clock, in rounds of six, with a record per list. |

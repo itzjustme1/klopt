@@ -10,4 +10,6 @@ export const MODE_ICON: Record<Mode, IconName> = {
   dictee: "listen",
   toets: "test",
   koppelen: "match",
+  vervoegen: "rows",
+  spelling: "spell",
 };

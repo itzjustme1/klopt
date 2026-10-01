@@ -22,6 +22,8 @@
   let engine = $state.raw<Practice | null>(null);
   let version = $state(0);
   let given = $state("");
+  /** For spell: the tiles picked so far, by index, in order. */
+  let picked = $state<number[]>([]);
   let hint = $state(0);
   let flipped = $state(false);
   let feedback = $state<Feedback | null>(null);
@@ -30,6 +32,7 @@
   let nextBtn: HTMLButtonElement | undefined = $state();
   let cardBtn: HTMLElement | undefined = $state();
   let optionsEl: HTMLElement | undefined = $state();
+  let tilesEl: HTMLElement | undefined = $state();
 
   const exitHref = $derived(scope === "alles" ? href.today() : href.deck(scope));
   const exitLabel = $derived(scope === "alles" ? t("practice.backHome") : t("practice.backToList"));
@@ -101,6 +104,7 @@
 
   async function prepareQuestion() {
     given = "";
+    picked = [];
     hint = 0;
     flipped = false;
     feedback = null;
@@ -111,6 +115,7 @@
     else if (app.settings.autoSpeak && cur.promptLang !== "xx") speak(cur.prompt, cur.promptLang);
     if (cur.kind === "type" || cur.kind === "dictee") inputEl?.focus();
     else if (cur.kind === "flash") cardBtn?.focus();
+    else if (cur.kind === "spell") tilesEl?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus();
     else optionsEl?.querySelector<HTMLButtonElement>("button")?.focus();
   }
 
@@ -213,6 +218,37 @@
     inputEl?.focus();
   }
 
+  /** The word as built so far: the picked letters in the answer's shape, with its spaces. */
+  function built(target: string, tiles: string[], picks: number[]): string {
+    let i = 0;
+    let out = "";
+    for (const ch of target) {
+      if (/\s/.test(ch)) out += ch;
+      else if (i < picks.length) out += tiles[picks[i++]!]!;
+      else break;
+    }
+    return out;
+  }
+
+  function pickTile(i: number) {
+    const cur = q;
+    if (!cur?.spell || feedback || picked.includes(i)) return;
+    picked = [...picked, i];
+    given = built(cur.spell.target, cur.spell.tiles, picked);
+    if (picked.length === cur.spell.tiles.length) check();
+    else if (tilesEl?.contains(document.activeElement)) {
+      // The picked tile is disabled now; keep focus on one that can still be picked.
+      void tick().then(() => tilesEl?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus());
+    }
+  }
+
+  function undoTile() {
+    const cur = q;
+    if (!cur?.spell || feedback || !picked.length) return;
+    picked = picked.slice(0, -1);
+    given = built(cur.spell.target, cur.spell.tiles, picked);
+  }
+
   function insertChar(ch: string) {
     if (!inputEl) return;
     given = insertAtCaret(inputEl, ch);
@@ -236,6 +272,18 @@
         if (idx >= 0 && idx < grades.length) {
           e.preventDefault();
           selfGrade(grades[idx]!);
+        }
+      }
+    } else if (q.kind === "spell" && q.spell && !feedback) {
+      if (e.key === "Backspace") {
+        e.preventDefault();
+        undoTile();
+      } else if (e.key.length === 1 && e.key.trim()) {
+        const want = e.key.toLocaleLowerCase();
+        const i = q.spell.tiles.findIndex((tile, j) => !picked.includes(j) && tile.toLocaleLowerCase() === want);
+        if (i >= 0) {
+          e.preventDefault();
+          pickTile(i);
         }
       }
     } else if (q.kind === "mc" && !feedback) {
@@ -443,6 +491,27 @@
                 {/if}
                 <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
               </form>
+            {:else if q.kind === "spell" && q.spell}
+              {@const spell = q.spell}
+              <p class="caption muted center" id="spell-label-{q.key}">{t("practice.spellHere")}</p>
+              <p
+                class="slots"
+                class:ok={feedback?.verdict === "correct"}
+                class:bad={!!feedback && feedback.verdict !== "correct"}
+                aria-hidden="true"
+              >
+                {#each [...spell.target] as ch, i (i)}
+                  {#if /\s/.test(ch)}<span class="gap"></span>{:else}<span class="slot" class:filled={i < given.length}>{given[i] ?? ""}</span>{/if}
+                {/each}
+              </p>
+              <p class="visually-hidden" aria-live="polite" lang={q.answerLang === "xx" || !given ? undefined : q.answerLang}>{given || t("practice.spellEmpty")}</p>
+              {#if !feedback}
+              <div class="tiles" role="group" aria-labelledby="spell-label-{q.key}" bind:this={tilesEl}>
+                {#each spell.tiles as tile, i (i)}
+                  <button type="button" class="tile" disabled={picked.includes(i)} onclick={() => pickTile(i)} lang={q.answerLang === "xx" ? undefined : q.answerLang}>{tile}</button>
+                {/each}
+              </div>
+              {/if}
             {:else if q.kind === "mc" && q.options}
               <p class="caption muted">{t("practice.chooseAnswer")}</p>
               <div class="options" role="group" aria-labelledby={q.prompt ? `prompt-${q.key}` : `prompt-img-${q.key}`} bind:this={optionsEl}>
@@ -540,6 +609,11 @@
           {#if !isTest && q.kind === "type" && (mode === "typen" || mode === "leren")}
             <button type="button" class="btn btn-quiet dont" onclick={dontKnow}>{t("practice.dontKnow")}</button>
           {/if}
+        {:else if q.kind === "spell"}
+          <div class="grades two">
+            <button type="button" class="btn btn-lg" disabled={!picked.length} onclick={undoTile}><Icon name="back" size={20} />{t("practice.undoLetter")}</button>
+            <button type="button" class="btn btn-lg" onclick={dontKnow}>{t("practice.dontKnow")}</button>
+          </div>
         {:else if q.kind === "mc"}
           <p class="small muted center keys-hint">{t("practice.keysMc")}</p>
         {/if}
@@ -708,6 +782,70 @@
   .options {
     display: grid;
     gap: 0.75rem;
+  }
+
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.375rem;
+    min-height: 3rem;
+  }
+  .slot {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.75rem;
+    border-bottom: 3px solid var(--line-strong);
+    font-size: var(--fs-section);
+    font-weight: 800;
+  }
+  .slot.filled {
+    border-color: var(--accent);
+  }
+  .slots.ok .slot {
+    border-color: var(--good-fill);
+    color: var(--good);
+  }
+  .slots.bad .slot {
+    border-color: var(--bad-fill);
+    color: var(--bad);
+  }
+  .gap {
+    width: 1rem;
+  }
+  .tiles {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .tile {
+    min-width: 3rem;
+    min-height: 3rem;
+    padding: 0 0.75rem;
+    border: 2px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-section);
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 var(--edge-2) 0 var(--line-strong);
+    margin-bottom: var(--edge-2);
+    transition: border-color var(--t-base) var(--ease), opacity var(--t-base) var(--ease), transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
+  }
+  .tile:hover:not([disabled]) {
+    border-color: var(--accent);
+  }
+  .tile:active:not([disabled]) {
+    transform: translateY(var(--edge-2));
+    box-shadow: 0 0 0 var(--line-strong);
+  }
+  .tile[disabled] {
+    opacity: 0.25;
+    cursor: default;
   }
   .option {
     display: flex;
