@@ -1,70 +1,70 @@
-/* Design tokens. Values and their sources: DESIGN-RECON.md. Components use these, never raw values. */
+/*
+ * Design tokens, v4: the structure of the StudyGo app in navy. Values and sources: DESIGN-RECON.md.
+ * Dark navy is the default; [data-theme="light"] (or "system" on a light device) switches to light.
+ * Components use these, never raw values.
+ */
 :root {
-  color-scheme: light;
-  --bg: #f3f6fc;
-  --surface: #ffffff;
-  --surface-2: #edf1f9;
-  --line: #e3e8f2;
-  --line-strong: #d3dae8;
-  --ink: #131a2e;
-  --ink-2: #56607a;
-  --accent: #1660ff;
-  --accent-edge: #0a46d1;
-  /* The brand band behind the header and page titles. */
-  --band: #1660ff;
-  --band-2: #0f52e6;
-  --band-3: #0b44c4;
-  --on-band: #ffffff;
-  /* Primary "go" buttons, like StudyGo's green knob. White text at 19px bold passes AA (3.3:1, large text). */
-  --cta: #16a34a;
-  --cta-hover: #138f41;
-  --cta-edge: #0f7a35;
-  --on-cta: #ffffff;
+  color-scheme: dark;
+  /* Ground, raised surfaces (row groups, sheets, the tab bar) and a second step for chips and inputs. */
+  --bg: #0b1736;
+  --surface: #14295a;
+  --surface-2: #1c3570;
+  --surface-3: #24407f;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.2);
+  --ink: #ffffff;
+  --ink-2: #a9b9df;
+  /* Links, active tabs, selected states. */
+  --accent: #7fa8ff;
+  --accent-soft: rgb(127 168 255 / 0.16);
+  /* The blue block on the home screen and the progress fill. */
+  --brand: #1f5cff;
+  --on-brand: #ffffff;
+  /* Green "go" buttons with dark text (6.7:1), like StudyGo's. */
+  --green: #29b966;
+  --green-hover: #31c972;
+  --green-edge: #1a8048;
+  --on-green: #08200f;
   --yellow: #ffd43b;
-  --yellow-soft: #fff6d1;
-  --grey-btn: #e9edf6;
-  --grey-btn-edge: #cfd6e4;
-  --accent-text: #1052e6;
-  --accent-soft: #e6eeff;
-  --on-accent: #ffffff;
-  --good: #0b7a43;
-  --good-fill: #17b26a;
-  --good-soft: #e2f6ea;
-  --bad: #c4261a;
-  --bad-fill: #c93a2e;
-  --bad-soft: #fdecea;
-  --warn: #b54708;
-  --warn-soft: #fef0e1;
-  --flame: #f2711c;
-  --b1: #d7e3ff;
-  --b2: #a9c2ff;
-  --b3: #6b95ff;
-  --b4: #2f6bff;
-  --b5: #0a3fbf;
-  --heat-0: #e7ebf3;
-  --heat-1: #b9ccff;
-  --heat-2: #7fa2ff;
-  --heat-3: #1660ff;
+  --on-yellow: #1f1a00;
+  --good: #5fdc8f;
+  --good-fill: #29b966;
+  --good-soft: rgb(41 185 102 / 0.16);
+  --bad: #ff8f86;
+  --bad-fill: #e5484d;
+  --bad-soft: rgb(229 72 77 / 0.16);
+  --warn: #ffb35c;
+  --warn-soft: rgb(255 179 92 / 0.14);
+  --flame: #ff8a3d;
+  --b1: #2a4180;
+  --b2: #2f59c8;
+  --b3: #4f7dff;
+  --b4: #8fb0ff;
+  --b5: #d3e0ff;
+  --heat-0: #1c3570;
+  --heat-1: #2c4da3;
+  --heat-2: #3f6cf0;
+  --heat-3: #8fb0ff;
+  --scrim: rgb(3 8 22 / 0.6);
+  --shadow-sheet: 0 -12px 40px rgb(0 0 0 / 0.35);
 
-  --font: "Figtree Variable", "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fs-hero: 4rem;
-  --fs-display: 2.5rem;
-  --fs-h1: 1.75rem;
-  --fs-h2: 1.25rem;
-  --fs-lead: 1.0625rem;
-  --fs-cta: 1.1875rem;
-  --fs-body: 1rem;
-  --fs-small: 0.875rem;
-  --fs-caption: 0.8125rem;
+  --font: "Gabarito Variable", "Gabarito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-hero: 2.75rem;
+  --fs-prompt: 2rem;
+  --fs-title: 1.5rem;
+  --fs-section: 1.125rem;
+  --fs-lead: 1rem;
+  --fs-body: 0.9375rem;
+  --fs-small: 0.8125rem;
+  --fs-caption: 0.75rem;
+  --fs-nav: 0.6875rem;
 
-  --r-xs: 10px;
-  --r-sm: 14px;
-  --r-lg: 24px;
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
   --r-pill: 999px;
-
-  --shadow-card: 0 2px 0 rgb(19 26 46 / 0.05), 0 10px 28px rgb(19 26 46 / 0.08);
   --edge: 4px;
-  --edge-2: 3px;
 
   --gutter: 16px;
   --tap: 44px;
@@ -80,94 +80,81 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #0f1422;
-    --surface: #171d2e;
-    --surface-2: #212940;
-    --line: #2a3350;
-    --line-strong: #37426a;
-    --ink: #eef1f8;
-    --ink-2: #a7b0c8;
-    --accent-edge: #0a3bb0;
-    --accent-text: #7fa6ff;
-    --accent-soft: #1a2a52;
-    --good: #4ade9a;
-    --good-soft: #12301f;
-    --bad: #ff7a6e;
-    --bad-soft: #3a1a18;
-    --warn: #f5a04a;
-    --warn-soft: #3a2a12;
-    --b1: #25355e;
-    --b2: #2c4a9a;
-    --b3: #3a67d6;
-    --b4: #6b95ff;
-    --b5: #b5caff;
-    --heat-0: #212940;
-    --heat-1: #25407f;
-    --heat-2: #2f5fd6;
-    --heat-3: #7fa6ff;
-    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
-    --band: #1447c9;
-    --band-2: #103aa6;
-    --band-3: #0c2d85;
-    --grey-btn: #263050;
-    --grey-btn-edge: #1a2240;
-    --yellow-soft: #3a3312;
-    --yellow: #caa52a;
+/* Light: the same structure on a pale ground with white surfaces. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f2f5fb;
+  --surface: #ffffff;
+  --surface-2: #e9eef8;
+  --surface-3: #dde4f2;
+  --line: #e1e6f0;
+  --line-strong: #c9d2e3;
+  --ink: #101a33;
+  --ink-2: #56607a;
+  --accent: #1052e6;
+  --accent-soft: #e6eeff;
+  --brand: #1660ff;
+  --good: #0b7a43;
+  --good-soft: #e2f6ea;
+  --bad: #c4261a;
+  --bad-soft: #fdecea;
+  --warn: #a54305;
+  --warn-soft: #fef0e1;
+  --b1: #d7e3ff;
+  --b2: #a9c2ff;
+  --b3: #6b95ff;
+  --b4: #2f6bff;
+  --b5: #0a3fbf;
+  --heat-0: #e3e9f4;
+  --heat-1: #b9ccff;
+  --heat-2: #7fa2ff;
+  --heat-3: #1660ff;
+  --scrim: rgb(16 26 51 / 0.45);
+  --shadow-sheet: 0 -12px 40px rgb(16 26 51 / 0.18);
+}
+@media (prefers-color-scheme: light) {
+  :root[data-theme="system"] {
+    color-scheme: light;
+    --bg: #f2f5fb;
+    --surface: #ffffff;
+    --surface-2: #e9eef8;
+    --surface-3: #dde4f2;
+    --line: #e1e6f0;
+    --line-strong: #c9d2e3;
+    --ink: #101a33;
+    --ink-2: #56607a;
+    --accent: #1052e6;
+    --accent-soft: #e6eeff;
+    --brand: #1660ff;
+    --good: #0b7a43;
+    --good-soft: #e2f6ea;
+    --bad: #c4261a;
+    --bad-soft: #fdecea;
+    --warn: #a54305;
+    --warn-soft: #fef0e1;
+    --b1: #d7e3ff;
+    --b2: #a9c2ff;
+    --b3: #6b95ff;
+    --b4: #2f6bff;
+    --b5: #0a3fbf;
+    --heat-0: #e3e9f4;
+    --heat-1: #b9ccff;
+    --heat-2: #7fa2ff;
+    --heat-3: #1660ff;
+    --scrim: rgb(16 26 51 / 0.45);
+    --shadow-sheet: 0 -12px 40px rgb(16 26 51 / 0.18);
   }
 }
 
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #0f1422;
-  --surface: #171d2e;
-  --surface-2: #212940;
-  --line: #2a3350;
-  --line-strong: #37426a;
-  --ink: #eef1f8;
-  --ink-2: #a7b0c8;
-  --accent-edge: #0a3bb0;
-  --accent-text: #7fa6ff;
-  --accent-soft: #1a2a52;
-  --good: #4ade9a;
-  --good-soft: #12301f;
-  --bad: #ff7a6e;
-  --bad-soft: #3a1a18;
-  --warn: #f5a04a;
-  --warn-soft: #3a2a12;
-  --b1: #25355e;
-  --b2: #2c4a9a;
-  --b3: #3a67d6;
-  --b4: #6b95ff;
-  --b5: #b5caff;
-  --heat-0: #212940;
-  --heat-1: #25407f;
-  --heat-2: #2f5fd6;
-  --heat-3: #7fa6ff;
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 6px 20px rgb(0 0 0 / 0.25);
-    --band: #1447c9;
-    --band-2: #103aa6;
-    --band-3: #0c2d85;
-    --grey-btn: #263050;
-    --grey-btn-edge: #1a2240;
-    --yellow-soft: #3a3312;
-    --yellow: #caa52a;
-}
-
-/* Round icons for subjects and practice modes: all pass AA with white text. */
+/* Subject colours: the dot or symbol in front of a list, picked by a hash of the subject name. */
 :root {
-  --ic-1: #2563eb;
-  --ic-2: #db2777;
-  --ic-3: #b45309;
-  --ic-4: #0f766e;
-  --ic-5: #7c3aed;
-  --ic-6: #c2410c;
-  --ic-7: #0369a1;
-  --ic-8: #15803d;
-  /* Text on surfaces that stay light in both themes (yellow icons, the white streak chip). */
-  --on-light: #131a2e;
-  --on-light-2: #56607a;
-  --on-light-accent: #1052e6;
+  --sub-1: #3b82f6;
+  --sub-2: #ec4899;
+  --sub-3: #f59e0b;
+  --sub-4: #14b8a6;
+  --sub-5: #a78bfa;
+  --sub-6: #f97316;
+  --sub-7: #06b6d4;
+  --sub-8: #22c55e;
+  --on-sub: #0b1736;
 }

@@ -5,7 +5,7 @@
   import AccentBar from "../components/AccentBar.svelte";
   import Flag from "../components/Flag.svelte";
   import Icon from "../components/Icon.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import { insertAtCaret } from "../lib/accents";
   import { app } from "../lib/app.svelte";
   import { SUBJECTS } from "../lib/subjects";
@@ -148,7 +148,7 @@
   const focusedLang = $derived(focused ? (focused.side === "front" ? langFront : langBack) : null);
 </script>
 
-<PageBand title={existing ? t("editor.editTitle") : t("editor.newTitle")} subtitle={existing?.name} back={{ href: existing ? href.deck(existing.id) : href.newList(), label: t("common.back") }} />
+<PageHead title={existing ? t("editor.editTitle") : t("editor.newTitle")} subtitle={existing?.name} back={{ href: existing ? href.deck(existing.id) : href.newList(), label: t("common.back") }} />
 <form class="editor" onsubmit={save} novalidate>
 
   <div class="card card-pad meta">
@@ -367,10 +367,5 @@
     gap: 0.75rem;
     padding: 0.75rem 0 calc(0.75rem + env(safe-area-inset-bottom));
     background: var(--bg);
-  }
-  @media (max-width: 719px) {
-    .savebar {
-      bottom: calc(4.25rem + env(safe-area-inset-bottom));
-    }
   }
 </style>

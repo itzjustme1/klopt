@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getLang, num, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { addDays, formatDay } from "../lib/dates";
@@ -47,9 +47,9 @@
   const maxComing = $derived(Math.max(1, ...coming.map((c) => c.count)));
 </script>
 
-<PageBand title={t("progress.title")} lifted />
+<PageHead title={t("progress.title")} />
 <section class="progress">
-  <div class="top lift">
+  <div class="top">
     <div class="streak card">
       <span class="flame" class:lit={s.today}><Icon name="flame" size={40} filled /></span>
       <p class="big num">{num(s.days)}</p>
@@ -108,7 +108,7 @@
 
   {#if hard > 0}
     <a class="hard card" href={href.practice("alles", "leren", "front", "hard")}>
-      <span class="ic-round ic-3 hard-ic"><Icon name="learn" size={24} /></span>
+      <Icon name="learn" size={22} />
       <span class="hard-txt">
         <span class="hard-title">{t("home.hard")}</span>
         <span class="small muted">{tp("home.hardCount", hard)}</span>
@@ -124,7 +124,7 @@
         {@const pct = app.knownPct(deck.id)}
         <li>
           <a href={href.deck(deck.id)}>
-            <SubjectBadge subject={deck.subject || deck.name} size="sm" />
+            <SubjectBadge subject={deck.subject || deck.name} size={24} />
             <span class="pl-name">{deck.name}</span>
             <span class="bar pl-bar" aria-hidden="true"><span style:width="{pct}%"></span></span>
             <span class="caption num pl-pct">{t("lists.learned", { p: pct })}</span>
@@ -155,10 +155,6 @@
     gap: 0.125rem;
     padding: 1.25rem;
   }
-  .streak {
-    background: var(--yellow-soft);
-    border: 2px solid var(--yellow);
-  }
   .week h2 {
     font-size: var(--fs-small);
     color: var(--ink-2);
@@ -172,7 +168,7 @@
     color: var(--flame);
   }
   .big {
-    font-size: var(--fs-display);
+    font-size: var(--fs-hero);
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;

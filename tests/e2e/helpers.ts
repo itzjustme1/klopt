@@ -67,3 +67,15 @@ export function dayISO(offsetDays: number): string {
   const d = new Date(Date.now() + offsetDays * 86_400_000);
   return new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Europe/Amsterdam" }).format(d);
 }
+
+/** Opens "Oefen met" on a list page; returns the menu. */
+export async function openPractice(page: Page) {
+  await page.getByRole("button", { name: /^Oefen / }).click();
+  return page.getByRole("dialog", { name: "Oefen met" });
+}
+
+/** Opens "Oefen met" on a list page and starts a mode (e.g. /^Leren/, "Toets"). */
+export async function practise(page: Page, mode: RegExp | string) {
+  const menu = await openPractice(page);
+  await menu.getByRole("link", { name: mode, exact: typeof mode === "string" }).click();
+}

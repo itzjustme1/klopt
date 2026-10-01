@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { guard } from "./helpers";
+import { guard, openPractice, practise } from "./helpers";
 
 test("choose how many words, star words, practise only starred ones", async ({ page }) => {
   const check = await guard(page);
@@ -18,18 +18,20 @@ test("choose how many words, star words, practise only starred ones", async ({ p
   await expect(page.locator(".word")).toHaveCount(24);
 
   // Big lists start with a round of 20; pick 10 and take a test.
-  const counts = page.getByRole("group", { name: "Aantal woorden" });
+  const menu = await openPractice(page);
+  const counts = menu.getByRole("group", { name: "Aantal woorden" });
   await expect(counts.getByLabel("20")).toBeChecked();
   await counts.getByText("10", { exact: true }).click();
-  await page.getByRole("link", { name: /^Toets / }).click();
+  await menu.getByRole("link", { name: "Toets", exact: true }).click();
   await expect(page.getByText("Vraag 1 van 10")).toBeVisible();
   await page.getByRole("link", { name: "Stoppen" }).click();
 
   // Star one word; "Gemarkeerd" becomes available and holds exactly that word.
   await page.getByRole("button", { name: "woord 3 markeren" }).click();
   await expect(page.getByRole("button", { name: "Markering bij woord 3 weghalen" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByText("Gemarkeerd (1)").click();
-  await page.getByRole("link", { name: /^Flashcards/ }).click();
+  await page.getByRole("button", { name: "Gemarkeerd (1)" }).click();
+  await expect(page.getByRole("button", { name: "Oefen 1 woord" })).toBeVisible();
+  await practise(page, /^Flashcards/);
   await expect(page.locator(".face.front .prompt")).toHaveText("woord 3");
   await page.keyboard.press("Space");
   await page.keyboard.press("2");
@@ -46,9 +48,9 @@ test("ignore accents when that setting is on", async ({ page }) => {
   await page.getByText("Accenten niet meetellen").click();
   await page.getByRole("link", { name: "Lijsten", exact: true }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
-  await page.locator("label", { hasText: "Nederlands naar Frans" }).click();
-  await expect(page.getByLabel("Nederlands naar Frans")).toBeChecked();
-  await page.getByRole("link", { name: /^Typen/ }).click();
+  await page.getByRole("button", { name: /^Richting: Frans naar Nederlands/ }).click();
+  await expect(page.getByRole("button", { name: /^Richting: Nederlands naar Frans/ })).toBeVisible();
+  await practise(page, /^Typen/);
   const french: Record<string, string> = { "het huis": "la maison", "de hond": "le chien", "de school": "l'ecole", "het boek": "le livre", "het raam": "la fenetre", "de jongen": "le garcon", "de appel": "la pomme", zijn: "etre" };
   for (let i = 0; i < 8; i++) {
     await expect(page.locator(".answer-input:not([readonly])")).toBeFocused();
@@ -68,7 +70,7 @@ test("swipe a flipped flashcard to grade it", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
-  await page.getByRole("link", { name: /^Flashcards/ }).click();
+  await practise(page, /^Flashcards/);
   const swipe = async (dx: number) => {
     await page.locator(".flip").evaluate((el, dx) => {
       const ev = (type: string, x: number) => el.dispatchEvent(new PointerEvent(type, { pointerType: "touch", pointerId: 7, clientX: x, clientY: 300, bubbles: true }));

@@ -16,7 +16,8 @@ body {
   color: var(--ink);
   font-family: var(--font);
   font-size: var(--fs-body);
-  line-height: 1.5;
+  font-weight: 500;
+  line-height: 1.45;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -30,19 +31,16 @@ h3 {
   text-wrap: balance;
 }
 h1 {
-  font-size: var(--fs-h1);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  letter-spacing: -0.02em;
+  font-size: var(--fs-title);
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 h2 {
-  font-size: var(--fs-h2);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  font-size: var(--fs-section);
+  font-weight: 900;
 }
 h3 {
-  font-size: var(--fs-body);
+  font-size: var(--fs-lead);
   font-weight: 700;
 }
 p {
@@ -50,8 +48,11 @@ p {
   text-wrap: pretty;
 }
 a {
-  color: var(--accent-text);
+  color: var(--accent);
   text-underline-offset: 0.2em;
+}
+button {
+  font: inherit;
 }
 
 [hidden] {
@@ -96,26 +97,27 @@ main[tabindex="-1"]:focus {
   float: none !important;
 }
 
-/* Buttons: pill-shaped faces on a darker edge that disappears when pressed (StudyGo's knob). */
+/* Buttons: pills on a darker edge that disappears when pressed. */
 .btn {
-  --face: var(--surface);
+  --face: var(--surface-2);
   --text: var(--ink);
-  --edge-color: var(--grey-btn-edge);
-  --edge-size: var(--edge-2);
+  --edge-color: rgb(0 0 0 / 0.25);
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: calc(var(--tap) + 4px);
-  padding: 0.625rem 1.5rem;
-  border: 2px solid var(--line);
+  min-height: 48px;
+  padding: 0.625rem 1.375rem;
+  border: 0;
   border-radius: var(--r-pill);
   background: var(--face);
   color: var(--text);
-  box-shadow: 0 var(--edge-size) 0 var(--edge-color);
+  box-shadow: 0 var(--edge) 0 var(--edge-color);
+  margin-bottom: var(--edge);
   font: inherit;
-  font-weight: 800;
+  font-size: var(--fs-lead);
+  font-weight: 700;
   line-height: 1.2;
   text-align: center;
   text-decoration: none;
@@ -124,15 +126,13 @@ main[tabindex="-1"]:focus {
   transition:
     transform var(--t-press) var(--ease),
     box-shadow var(--t-press) var(--ease),
-    background-color var(--t-base) var(--ease),
-    border-color var(--t-base) var(--ease);
-  margin-bottom: var(--edge-size);
+    background-color var(--t-base) var(--ease);
 }
 .btn:hover {
-  background: var(--surface-2);
+  background: var(--surface-3);
 }
 .btn:active:not([disabled]) {
-  transform: translateY(var(--edge-size));
+  transform: translateY(var(--edge));
   box-shadow: 0 0 0 var(--edge-color);
 }
 .btn[disabled],
@@ -140,64 +140,38 @@ main[tabindex="-1"]:focus {
   opacity: 0.45;
   cursor: not-allowed;
 }
-/* The green "go" button. Large bold text keeps white-on-green above 3:1. */
-.btn-primary {
-  --face: var(--cta);
-  --text: var(--on-cta);
-  --edge-color: var(--cta-edge);
-  --edge-size: var(--edge);
-  border-color: var(--cta);
-  font-size: var(--fs-cta);
+:root[data-theme="light"] .btn:not(.btn-primary, .btn-good, .btn-bad, .btn-quiet) {
+  --face: var(--surface);
+  --edge-color: var(--line-strong);
+  box-shadow: inset 0 0 0 1px var(--line-strong), 0 var(--edge) 0 var(--edge-color);
 }
-.btn-primary:hover {
-  background: var(--cta-hover);
-  border-color: var(--cta-hover);
-}
-/* Blue brand button, for selecting rather than starting. */
-.btn-brand {
-  --face: var(--accent);
-  --text: var(--on-accent);
-  --edge-color: var(--accent-edge);
-  --edge-size: var(--edge);
-  border-color: var(--accent);
-}
-.btn-brand:hover {
-  background: #0f55f0;
-  border-color: #0f55f0;
-}
+/* The green "go" button, dark text. */
+.btn-primary,
 .btn-good {
-  --face: var(--cta);
-  --text: var(--on-cta);
-  --edge-color: var(--cta-edge);
-  --edge-size: var(--edge);
-  border-color: var(--cta);
-  font-size: var(--fs-cta);
+  --face: var(--green);
+  --text: var(--on-green);
+  --edge-color: var(--green-edge);
 }
+.btn-primary:hover,
 .btn-good:hover {
-  background: var(--cta-hover);
-  border-color: var(--cta-hover);
+  background: var(--green-hover);
 }
 .btn-bad {
   --face: var(--bad-fill);
   --text: #ffffff;
-  --edge-color: #a8271c;
-  --edge-size: var(--edge);
-  border-color: var(--bad-fill);
+  --edge-color: #a3262a;
 }
 .btn-bad:hover {
-  background: #b83328;
-  border-color: #b83328;
+  background: #d63c41;
 }
-/* On the blue band: translucent white. */
 .btn-danger {
   --text: var(--bad);
 }
 .btn-quiet {
-  border-color: transparent;
   background: transparent;
   box-shadow: none;
   margin-bottom: 0;
-  color: var(--accent-text);
+  color: var(--accent);
   padding-inline: 0.75rem;
 }
 .btn-quiet:hover {
@@ -211,10 +185,6 @@ main[tabindex="-1"]:focus {
 }
 .btn-lg {
   min-height: 3.5rem;
-}
-/* Green buttons keep their own size: white on green (3.3:1) only passes as large bold text. */
-.btn-lg:where(:not(.btn-primary, .btn-good)) {
-  font-size: var(--fs-lead);
 }
 .icon-btn {
   display: inline-grid;
@@ -233,26 +203,266 @@ main[tabindex="-1"]:focus {
   color: var(--ink);
 }
 
-/* Cards */
+/* Flat surfaces: one rounded block, no shadow. */
 .card {
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-card);
+  border-radius: var(--r-md);
+}
+:root[data-theme="light"] .card {
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 .card-pad {
-  padding: 1.25rem;
+  padding: 1rem;
+}
+
+/* A group of rows in one block, StudyGo's main list pattern. */
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+:root[data-theme="light"] .rows {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.rows > li + li,
+.rows > .row-item + .row-item {
+  border-top: 1px solid var(--line);
+}
+.row-item {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-height: 60px;
+  padding: 0.75rem 1rem;
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--t-base) var(--ease);
+}
+a.row-item:hover,
+button.row-item:hover {
+  background: var(--surface-2);
+}
+button.row-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.row-main {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.row-title {
+  font-weight: 700;
+  font-size: var(--fs-lead);
+  overflow-wrap: anywhere;
+}
+.row-sub {
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+}
+.row-end {
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Horizontally scrolling chips ("Jouw vakken"). */
+.chips {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0 0 4px;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chips > * {
+  flex: none;
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: var(--tap);
+  padding: 0 0.875rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--t-base) var(--ease);
+}
+:root[data-theme="light"] .chip {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+a.chip:hover,
+button.chip:hover {
+  background: var(--surface-2);
+}
+.chip[aria-current="true"],
+.chip[aria-pressed="true"],
+label.chip:has(input:checked) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+label.chip:has(input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+label.chip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Yellow label (AANBEVOLEN, a test date). */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-xs);
+  background: var(--yellow);
+  color: var(--on-yellow);
+  font-size: var(--fs-caption);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* Screen header: back on the left, a centred mark, actions on the right. */
+.page-top {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: center;
+  min-height: 56px;
+}
+.page-top > :nth-child(2) {
+  justify-self: center;
+}
+.page-top > :last-child {
+  justify-self: end;
+}
+.page-title {
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.section-title {
+  margin: 1.5rem 0 0.75rem;
+}
+.sect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+/* Bottom sheet with a scrim (the "Oefen met" and "Nieuw" menus). */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--scrim);
+  animation: fade-in var(--t-base) var(--ease);
+}
+.drawer {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 41;
+  width: min(560px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  transform: translateX(-50%);
+  padding: 0.25rem 0 calc(1rem + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: var(--shadow-sheet);
+  animation: drawer-up var(--t-signature) var(--ease);
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.5rem 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+.drawer-head h2 {
+  font-size: var(--fs-lead);
+}
+.drawer-list {
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 52px;
+  padding: 0.5rem 1.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-lead);
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.drawer-item:hover {
+  background: var(--surface-2);
+}
+.drawer-item[aria-disabled="true"] {
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+.drawer-item .hint {
+  margin-left: auto;
+  color: var(--ink-2);
+  font-size: var(--fs-small);
+  font-weight: 500;
+}
+@keyframes drawer-up {
+  from {
+    transform: translate(-50%, 24px);
+    opacity: 0;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* Forms */
 .field {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 .field > label,
 .label {
   font-weight: 700;
   font-size: var(--fs-small);
+  color: var(--ink-2);
 }
 input[type="text"],
 input[type="search"],
@@ -260,22 +470,24 @@ input[type="date"],
 textarea,
 select {
   width: 100%;
-  min-height: calc(var(--tap) + 4px);
-  padding: 0.75rem 0.75rem;
-  border: 2px solid var(--line);
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border: 2px solid transparent;
   border-radius: var(--r-sm);
-  background: var(--surface);
+  background: var(--surface-2);
   color: var(--ink);
   font: inherit;
-  font-weight: 400;
+  font-weight: 500;
   transition: border-color var(--t-base) var(--ease);
 }
-input[type="text"]:hover,
-input[type="search"]:hover,
-input[type="date"]:hover,
-textarea:hover,
-select:hover {
+:root[data-theme="light"] :is(input[type="text"], input[type="search"], input[type="date"], textarea, select) {
+  background: var(--surface);
   border-color: var(--line-strong);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
 }
 input[type="text"]:focus-visible,
 input[type="search"]:focus-visible,
@@ -302,6 +514,23 @@ textarea {
   color: var(--bad);
   font-weight: 700;
 }
+/* A pill-shaped search field with the icon inside. */
+.search {
+  position: relative;
+}
+.search > .icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-2);
+  pointer-events: none;
+}
+.search input {
+  border-radius: var(--r-pill);
+  padding-left: 2.75rem;
+  font-weight: 700;
+}
 
 /* Segmented control (radio group) */
 .segmented {
@@ -313,7 +542,7 @@ textarea {
   padding: 4px;
   border: 0;
   margin: 0;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-sm);
   background: var(--surface-2);
 }
 .segmented label {
@@ -321,17 +550,20 @@ textarea {
   align-items: center;
   justify-content: center;
   min-height: var(--tap);
-  padding: 0.5rem 1rem;
-  border-radius: var(--r-pill);
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--r-xs);
   font-weight: 700;
-  font-size: var(--fs-small);
   color: var(--ink-2);
   cursor: pointer;
   transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
 }
 .segmented label:has(input:checked) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+:root[data-theme="light"] .segmented label:has(input:checked) {
   background: var(--surface);
-  color: var(--accent-text);
+  color: var(--accent);
 }
 .segmented label:has(input:focus-visible) {
   outline: 3px solid var(--accent);
@@ -345,7 +577,7 @@ textarea {
 /* Fieldsets default to min-width: min-content; reset it so their options can wrap. */
 .fieldset-wrap {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.375rem;
   min-width: 0;
   max-width: 100%;
   border: 0;
@@ -356,21 +588,8 @@ textarea {
   padding: 0;
   font-weight: 700;
   font-size: var(--fs-small);
-  margin-bottom: 0.5rem;
-}
-
-/* Chips */
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 2rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--r-pill);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: var(--fs-caption);
-  font-weight: 700;
+  color: var(--ink-2);
+  margin-bottom: 0.375rem;
 }
 
 /* Grid and flex children may shrink below their content, so one long word can never widen the page. */
@@ -387,21 +606,10 @@ main :where(section, form, div, li, article) {
   gap: 0.5rem 0.75rem;
   align-items: center;
 }
-.page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-}
-.section-title {
-  margin: 2rem 0 0.75rem;
-}
 
 /* A thin pill-shaped progress bar. */
 .bar {
-  height: 10px;
+  height: 8px;
   border-radius: var(--r-pill);
   background: var(--surface-2);
   overflow: hidden;
@@ -410,8 +618,17 @@ main :where(section, form, div, li, article) {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  background: var(--green);
   transition: width var(--t-signature) var(--ease);
+}
+
+/* A small coloured subject mark: a dot, or a flag for languages. */
+.dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex: none;
 }
 
 /* Printing: no app chrome, black on white. */
@@ -421,9 +638,10 @@ main :where(section, form, div, li, article) {
     --surface: #ffffff;
     --ink: #000000;
     --ink-2: #333333;
+    color-scheme: light;
   }
-  header.top,
-  .nav,
+  .tabbar,
+  .topbar,
   .skip,
   .toast {
     display: none !important;
@@ -442,56 +660,4 @@ main :where(section, form, div, li, article) {
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
-}
-
-/* The blue band with a wave: the header continues into it on main screens. */
-.band {
-  position: relative;
-  background: var(--band);
-  color: var(--on-band);
-  padding-bottom: 3.5rem;
-}
-/* Low specificity, so a component's own colour (the white streak chip) still wins. */
-.band :where(a:not(.btn)) {
-  color: var(--on-band);
-}
-.band .muted {
-  color: #ffffff;
-}
-.band-wave {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  width: 100%;
-  height: 36px;
-  display: block;
-}
-/* Content that pulls up onto the wave. */
-.lift {
-  position: relative;
-  margin-top: -2.5rem;
-}
-/* Round icons (subjects, modes). */
-.ic-round {
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  border-radius: 50%;
-  color: #ffffff;
-  font-weight: 800;
-}
-.ic-1 { background: var(--ic-1); }
-.ic-2 { background: var(--ic-2); }
-.ic-3 { background: var(--ic-3); }
-.ic-4 { background: var(--ic-4); }
-.ic-5 { background: var(--ic-5); }
-.ic-6 { background: var(--ic-6); }
-.ic-7 { background: var(--ic-7); }
-.ic-8 { background: var(--ic-8); }
-/* Yellow callout, for tests and nudges. */
-.callout {
-  background: var(--yellow-soft);
-  border: 2px solid var(--yellow);
-  border-radius: var(--r-lg);
 }

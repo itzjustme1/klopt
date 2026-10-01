@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { guard } from "./helpers";
+import { guard, practise } from "./helpers";
 
 const PAIRS: Record<string, string> = {
   "la maison": "het huis",
@@ -17,7 +17,7 @@ test("match words to translations over two rounds, with a timer and a record", a
   await page.goto("/");
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
-  await page.getByRole("link", { name: /^Koppelen/ }).click();
+  await practise(page, /^Koppelen/);
   await expect(page.getByText("Ronde 1 van 2")).toBeVisible();
 
   const playRound = async (withMistake: boolean) => {

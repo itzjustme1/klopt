@@ -1,6 +1,6 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import SharedPreview from "../components/SharedPreview.svelte";
   import type { SharedDeck } from "../lib/backup";
   import { href } from "../lib/router";
@@ -26,7 +26,7 @@
   }
 </script>
 
-<PageBand title={t("receive.title")} subtitle={typeof status === "object" ? t("receive.intro") : undefined} />
+<PageHead title={t("receive.title")} subtitle={typeof status === "object" ? t("receive.intro") : undefined} />
 <section class="receive">
   {#if status === "loading"}
     <p class="muted" aria-busy="true">{t("receive.reading")}</p>

@@ -2,7 +2,6 @@
   import { untrack } from "svelte";
   import { getLang, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
-  import Illustration from "../components/Illustration.svelte";
   import { app } from "../lib/app.svelte";
   import { MatchGame } from "../lib/match";
   import { href, type Count, type Which } from "../lib/router";
@@ -122,7 +121,7 @@
       </div>
     {:else if view && finishedMs !== null}
       <section class="done card">
-        <Illustration name="trophy" size={128} />
+        
         <h2 tabindex="-1" bind:this={heading}>{newRecord ? t("match.newRecord") : t("result.title")}</h2>
         <p class="big num">{t("match.seconds", { s: seconds(finishedMs) })}</p>
         <p class="muted">{t("match.done", { s: seconds(finishedMs) })}</p>
@@ -246,7 +245,7 @@
   .tile.selected {
     border-color: var(--accent);
     background: var(--accent-soft);
-    color: var(--accent-text);
+    color: var(--accent);
   }
   .tile.wrong {
     border-color: var(--bad-fill);
@@ -274,7 +273,7 @@
     text-align: center;
   }
   .done h2 {
-    font-size: var(--fs-h1);
+    font-size: var(--fs-title);
     font-weight: 800;
   }
   .big {

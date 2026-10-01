@@ -6,7 +6,8 @@ test("share a list by link and open it", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
-  await page.getByRole("link", { name: "Delen" }).click();
+  await page.getByRole("button", { name: "Meer opties" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Delen" }).click();
   await expect(page.getByRole("heading", { name: "Lijst delen" })).toBeVisible();
   const link = await page.getByLabel("Deellink").inputValue();
   expect(link).toMatch(/^http:\/\/localhost:4173\/#\/deel\/[A-Za-z0-9_-]+$/);

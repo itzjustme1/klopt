@@ -136,7 +136,7 @@ function validate(raw: unknown, version: number): Snapshot {
     const w = `decks[${i}]`;
     const o = v1
       ? obj(d, w, ["id", "name", "lang", "subject", "createdAt"], ["id", "name", "lang", "createdAt"])
-      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
+      : obj(d, w, ["id", "name", "langFront", "langBack", "subject", "examDate", "kind", "createdAt"], ["id", "name", "langFront", "langBack", "createdAt"]);
     const langFront = lang(v1 ? o.lang : o.langFront, v1 ? `${w}.lang` : `${w}.langFront`);
     const langBack = v1 ? langFront : lang(o.langBack, `${w}.langBack`);
     if (v1 && langFront !== "nl" && langFront !== "en") throw new Invalid(`${w}.lang`);
@@ -144,6 +144,10 @@ function validate(raw: unknown, version: number): Snapshot {
     const subject = optStr(o.subject, `${w}.subject`, LIMITS.labelChars);
     if (subject) deck.subject = subject;
     if (!v1 && o.examDate !== undefined) deck.examDate = day(o.examDate, `${w}.examDate`);
+    if (!v1 && o.kind !== undefined) {
+      if (o.kind !== "terms" && o.kind !== "words") throw new Invalid(`${w}.kind`);
+      if (o.kind === "terms") deck.kind = "terms";
+    }
     if (deckIds.has(deck.id)) throw new Invalid(`${w}.id`);
     deckIds.add(deck.id);
     return deck;
@@ -228,7 +232,7 @@ export function parseBackup(text: string): Parsed<Snapshot> {
 }
 
 export interface SharedDeck {
-  deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject" | "examDate">;
+  deck: Pick<Deck, "name" | "langFront" | "langBack" | "subject" | "examDate" | "kind">;
   cards: { front: string; back: string; topic?: string }[];
 }
 
@@ -243,6 +247,7 @@ export function parseShared(text: string): Parsed<SharedDeck> {
   const deck: SharedDeck["deck"] = { name: d.name, langFront: d.langFront, langBack: d.langBack };
   if (d.subject) deck.subject = d.subject;
   if (d.examDate) deck.examDate = d.examDate;
+  if (d.kind) deck.kind = d.kind;
   return {
     ok: true,
     data: {

@@ -17,8 +17,12 @@ export interface Deck {
   langBack: ContentLang;
   /** Date of the test this list is for (YYYY-MM-DD), to plan practice. */
   examDate?: string;
+  /** "terms": a term and its explanation (history, biology), practised mostly as flashcards. Absent: words. */
+  kind?: DeckKind;
   createdAt: string;
 }
+
+export type DeckKind = "words" | "terms";
 
 export interface Card {
   id: string;

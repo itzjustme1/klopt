@@ -2,8 +2,7 @@
   import { t } from "../i18n/index.svelte";
   import type { StringKey } from "../i18n/types";
   import Icon, { type IconName } from "../components/Icon.svelte";
-  import PageBand from "../components/PageBand.svelte";
-  import { MODE_COLOR } from "../lib/modeStyle";
+  import PageHead from "../components/PageHead.svelte";
   import { href } from "../lib/router";
   import { DAYS } from "../lib/scheduler";
   import type { Mode } from "../lib/types";
@@ -24,7 +23,7 @@
   ];
 </script>
 
-<PageBand title={t("help.title")} back={{ href: href.settings(), label: t("settings.title") }} />
+<PageHead title={t("help.title")} back={{ href: href.settings(), label: t("settings.title") }} />
 <article class="help">
 
   <section class="card card-pad">
@@ -45,7 +44,7 @@
     <ul class="modes">
       {#each modes as m (m.mode)}
         <li>
-          <span class="ic-round ic-{MODE_COLOR[m.mode]} ic"><Icon name={m.icon} size={22} /></span>
+          <span class="ic"><Icon name={m.icon} size={22} /></span>
           <span><strong>{t(`mode.${m.mode}`)}</strong> <span class="muted">{t(m.desc)}</span></span>
         </li>
       {/each}
@@ -96,7 +95,7 @@
   .boxes .b5 { border-top-color: var(--b5); }
   .boxes .num {
     font-weight: 800;
-    font-size: var(--fs-h2);
+    font-size: var(--fs-section);
   }
   .modes,
   .points {

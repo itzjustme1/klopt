@@ -11,6 +11,7 @@ import type { PracticeCard } from "./practice";
 import { parseHash, type Count, type Route, type Which } from "./router";
 import { buildSession } from "./session";
 import type { Box, Card, DayStat, Deck, Grade, Lang, Mode, Settings, Theme } from "./types";
+import { getSelection } from "./selection";
 
 export type BoxCounts = [number, number, number, number, number];
 export type DiffCounts = Record<Difficulty, number>;
@@ -158,6 +159,10 @@ class App {
     if (which === "due") chosen = buildSession(pool, this.today);
     else if (which === "hard") chosen = pool.filter((c) => isHard(c.hist));
     else if (which === "starred") chosen = pool.filter((c) => c.starred);
+    else if (which === "selectie") {
+      const ids = new Set(getSelection(scope));
+      chosen = ids.size ? this.sortedCards(scope).filter((c) => ids.has(c.id)) : this.sortedCards(scope);
+    }
     else chosen = scope === "alles" ? pool : this.sortedCards(scope);
     if (count !== "all" && which !== "due" && chosen.length > count) chosen = pickForPractice(chosen, count);
     const langs = new Map(this.decks.map((d) => [d.id, d]));
@@ -255,7 +260,7 @@ class App {
   async duplicateDeck(id: string, name: string): Promise<Deck> {
     const src = this.deck(id);
     if (!src) throw new Error("Deck not found");
-    const copy = await this.createDeck({ name, langFront: src.langFront, langBack: src.langBack, ...(src.subject ? { subject: src.subject } : {}) });
+    const copy = await this.createDeck({ name, langFront: src.langFront, langBack: src.langBack, ...(src.subject ? { subject: src.subject } : {}), ...(src.kind ? { kind: src.kind } : {}) });
     await this.addCards(
       copy.id,
       this.sortedCards(id).map((c) => ({ front: c.front, back: c.back, ...(c.topic ? { topic: c.topic } : {}) })),
@@ -355,13 +360,12 @@ class App {
 
 /** The theme of the last visit, kept in this browser so the first paint is already right. */
 const THEME_KEY = "klopt-theme";
-/** The browser bar takes the colour of the blue header band (--band in light and dark). */
-const BAR_COLOR = { light: "#1660FF", dark: "#1447C9" } as const;
+/** The browser bar takes the page colour (--bg in light and dark). */
+const BAR_COLOR = { light: "#F2F5FB", dark: "#0B1736" } as const;
 
 export function applyTheme(theme: Theme, remember = true): void {
   const root = document.documentElement;
-  if (theme === "system") delete root.dataset.theme;
-  else root.dataset.theme = theme;
+  root.dataset.theme = theme;
   // Two theme-color metas (light, dark). With an explicit theme both get that theme's colour.
   const [light, dark] = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
   if (light) light.content = theme === "dark" ? BAR_COLOR.dark : BAR_COLOR.light;

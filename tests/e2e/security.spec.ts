@@ -1,3 +1,4 @@
+import { practise } from "./helpers";
 import { expect, test } from "@playwright/test";
 
 test("the CSP blocks inline script and third-party requests, and never allows eval", async ({ page }) => {
@@ -43,7 +44,7 @@ test("card text with HTML is shown as text everywhere", async ({ page }) => {
   await page.getByRole("link", { name: "Naar de lijst" }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("<i>XSS</i>");
   await expect(page.locator(".w-front")).toHaveText('<img src=x onerror="document.title=\'pwned\'">');
-  await page.getByRole("link", { name: /^Flashcards/ }).click();
+  await practise(page, /^Flashcards/);
   await page.locator(".flip").waitFor();
   await page.keyboard.press("Space");
   await expect(page.locator(".face.back .prompt")).toHaveText("<b>vet</b>");

@@ -23,29 +23,30 @@ describe("settings", () => {
     expect(detectLang("nl-NL")).toBe("nl");
     expect(detectLang("de-DE")).toBe("nl");
     expect(detectLang(undefined)).toBe("nl");
-    expect(defaultSettings("en-US")).toMatchObject({ uiLang: "en", theme: "light", schemaVersion: 2, designVersion: 2, dailyGoal: 20, autoSpeak: false });
+    expect(defaultSettings("en-US")).toMatchObject({ uiLang: "en", theme: "dark", schemaVersion: 2, designVersion: 3, dailyGoal: 20, autoSpeak: false });
   });
 
-  it("moves settings from before the blue design to light once, and keeps an explicit dark", async () => {
-    const put = async (name: string, theme: string) => {
+  it("moves settings from an older look to the navy default once, then keeps what is chosen", async () => {
+    const put = async (name: string, theme: string, designVersion?: number) => {
       (await Store.open(name)).close();
       const raw = await openDB(name);
       const old: Record<string, unknown> = { ...defaultSettings(), theme, dailyGoal: 50 };
-      delete old.designVersion;
+      if (designVersion === undefined) delete old.designVersion;
+      else old.designVersion = designVersion;
       await raw.put("meta", old, "settings");
       raw.close();
       return Store.open(name);
     };
-    const followed = await put(`test-${++n}`, "system");
-    expect(await followed.getSettings()).toMatchObject({ theme: "light", designVersion: 2, dailyGoal: 50 });
-    // Choosing "system" after the move sticks.
-    await followed.saveSettings({ theme: "system" });
-    expect((await followed.getSettings()).theme).toBe("system");
-    followed.close();
+    const v1 = await put(`test-${++n}`, "system");
+    expect(await v1.getSettings()).toMatchObject({ theme: "dark", designVersion: 3, dailyGoal: 50 });
+    // Choosing light after the move sticks.
+    await v1.saveSettings({ theme: "light" });
+    expect((await v1.getSettings()).theme).toBe("light");
+    v1.close();
 
-    const dark = await put(`test-${++n}`, "dark");
-    expect(await dark.getSettings()).toMatchObject({ theme: "dark", designVersion: 2 });
-    dark.close();
+    const v2 = await put(`test-${++n}`, "light", 2);
+    expect(await v2.getSettings()).toMatchObject({ theme: "dark", designVersion: 3 });
+    v2.close();
   });
 
   it("saves and reads back", async () => {
@@ -242,7 +243,7 @@ describe("snapshot, merge, replace, wipe", () => {
     await store.wipe();
     expect(await store.snapshot()).toEqual({ decks: [], cards: [], reviews: [] });
     expect(await store.allDays()).toEqual([]);
-    expect((await store.getSettings()).theme).toBe("light");
+    expect((await store.getSettings()).theme).toBe("dark");
   });
 
   it("persists across reopening the database", async () => {

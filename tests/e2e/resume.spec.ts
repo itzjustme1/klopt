@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { guard } from "./helpers";
+import { guard, practise } from "./helpers";
 
 const NL: Record<string, string> = {
   "la maison": "het huis",
@@ -18,7 +18,7 @@ test("leave a session halfway and continue it later", async ({ page }) => {
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
   const listUrl = page.url();
-  await page.getByRole("link", { name: /^Typen/ }).click();
+  await practise(page, /^Typen/);
 
   const answer = async () => {
     await expect(page.locator(".answer-input:not([readonly])")).toBeFocused();
@@ -37,7 +37,7 @@ test("leave a session halfway and continue it later", async ({ page }) => {
   await page.getByRole("link", { name: "Stoppen" }).click();
   await page.reload();
   await page.goto(listUrl);
-  await page.getByRole("link", { name: /^Typen/ }).click();
+  await practise(page, /^Typen/);
   await expect(page.getByRole("heading", { name: "Verder waar je was?" })).toBeVisible();
   await expect(page.getByText("Je was hier nog mee bezig. Nog 5 woorden te gaan.")).toBeVisible();
   await page.getByRole("button", { name: "Verder waar je was" }).click();
@@ -47,7 +47,7 @@ test("leave a session halfway and continue it later", async ({ page }) => {
 
   // Finished sessions are not offered again.
   await page.getByRole("link", { name: "Terug naar de lijst" }).click();
-  await page.getByRole("link", { name: /^Typen/ }).click();
+  await practise(page, /^Typen/);
   await expect(page.locator(".answer-input")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Verder waar je was?" })).toHaveCount(0);
   await check();

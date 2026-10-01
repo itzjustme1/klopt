@@ -3,7 +3,7 @@
   import { LIMITS } from "../config";
   import Flag from "../components/Flag.svelte";
   import Icon from "../components/Icon.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import { app } from "../lib/app.svelte";
   import { takePendingImport } from "../lib/handoff";
   import { cardKey, parseImport } from "../lib/importText";
@@ -79,7 +79,7 @@
   }
 </script>
 
-<PageBand
+<PageHead
   title={t("import.title")}
   subtitle={done ? undefined : fromPhoto?.source === "photo" ? t("import.fromPhoto") : fromPhoto?.source === "share" ? t("import.fromShare") : t("import.intro")}
   back={{ href: href.newList(), label: t("common.back") }}
@@ -285,7 +285,7 @@
     color: #ffffff;
   }
   .success-text {
-    font-size: var(--fs-h2);
+    font-size: var(--fs-section);
     font-weight: 800;
   }
 </style>

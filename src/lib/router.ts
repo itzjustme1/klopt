@@ -2,7 +2,7 @@ import type { Mode } from "./types";
 import { MODES } from "./types";
 import type { Direction } from "./practice";
 
-export type Which = "all" | "hard" | "due" | "starred";
+export type Which = "all" | "hard" | "due" | "starred" | "selectie";
 /** How many words a session holds: a number, or every word. */
 export type Count = 10 | 20 | "all";
 /** A deck id, or "alles" for every list. */
@@ -12,7 +12,7 @@ export type Route =
   | { name: "today" }
   | { name: "lists"; subject?: string }
   | { name: "new" }
-  | { name: "editor"; id?: string }
+  | { name: "editor"; id?: string; terms?: boolean }
   | { name: "deck"; id: string; share?: boolean }
   | { name: "practice"; scope: Scope; mode: Mode; dir: Direction; which: Which; count: Count }
   | { name: "import"; deckId?: string }
@@ -34,7 +34,7 @@ function seg(s: string | undefined): string | undefined {
 }
 
 const DIRS: readonly Direction[] = ["front", "back", "mixed"];
-const WHICH: readonly Which[] = ["all", "hard", "due", "starred"];
+const WHICH: readonly Which[] = ["all", "hard", "due", "starred", "selectie"];
 const COUNTS: Record<string, Count> = { "10": 10, "20": 20, all: "all" };
 
 /** Pure hash parser. Slugs are fixed Dutch words so shared links work in any UI language. */
@@ -57,6 +57,7 @@ export function parseHash(hash: string): Route {
       return n === 1 ? { name: "new" } : notFound;
     case "lijst": {
       if (a === "nieuw" && n === 2) return { name: "editor" };
+      if (a === "nieuw" && n === 3 && b === "begrippen") return { name: "editor", terms: true };
       const id = seg(a);
       if (!id) return notFound;
       if (n === 2) return { name: "deck", id };
@@ -105,6 +106,7 @@ export const href = {
   lists: (subject?: string) => (subject ? `#/lijsten/${enc(subject)}` : "#/lijsten"),
   newList: () => "#/nieuw",
   editorNew: () => "#/lijst/nieuw",
+  termsNew: () => "#/lijst/nieuw/begrippen",
   deck: (id: string) => `#/lijst/${enc(id)}`,
   edit: (id: string) => `#/lijst/${enc(id)}/bewerken`,
   shareDeck: (id: string) => `#/lijst/${enc(id)}/delen`,

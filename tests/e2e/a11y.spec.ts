@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { practise } from "./helpers";
 import { expect, test, type Page } from "@playwright/test";
 
 async function audit(page: Page, label: string) {
@@ -38,15 +39,14 @@ for (const scheme of ["light", "dark"] as const) {
 
     await page.goto(base);
     await page.getByRole("heading", { name: "Welkom bij Klopt" }).waitFor();
-    // The app is light by default, also on a dark phone; dark is a choice in the settings.
-    expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("light");
-    if (scheme === "dark") {
+    // The app is navy by default, also on a light device; light is a choice in the settings.
+    expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
+    if (scheme === "light") {
       await page.goto(base + "#/instellingen");
-      await page.getByText("Donker", { exact: true }).click();
-      await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+      await page.getByText("Licht", { exact: true }).click();
+      await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
       await page.getByRole("link", { name: "Vandaag", exact: true }).click();
       await page.getByRole("heading", { name: "Welkom bij Klopt" }).waitFor();
-      expect(await page.evaluate(() => document.documentElement.dataset.theme)).toBe("dark");
     }
     await check("welcome");
     await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
@@ -60,13 +60,13 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     // Test date and a starred word, so the plan and stars are audited too.
-    await page.getByRole("link", { name: "Toetsdatum instellen" }).click();
+    await page.getByRole("link", { name: "Wanneer is je toets?" }).click();
     await page.getByLabel("Toetsdatum (optioneel)").fill(new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam" }).format(new Date(Date.now() + 3 * 86_400_000)));
     await page.getByRole("button", { name: "Lijst opslaan" }).click();
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     await page.getByRole("button", { name: "la maison markeren" }).click();
     await check("list");
-    await page.getByRole("link", { name: /^Leren/ }).click();
+    await practise(page, /^Leren/);
     await page.locator(".options").waitFor();
     await check("learn: multiple choice");
     await page.keyboard.press("1");
@@ -161,7 +161,7 @@ test("reduced motion: the flashcard swaps without rotating", async ({ browser })
   await page.goto("http://localhost:4173/");
   await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
   await page.getByRole("link", { name: /Frans: basiswoorden/ }).first().click();
-  await page.getByRole("link", { name: /^Flashcards/ }).click();
+  await practise(page, /^Flashcards/);
   await page.locator(".flip").waitFor();
   await page.keyboard.press("Space");
   await expect(page.locator(".flip.flipped")).toHaveCount(1);

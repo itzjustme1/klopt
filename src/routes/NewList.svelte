@@ -1,17 +1,9 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
-  import NewOptions from "../components/NewOptions.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import NewMenu from "../components/NewMenu.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import { href } from "../lib/router";
 </script>
 
-<PageBand title={t("new.title")} subtitle={t("new.sub")} back={{ href: href.lists(), label: t("deck.back") }} />
-<section class="new">
-  <NewOptions />
-</section>
-
-<style>
-  .new {
-    max-width: 760px;
-  }
-</style>
+<PageHead title={t("new.title")} back={{ href: href.lists(), label: t("nav.lists") }} />
+<div class="rows"><NewMenu /></div>

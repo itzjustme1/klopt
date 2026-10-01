@@ -13,7 +13,7 @@
   import { playRight, playWrong } from "../lib/sounds";
   import { canSpeak, loadVoices, speak, stopSpeaking } from "../lib/speech";
   import type { ContentLang, Grade, Mode } from "../lib/types";
-  import { MODE_COLOR, MODE_ICON } from "../lib/modeStyle";
+  import { MODE_ICON } from "../lib/modeStyle";
 
   let { scope, mode, dir, which, count = "all" }: { scope: string; mode: Mode; dir: Direction; which: Which; count?: Count } = $props();
 
@@ -345,7 +345,7 @@
           style:transform={drag ? `translateX(${drag}px) rotate(${drag / 24}deg)` : undefined}
         >
           <div class="q-head">
-            <span class="mode-tag caption"><span class="ic-round ic-{MODE_COLOR[mode]} mt-ic"><Icon name={MODE_ICON[mode]} size={14} /></span>{t(`mode.${mode}`)}</span>
+            <span class="mode-tag caption"><Icon name={MODE_ICON[mode]} size={18} />{t(`mode.${mode}`)}</span>
             {#if !isTest}
               <button type="button" class="icon-btn qstar" class:on={starredNow} aria-pressed={starredNow} aria-label={starredNow ? t("practice.unstar") : t("practice.star")} title={starredNow ? t("practice.unstar") : t("practice.star")} onclick={toggleStar}>
                 <Icon name="star" size={22} filled={starredNow} />
@@ -634,7 +634,7 @@
     gap: 0.25rem;
   }
   .prompt {
-    font-size: clamp(1.75rem, 7vw, var(--fs-display));
+    font-size: clamp(1.75rem, 7vw, var(--fs-prompt));
     font-weight: 800;
     line-height: 1.15;
     letter-spacing: -0.02em;
@@ -642,7 +642,7 @@
     white-space: pre-wrap;
   }
   .prompt-sm {
-    font-size: var(--fs-h2);
+    font-size: var(--fs-section);
     font-weight: 800;
   }
   .play {
@@ -652,15 +652,15 @@
     height: 84px;
     border: 0;
     border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
-    box-shadow: 0 var(--edge) 0 var(--accent-edge);
+    background: var(--brand);
+    color: var(--on-brand);
+    box-shadow: 0 var(--edge) 0 rgb(0 0 0 / 0.25);
     cursor: pointer;
     transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
   }
   .play:active {
     transform: translateY(var(--edge));
-    box-shadow: 0 0 0 var(--accent-edge);
+    box-shadow: 0 0 0 rgb(0 0 0 / 0.25);
   }
 
   .answer-form {
@@ -673,7 +673,7 @@
     border-radius: 0;
     padding-inline: 0.25rem;
     background: transparent;
-    font-size: var(--fs-h2);
+    font-size: var(--fs-section);
     font-weight: 700;
   }
   .answer-input:focus-visible {
@@ -689,7 +689,7 @@
     border-color: var(--bad-fill);
   }
   .hint {
-    color: var(--accent-text);
+    color: var(--accent);
     font-weight: 700;
     letter-spacing: 0.08em;
   }
@@ -826,7 +826,7 @@
     transform: rotateY(0deg);
   }
   .answer {
-    color: var(--accent-text);
+    color: var(--accent);
   }
   @media (prefers-reduced-motion: reduce) {
     .face {
@@ -875,7 +875,7 @@
     color: var(--surface);
   }
   .sheet-title {
-    font-size: var(--fs-h2);
+    font-size: var(--fs-section);
     font-weight: 800;
   }
   .sheet-answer-row {

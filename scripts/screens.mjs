@@ -20,10 +20,10 @@ try {
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, deviceScaleFactor: 2, colorScheme: scheme, locale: "nl-NL", timezoneId: "Europe/Amsterdam", serviceWorkers: "block" });
     const page = await ctx.newPage();
     const shot = (name, full = false) => page.screenshot({ path: `${out}/${scheme}-${width}-${name}.png`, fullPage: full });
-    if (scheme === "dark") {
-      // Light is the default; dark is chosen in the settings.
+    if (scheme === "light") {
+      // Navy is the default; light is chosen in the settings.
       await page.goto(base + "#/instellingen");
-      await page.getByText("Donker", { exact: true }).click();
+      await page.getByText("Licht", { exact: true }).click();
       await page.getByRole("link", { name: "Vandaag", exact: true }).click();
     } else {
       await page.goto(base);
@@ -37,7 +37,7 @@ try {
     await page.goto(base + "#/lijsten");
     await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
     const deckHash = await page.evaluate(() => location.hash);
-    await page.getByRole("link", { name: "Toetsdatum instellen" }).click();
+    await page.getByRole("link", { name: "Wanneer is je toets?" }).click();
     await page.getByLabel("Toetsdatum (optioneel)").fill(iso(4));
     await page.getByRole("button", { name: "Lijst opslaan" }).click();
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();

@@ -1,8 +1,7 @@
 <script lang="ts">
   import { getLang, t } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
-  import Illustration from "../components/Illustration.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import { app } from "../lib/app.svelte";
   import { setPendingImport } from "../lib/handoff";
   import { recognizeList, tesseractLangs, type OcrProgress } from "../lib/ocr";
@@ -47,10 +46,10 @@
   }
 </script>
 
-<PageBand title={t("photo.title")} subtitle={t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
+<PageHead title={t("photo.title")} subtitle={t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
 <section class="photo">
   <div class="card card-pad box">
-    <div class="art"><Illustration name="camera" size={96} /></div>
+    <div class="art"></div>
     <fieldset class="fieldset-wrap">
       <legend>{t("photo.langs")}</legend>
       <div class="langs">

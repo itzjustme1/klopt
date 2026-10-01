@@ -8,6 +8,8 @@
   import { href } from "./lib/router";
   import Icon, { type IconName } from "./components/Icon.svelte";
   import Logo from "./components/Logo.svelte";
+  import NewMenu from "./components/NewMenu.svelte";
+  import Sheet from "./components/Sheet.svelte";
   import Today from "./routes/Today.svelte";
   import Lists from "./routes/Lists.svelte";
   import NewList from "./routes/NewList.svelte";
@@ -70,27 +72,35 @@
   });
 
   const focusMode = $derived(app.route.name === "practice");
+  /** Making a list has its own save bar at the bottom, so the tab bar steps aside (as in StudyGo). */
+  const hideNav = $derived(focusMode || app.route.name === "editor");
+  let newOpen = $state(false);
+  // Phones: Vandaag, Lijsten, [Nieuw], Voortgang, Instellingen.
+  const navStart = nav.slice(0, 2);
+  const navEnd = nav.slice(2);
 </script>
 
 <a class="skip" href="#main" onclick={(e) => { e.preventDefault(); main?.focus(); }}>{t("skip")}</a>
 
-{#if !focusMode}
-  <header class="top">
-    <div class="wrap top-inner">
-      <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo onBand /></a>
-      <nav class="nav" aria-label={t("nav.label")}>
-        {#each nav as item (item.key)}
-          <a href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>
-            <Icon name={item.icon} size={22} />
-            <span>{t(item.key)}</span>
-          </a>
-        {/each}
-      </nav>
-    </div>
-  </header>
+{#if !hideNav}
+  <nav class="tabbar" aria-label={t("nav.label")}>
+    <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo /></a>
+    {#snippet tab(item: (typeof nav)[number])}
+      <a class="tab" href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>
+        <Icon name={item.icon} size={22} />
+        <span>{t(item.key)}</span>
+      </a>
+    {/snippet}
+    {#each navStart as item (item.key)}{@render tab(item)}{/each}
+    <button type="button" class="tab tab-new" aria-haspopup="dialog" onclick={() => (newOpen = true)}>
+      <span class="plus"><Icon name="plus" size={20} /></span>
+      <span>{t("nav.new")}</span>
+    </button>
+    {#each navEnd as item (item.key)}{@render tab(item)}{/each}
+  </nav>
 {/if}
 
-<main id="main" class:wrap={!focusMode} class:with-tabbar={!focusMode} class:focus-mode={focusMode} tabindex="-1" bind:this={main}>
+<main id="main" class:wrap={!focusMode} class:with-nav={!hideNav} class:focus-mode={focusMode} tabindex="-1" bind:this={main}>
   {#if app.failed}
     <div class="card card-pad">
       <p class="error">{t("common.saveFailed")}</p>
@@ -149,6 +159,12 @@
   {/if}
 </main>
 
+{#if newOpen}
+  <Sheet title={t("new.title")} onclose={() => (newOpen = false)}>
+    <NewMenu onpick={() => (newOpen = false)} />
+  </Sheet>
+{/if}
+
 {#if pwa.needRefresh && !focusMode}
   <div class="update card" role="status">
     <p>{t("pwa.update")}</p>
@@ -158,13 +174,13 @@
 
 <p class="visually-hidden" aria-live="polite">{app.flash}</p>
 {#if app.flash}
-  <div class="toast" class:raised={!focusMode} role="presentation">{app.flash}</div>
+  <div class="toast" class:raised={!hideNav} role="presentation">{app.flash}</div>
 {/if}
 
 <style>
   :global(.wrap) {
     width: 100%;
-    max-width: 1040px;
+    max-width: 760px;
     margin-inline: auto;
     padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right));
   }
@@ -175,8 +191,8 @@
     top: -4rem;
     z-index: 50;
     padding: 0.75rem 1rem;
-    background: var(--accent);
-    color: var(--on-accent);
+    background: var(--green);
+    color: var(--on-green);
     border-radius: var(--r-sm);
     font-weight: 700;
   }
@@ -184,109 +200,125 @@
     top: 0.5rem;
   }
 
-  .top {
-    position: sticky;
-    top: 0;
+  /* Phones: a tab bar at the bottom. */
+  .tabbar {
+    position: fixed;
+    inset: auto 0 0 0;
     z-index: 20;
-    background: var(--band);
-    color: var(--on-band);
-    padding-top: env(safe-area-inset-top);
-  }
-  .top-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 64px;
-    gap: 1rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 0.25rem 0.25rem env(safe-area-inset-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--line);
   }
   .brand {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--tap);
-    text-decoration: none;
-    border-radius: var(--r-sm);
+    display: none;
   }
-  .brand:focus-visible,
-  .nav a:focus-visible {
-    outline-color: #ffffff;
-  }
-
-  .nav {
+  .tab {
     display: flex;
-    gap: 0.25rem;
-  }
-  .nav a {
-    display: inline-flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    min-height: var(--tap);
-    padding: 0 1rem;
-    border-radius: var(--r-pill);
-    color: #ffffff;
-    text-decoration: none;
+    justify-content: center;
+    gap: 0.125rem;
+    min-height: 3.5rem;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-nav);
     font-weight: 700;
-    transition: background-color var(--t-base) var(--ease), color var(--t-base) var(--ease);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color var(--t-base) var(--ease), background-color var(--t-base) var(--ease);
   }
-  .nav a:hover {
-    background: rgb(255 255 255 / 0.14);
-    color: #ffffff;
+  .tab:hover {
+    color: var(--ink);
   }
-  .nav a[aria-current="page"] {
-    background: #ffffff;
-    color: var(--on-light-accent);
+  .tab[aria-current="page"] {
+    color: var(--ink);
+  }
+  .tab[aria-current="page"] :global(.icon) {
+    color: var(--accent);
+  }
+  .plus {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 24px;
+    border-radius: var(--r-xs);
+    background: var(--green);
+    color: var(--on-green);
   }
 
   main {
-    padding-top: 1.75rem;
-    padding-bottom: 4rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
+    padding-bottom: 3rem;
     outline: none;
+  }
+  main.with-nav {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
   }
   main.focus-mode {
     padding: 0;
   }
 
-  /* Phones: the nav becomes a white bottom tab bar. */
-  @media (max-width: 719px) {
-    .top-inner {
-      min-height: 56px;
-    }
-    .nav {
-      position: fixed;
-      inset: auto 0 0 0;
-      z-index: 20;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      background: var(--surface);
-      border-top: 1px solid var(--line);
-      padding: 0.25rem 0.25rem env(safe-area-inset-bottom);
-    }
-    .nav a {
+  /* Laptops: the same items in a sidebar on the left. */
+  @media (min-width: 720px) {
+    .tabbar {
+      inset: 0 auto 0 0;
+      width: 232px;
+      display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 0.125rem;
-      min-height: 3.5rem;
-      padding: 0.25rem;
-      font-size: var(--fs-caption);
+      gap: 0.25rem;
+      padding: 1.25rem 0.75rem;
+      border-top: 0;
+      border-right: 1px solid var(--line);
+    }
+    .brand {
+      order: -2;
+      display: flex;
+      align-items: center;
+      min-height: var(--tap);
+      margin: 0 0.5rem 1rem;
+      text-decoration: none;
       border-radius: var(--r-sm);
-      color: var(--ink-2);
     }
-    .nav a:hover {
+    .tab {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.75rem;
+      min-height: var(--tap);
+      padding: 0 0.75rem;
+      font-size: var(--fs-body);
+    }
+    .tab[aria-current="page"] {
       background: var(--surface-2);
-      color: var(--ink);
     }
-    .nav a[aria-current="page"] {
-      background: transparent;
-      color: var(--accent-text);
+    .tab-new {
+      order: -1;
+      margin-bottom: 0.75rem;
+      background: var(--green);
+      color: var(--on-green);
+      border-radius: var(--r-pill);
+      box-shadow: 0 var(--edge) 0 var(--green-edge);
     }
-    .nav a[aria-current="page"] :global(.icon) {
-      color: var(--accent);
+    .tab-new:hover {
+      color: var(--on-green);
+      background: var(--green-hover);
     }
-    .nav a:focus-visible {
-      outline-color: var(--accent);
+    .tab-new .plus {
+      width: auto;
+      background: none;
     }
-    main.with-tabbar {
-      padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    main.with-nav {
+      padding-left: 232px;
+      padding-top: 2rem;
+      padding-bottom: 4rem;
+    }
+    main.with-nav:global(.wrap) {
+      max-width: calc(760px + 232px);
     }
   }
 
@@ -294,7 +326,7 @@
   .update {
     position: fixed;
     left: 50%;
-    bottom: calc(1.5rem + env(safe-area-inset-bottom));
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     z-index: 30;
     display: flex;
@@ -304,14 +336,15 @@
     width: min(32rem, calc(100vw - 2rem));
     padding: 0.75rem 0.75rem 0.75rem 1.25rem;
     font-weight: 700;
+    background: var(--surface-2);
   }
   .update p {
     flex: 1;
     min-width: 10rem;
   }
-  @media (max-width: 719px) {
+  @media (min-width: 720px) {
     .update {
-      bottom: calc(5.5rem + env(safe-area-inset-bottom));
+      bottom: 1.5rem;
     }
   }
 
@@ -327,7 +360,6 @@
     color: var(--bg);
     border-radius: var(--r-sm);
     font-weight: 700;
-    box-shadow: var(--shadow-card);
     animation: toast-in var(--t-base) var(--ease);
   }
   @media (max-width: 719px) {

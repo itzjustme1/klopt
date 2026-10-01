@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
-  import PageBand from "../components/PageBand.svelte";
+  import PageHead from "../components/PageHead.svelte";
   import SharedPreview from "../components/SharedPreview.svelte";
   import { parseShared, type SharedDeck } from "../lib/backup";
   import { readTextFile } from "../lib/files";
@@ -30,7 +30,7 @@
   }
 </script>
 
-<PageBand title={t("new.file")} subtitle={t("new.fileDesc")} back={{ href: href.newList(), label: t("common.back") }} />
+<PageHead title={t("new.file")} subtitle={t("new.fileDesc")} back={{ href: href.newList(), label: t("common.back") }} />
 <section class="open">
   {#if !shared}
     <div class="field card card-pad">

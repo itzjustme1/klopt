@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answerFor, createFrenchList, dayLabel, guard } from "./helpers";
+import { answerFor, createFrenchList, dayLabel, guard, practise } from "./helpers";
 
 test("make a list, learn it with the keyboard, persist, work offline", async ({ page, context }) => {
   const check = await guard(page);
@@ -9,7 +9,7 @@ test("make a list, learn it with the keyboard, persist, work offline", async ({ 
   await expect(page.getByText("4 woorden").first()).toBeVisible();
 
   // Leren: multiple choice first, then typing. "le chien" is answered wrong once and has to come back.
-  await page.getByRole("link", { name: /^Leren/ }).click();
+  await practise(page, /^Leren/);
   const seen = new Map<string, number>();
   for (let step = 0; step < 30; step++) {
     if (await page.getByRole("heading", { name: "Klaar!" }).isVisible()) break;
@@ -122,7 +122,7 @@ test("review the daily queue by keyboard, typing short answers and self-checking
 test("a test gives a Dutch grade", async ({ page }) => {
   const check = await guard(page);
   await createFrenchList(page, "Toetslijst");
-  await page.getByRole("link", { name: /^Toets / }).click();
+  await practise(page, "Toets");
   for (let i = 0; i < 4; i++) {
     await expect(page.getByText(`Vraag ${i + 1} van 4`)).toBeVisible();
     await expect(page.locator(".answer-input")).toBeFocused();

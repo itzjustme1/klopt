@@ -1,24 +1,23 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import { num, t, tp } from "../i18n/index.svelte";
-  import type { StringKey } from "../i18n/types";
   import BoxBar from "../components/BoxBar.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
-  import Flag from "../components/Flag.svelte";
-  import Icon, { type IconName } from "../components/Icon.svelte";
-  import SharePanel from "../components/SharePanel.svelte";
   import ExamCard from "../components/ExamCard.svelte";
-  import Illustration from "../components/Illustration.svelte";
-  import PageBand from "../components/PageBand.svelte";
+  import Icon from "../components/Icon.svelte";
+  import PageHead from "../components/PageHead.svelte";
+  import Sheet from "../components/Sheet.svelte";
+  import SharePanel from "../components/SharePanel.svelte";
   import SpeakButton from "../components/SpeakButton.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { LIMITS } from "../config";
   import { app } from "../lib/app.svelte";
-  import { difficulty } from "../lib/history";
-  import { MODE_COLOR } from "../lib/modeStyle";
+  import { difficulty, isHard } from "../lib/history";
   import { normalize } from "../lib/answer";
+  import { MODE_ICON } from "../lib/modeStyle";
   import type { Direction } from "../lib/practice";
-  import { href, type Count, type Which } from "../lib/router";
+  import { href, type Count } from "../lib/router";
+  import { getSelection, setSelection } from "../lib/selection";
   import { canSpeak, loadVoices } from "../lib/speech";
   import type { Mode } from "../lib/types";
 
@@ -27,16 +26,20 @@
   const deck = $derived(app.deck(id));
   const cards = $derived(app.sortedCards(id));
   const due = $derived(app.dueCount(id));
-  const hard = $derived(app.hardCount(id));
   const diff = $derived(app.diffCounts(id));
 
-  const starred = $derived(app.starredCount(id));
   let dir = $state<Direction>("front");
-  let which = $state<Which>("all");
   // Big lists start with a round of 20; small ones with everything.
   let count = $state<string>(untrack(() => (app.cardsIn(id).length > 20 ? "20" : "all")));
   const countValue = $derived<Count>(count === "10" ? 10 : count === "20" ? 20 : "all");
+  let selected = $state<string[]>(untrack(() => getSelection(id)));
+  const selectedSet = $derived(new Set(selected));
+  $effect(() => setSelection(id, selected));
+
+  let practiceOpen = $state(false);
+  let moreOpen = $state(false);
   let deleting = $state(false);
+
   /** Long lists show the first words; the rest on request (keeps big lists quick on phones). */
   const PAGE = 100;
   let showAll = $state(false);
@@ -46,6 +49,8 @@
     return q ? cards.filter((c) => normalize(`${c.front} ${c.back}`).includes(q)) : cards;
   });
   const shownCards = $derived(showAll || wordQuery ? filtered : filtered.slice(0, PAGE));
+  const hardIds = $derived(cards.filter((c) => isHard(c.hist)).map((c) => c.id));
+  const starredIds = $derived(cards.filter((c) => c.starred).map((c) => c.id));
 
   // Printing shows every word, whatever was on screen.
   $effect(() => {
@@ -53,42 +58,43 @@
     window.addEventListener("beforeprint", before);
     return () => window.removeEventListener("beforeprint", before);
   });
-  let voice = $state(false);
 
+  let voice = $state(false);
   $effect(() => {
     const d = deck;
     if (!d) return;
     void loadVoices().then(() => (voice = (d.langFront !== "xx" && canSpeak(d.langFront)) || (d.langBack !== "xx" && canSpeak(d.langBack))));
   });
-  $effect(() => {
-    if ((hard === 0 && which === "hard") || (starred === 0 && which === "starred")) which = "all";
-  });
 
   const sameLang = $derived(!deck || deck.langFront === deck.langBack || deck.langFront === "xx" || deck.langBack === "xx");
-  const dirLabels = $derived.by(() => {
-    if (!deck) return { front: "", back: "" };
-    if (sameLang) return { front: t("deck.leftToRight"), back: t("deck.rightToLeft") };
+  const dirLabel = $derived.by(() => {
+    if (!deck) return "";
+    if (dir === "mixed") return t("deck.mixed");
+    if (sameLang) return dir === "front" ? t("deck.leftToRight") : t("deck.rightToLeft");
     const a = t(`lang.${deck.langFront}`);
     const b = t(`lang.${deck.langBack}`);
-    return { front: t("lists.langs", { a, b }), back: t("lists.langs", { a: b, b: a }) };
+    return dir === "front" ? t("lists.langs", { a, b }) : t("lists.langs", { a: b, b: a });
   });
+  function nextDir() {
+    dir = dir === "front" ? "back" : dir === "back" ? "mixed" : "front";
+  }
 
-  const modes: { mode: Exclude<Mode, "herhalen">; icon: IconName; desc: StringKey }[] = [
-    { mode: "leren", icon: "learn", desc: "modeDesc.leren" },
-    { mode: "flashcards", icon: "cards", desc: "modeDesc.flashcards" },
-    { mode: "meerkeuze", icon: "choice", desc: "modeDesc.meerkeuze" },
-    { mode: "typen", icon: "type", desc: "modeDesc.typen" },
-    { mode: "dictee", icon: "listen", desc: "modeDesc.dictee" },
-    { mode: "toets", icon: "test", desc: "modeDesc.toets" },
-    { mode: "koppelen", icon: "match", desc: "modeDesc.koppelen" },
-  ];
+  const modes: Exclude<Mode, "herhalen">[] = ["leren", "toets", "flashcards", "meerkeuze", "typen", "dictee", "koppelen"];
+  const which = $derived(selected.length ? "selectie" : "all");
 
-  const DIFF_ORDER = ["vaak", "soms", "goed", "nieuw"] as const;
+  function toggle(cardId: string) {
+    selected = selectedSet.has(cardId) ? selected.filter((x) => x !== cardId) : [...selected, cardId];
+  }
+  function selectOnly(ids: string[]) {
+    const same = ids.length === selected.length && ids.every((x) => selectedSet.has(x));
+    selected = same ? [] : ids;
+  }
 
   let copying = $state(false);
   async function duplicate() {
     if (!deck) return;
     copying = true;
+    moreOpen = false;
     try {
       const copy = await app.duplicateDeck(id, t("deck.copyName", { name: deck.name.slice(0, LIMITS.deckNameChars - 12) }));
       app.showFlash(t("deck.copied"));
@@ -102,42 +108,37 @@
 
   async function remove() {
     await app.deleteDeck(id);
+    setSelection(id, []);
     app.showFlash(t("deck.deleted"));
     location.hash = href.lists();
   }
 </script>
 
 {#if !deck}
-  <PageBand title={t("deck.notFound")} back={{ href: href.lists(), label: t("deck.back") }} />
+  <PageHead title={t("deck.notFound")} back={{ href: href.lists(), label: t("nav.lists") }} />
 {:else}
   <section class="deck">
-    <PageBand title={deck.name} back={{ href: href.lists(), label: t("deck.back") }}>
-      {#snippet lead()}<span class="lead-badge"><SubjectBadge subject={deck.subject || deck.name} size="lg" /></span>{/snippet}
-      <ul class="meta">
-        {#if deck.subject}<li class="bchip">{deck.subject}</li>{/if}
-        <li class="bchip">{tp("common.wordsCount", cards.length)}</li>
-        {#if !sameLang}
-          <li class="bchip">
-            <Flag lang={deck.langFront} size={18} /><span class="visually-hidden">{t("lists.langs", { a: t(`lang.${deck.langFront}`), b: t(`lang.${deck.langBack}`) })}</span><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={18} />
-          </li>
+    <PageHead title={deck.name} subtitle={[deck.subject, tp("common.wordsCount", cards.length)].filter(Boolean).join(" · ")} back={{ href: href.lists(), label: t("nav.lists") }}>
+      {#snippet mark()}<SubjectBadge subject={deck.subject} lang={deck.langFront} size={32} />{/snippet}
+      {#snippet actions()}
+        <button type="button" class="icon-btn" aria-haspopup="dialog" aria-label={t("deck.more")} title={t("deck.more")} onclick={() => (moreOpen = true)}><Icon name="more" /></button>
+      {/snippet}
+      {#if cards.length > 0}
+        {#if !deck.examDate}
+          <a class="when-link" href={href.edit(id)}><Icon name="calendar" size={20} />{t("deck.whenTest")}</a>
         {/if}
-      </ul>
-      <div class="tools">
-        <a class="tool" href={href.edit(id)}><Icon name="edit" size={22} /><span>{t("common.edit")}</span></a>
-        {#if cards.length > 0}
-          <a class="tool" href={share ? href.deck(id) : href.shareDeck(id)} aria-current={share ? "true" : undefined}><Icon name="share" size={22} /><span>{t("deck.share")}</span></a>
-          <button type="button" class="tool" disabled={copying} onclick={duplicate}><Icon name="cards" size={22} /><span>{t("deck.copy")}</span></button>
-        {/if}
-      </div>
-    </PageBand>
+        <button type="button" class="btn btn-primary btn-lg practice-btn" aria-haspopup="dialog" onclick={() => (practiceOpen = true)}>
+          <Icon name="play" size={18} />{selected.length ? tp("deck.practiceSelection", selected.length) : t("deck.practiceAll")}
+        </button>
+        <button type="button" class="dir" onclick={nextDir} aria-label={t("deck.directionNow", { dir: dirLabel })}><Icon name="swap" size={18} />{dirLabel}</button>
+      {/if}
+    </PageHead>
 
     {#if share}
       <SharePanel {deck} {cards} onclose={() => (location.hash = href.deck(id))} />
     {/if}
 
-    {#if deck.examDate}
-      <ExamCard {deck} />
-    {/if}
+    {#if deck.examDate}<ExamCard {deck} />{/if}
 
     {#if cards.length === 0}
       <div class="card card-pad empty">
@@ -150,135 +151,43 @@
       </div>
     {:else}
       {#if due > 0}
-        <div class="due card">
-          <Illustration name="cards" size={80} />
-          <div class="due-txt">
-            <p class="due-title">{tp("deck.dueHero", due)}</p>
-            <a class="btn btn-primary" href={href.review(id)}>{t("home.startReview")}</a>
-          </div>
-        </div>
-      {/if}
-      {#if !deck.examDate}
-        <a class="set-exam callout" href={href.edit(id)}>
-          <span class="ic-round exam-ic"><Icon name="test" size={20} /></span>
-          <span class="set-exam-txt">
-            <span class="set-exam-title">{t("exam.set")}</span>
-            <span class="small muted">{t("exam.setHelp")}</span>
-          </span>
-          <Icon name="chevron" size={20} />
+        <a class="due-row" href={href.review(id)}>
+          <Icon name="review" size={20} />
+          <span class="row-main"><span class="row-title">{tp("deck.dueHero", due)}</span></span>
+          <span class="row-end">{t("home.startReview")}</span>
         </a>
       {/if}
 
-      <h2 class="section-title">{t("deck.practice")}</h2>
-      <div class="options">
-        <fieldset class="fieldset-wrap">
-          <legend>{t("deck.direction")}</legend>
-          <div class="segmented">
-            {#if sameLang}
-              <label><input type="radio" name="dir" value="front" bind:group={dir} />{dirLabels.front}</label>
-              <label><input type="radio" name="dir" value="back" bind:group={dir} />{dirLabels.back}</label>
-            {:else}
-              <label class="flags" title={dirLabels.front}><input type="radio" name="dir" value="front" bind:group={dir} /><Flag lang={deck.langFront} size={20} /><span aria-hidden="true">›</span><Flag lang={deck.langBack} size={20} /><span class="visually-hidden">{dirLabels.front}</span></label>
-              <label class="flags" title={dirLabels.back}><input type="radio" name="dir" value="back" bind:group={dir} /><Flag lang={deck.langBack} size={20} /><span aria-hidden="true">›</span><Flag lang={deck.langFront} size={20} /><span class="visually-hidden">{dirLabels.back}</span></label>
-            {/if}
-            <label><input type="radio" name="dir" value="mixed" bind:group={dir} />{t("deck.mixed")}</label>
-          </div>
-        </fieldset>
-        <fieldset class="fieldset-wrap">
-          <legend>{t("deck.which")}</legend>
-          <div class="segmented">
-            <label><input type="radio" name="which" value="all" bind:group={which} />{t("deck.allWords", { n: cards.length })}</label>
-            <label class:disabled={hard === 0}><input type="radio" name="which" value="hard" bind:group={which} disabled={hard === 0} />{t("deck.hardWords", { n: hard })}</label>
-            <label class:disabled={starred === 0}><input type="radio" name="which" value="starred" bind:group={which} disabled={starred === 0} />{t("deck.starredWords", { n: starred })}</label>
-          </div>
-        </fieldset>
-        {#if cards.length > 10}
-          <fieldset class="fieldset-wrap">
-            <legend>{t("deck.count")}</legend>
-            <div class="segmented">
-              <label><input type="radio" name="count" value="10" bind:group={count} />10</label>
-              {#if cards.length > 20}<label><input type="radio" name="count" value="20" bind:group={count} />20</label>{/if}
-              <label><input type="radio" name="count" value="all" bind:group={count} />{t("deck.countAll")}</label>
-            </div>
-          </fieldset>
-        {/if}
-      </div>
-
-      <ul class="modes">
-        {#each modes as m (m.mode)}
-          {@const disabled = m.mode === "dictee" && !voice}
-          <li class:featured={m.mode === "leren"}>
-            {#if disabled}
-              <div class="mode card disabled" aria-disabled="true">
-                <span class="ic-round ic-{MODE_COLOR[m.mode]} mode-ic"><Icon name={m.icon} size={24} /></span>
-                <span class="mode-txt">
-                  <span class="mode-name">{t(`mode.${m.mode}`)}</span>
-                  <span class="small muted">{t("modeDesc.noVoice", { lang: t(`lang.${deck.langFront === "nl" ? deck.langBack : deck.langFront}`) })}</span>
-                </span>
-              </div>
-            {:else}
-              <a class="mode card" href={href.practice(id, m.mode, dir, which, countValue)}>
-                <span class="ic-round ic-{MODE_COLOR[m.mode]} mode-ic"><Icon name={m.icon} size={24} /></span>
-                <span class="mode-txt">
-                  <span class="mode-name">{t(`mode.${m.mode}`)}{#if m.mode === "leren"}<span class="rec caption">{t("deck.recommended")}</span>{/if}</span>
-                  <span class="small muted">{t(m.desc)}</span>
-                </span>
-                <Icon name="chevron" size={20} />
-              </a>
-            {/if}
-          </li>
-        {/each}
-      </ul>
-
-      <h2 class="section-title">{t("deck.progress")}</h2>
-      <div class="card card-pad progress">
-        <ul class="diff">
-          {#each DIFF_ORDER as d (d)}
-            <li class="d-{d}">
-              <span class="d-num num">{diff[d]}</span>
-              <span class="small">{t(`diff.${d}`)}</span>
-            </li>
-          {/each}
-        </ul>
-        <div class="boxes">
-          <h3>{t("box.title")}</h3>
-          <p class="small muted">{t("box.help")}</p>
-          <BoxBar counts={app.boxCounts(id)} />
-        </div>
-      </div>
-
       <div class="words-head">
-        <h2 class="section-title">{t("deck.words")}</h2>
-        <div class="row no-print">
-          <button type="button" class="btn btn-quiet" onclick={() => window.print()}><Icon name="file" size={18} />{t("deck.print")}</button>
-          <a class="btn btn-quiet" href={href.edit(id)}><Icon name="edit" size={18} />{t("common.edit")}</a>
+        <h2>{t("deck.words")}</h2>
+        <div class="pick">
+          {#if hardIds.length}<button type="button" class="chip" aria-pressed={hardIds.length === selected.length && hardIds.every((x) => selectedSet.has(x))} onclick={() => selectOnly(hardIds)}>{t("deck.hardWords", { n: hardIds.length })}</button>{/if}
+          {#if starredIds.length}<button type="button" class="chip" aria-pressed={starredIds.length === selected.length && starredIds.every((x) => selectedSet.has(x))} onclick={() => selectOnly(starredIds)}>{t("deck.starredWords", { n: starredIds.length })}</button>{/if}
+          {#if selected.length}<button type="button" class="btn btn-quiet" onclick={() => (selected = [])}>{t("deck.clearSelection")}</button>{/if}
         </div>
       </div>
       {#if cards.length > 20}
-        <div class="word-search no-print">
+        <div class="search no-print">
           <Icon name="search" size={20} />
           <label class="visually-hidden" for="word-search">{t("deck.searchWords")}</label>
           <input id="word-search" type="search" placeholder={t("deck.searchWords")} bind:value={wordQuery} autocomplete="off" />
         </div>
         {#if wordQuery && filtered.length === 0}<p class="muted" role="status">{t("deck.noMatches", { q: wordQuery })}</p>{/if}
       {/if}
-      <ol class="words card">
+      <ol class="rows words">
         {#each shownCards as card (card.id)}
           {@const d = difficulty(card.hist)}
-          <li class="word">
-            <span class="dot d-{d}" title={t(`diff.${d}`)}></span>
-            <span class="visually-hidden">{t("deck.statusLabel", { status: t(`diff.${d}`) })}</span>
-            <span class="side s-front">
+          {@const sel = selectedSet.has(card.id)}
+          <li class="word" class:sel>
+            <SpeakButton text={card.front} lang={deck.langFront} size={20} />
+            <span class="w-text">
               <span class="w-front" lang={deck.langFront === "xx" ? undefined : deck.langFront}>{card.front}</span>
-              <SpeakButton text={card.front} lang={deck.langFront} size={18} />
-            </span>
-            <span class="side s-back">
               <span class="w-back" lang={deck.langBack === "xx" ? undefined : deck.langBack}>{card.back}</span>
-              <SpeakButton text={card.back} lang={deck.langBack} size={18} />
             </span>
+            <span class="status d-{d}" title={t(`diff.${d}`)}><span class="visually-hidden">{t("deck.statusLabel", { status: t(`diff.${d}`) })}</span></span>
             <button
               type="button"
-              class="icon-btn star"
+              class="icon-btn star no-print"
               class:on={card.starred}
               aria-pressed={!!card.starred}
               aria-label={card.starred ? t("deck.unstar", { word: card.front }) : t("deck.star", { word: card.front })}
@@ -286,22 +195,82 @@
             >
               <Icon name="star" size={20} filled={!!card.starred} />
             </button>
+            <label class="select no-print">
+              <input type="checkbox" checked={sel} onchange={() => toggle(card.id)} />
+              <span class="visually-hidden">{t("deck.select", { word: card.front })}</span>
+              <span class="circle" aria-hidden="true">{#if sel}<Icon name="check" size={16} />{/if}</span>
+            </label>
           </li>
         {/each}
       </ol>
       {#if cards.length > shownCards.length}
         <button type="button" class="btn show-all" onclick={() => (showAll = true)}>{t("deck.showAll", { n: num(cards.length) })}</button>
       {/if}
+
+      <h2 class="section-title">{t("deck.progress")}</h2>
+      <div class="card card-pad progress">
+        <ul class="diff">
+          {#each ["vaak", "soms", "goed", "nieuw"] as const as k (k)}
+            <li class="d-{k}"><span class="d-num num">{diff[k]}</span><span class="small">{t(`diff.${k}`)}</span></li>
+          {/each}
+        </ul>
+        <div class="boxes">
+          <h3>{t("box.title")}</h3>
+          <BoxBar counts={app.boxCounts(id)} />
+        </div>
+      </div>
     {/if}
 
-    <div class="danger">
-      {#if deleting}
-        <ConfirmInline message={t("deck.deleteConfirm", { name: deck.name })} confirmLabel={t("deck.deleteYes")} onconfirm={remove} oncancel={() => (deleting = false)} />
-      {:else}
-        <button type="button" class="btn btn-quiet del" onclick={() => (deleting = true)}><Icon name="trash" size={20} />{t("common.delete")}</button>
-      {/if}
-    </div>
+    {#if deleting}
+      <ConfirmInline message={t("deck.deleteConfirm", { name: deck.name })} confirmLabel={t("deck.deleteYes")} onconfirm={remove} oncancel={() => (deleting = false)} />
+    {/if}
   </section>
+
+  {#if practiceOpen}
+    <Sheet title={t("deck.practiceWith")} onclose={() => (practiceOpen = false)}>
+      {#if cards.length > 10 && !selected.length}
+        <fieldset class="fieldset-wrap count">
+          <legend>{t("deck.count")}</legend>
+          <div class="segmented">
+            <label><input type="radio" name="count" value="10" bind:group={count} />10</label>
+            {#if cards.length > 20}<label><input type="radio" name="count" value="20" bind:group={count} />20</label>{/if}
+            <label><input type="radio" name="count" value="all" bind:group={count} />{t("deck.countAll")}</label>
+          </div>
+        </fieldset>
+      {/if}
+      <ul class="drawer-list">
+        {#each modes as m (m)}
+          {@const off = m === "dictee" && !voice}
+          <li>
+            {#if off}
+              <span class="drawer-item" aria-disabled="true"><Icon name={MODE_ICON[m]} />{t(`mode.${m}`)}<span class="hint">{t("deck.noVoice")}</span></span>
+            {:else}
+              <a class="drawer-item" href={href.practice(id, m, dir, which, selected.length ? "all" : countValue)}>
+                <Icon name={MODE_ICON[m]} />{t(`mode.${m}`)}
+                {#if m === "leren"}<span class="tag">{t("deck.recommended")}</span>{/if}
+              </a>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    </Sheet>
+  {/if}
+
+  {#if moreOpen}
+    <Sheet title={t("deck.more")} onclose={() => (moreOpen = false)}>
+      <ul class="drawer-list">
+        <li><a class="drawer-item" href={href.edit(id)}><Icon name="edit" />{t("common.edit")}</a></li>
+        {#if cards.length > 0}
+          <li><a class="drawer-item" href={href.shareDeck(id)} onclick={() => (moreOpen = false)}><Icon name="share" />{t("deck.share")}</a></li>
+          <li><button type="button" class="drawer-item" disabled={copying} onclick={duplicate}><Icon name="cards" />{t("deck.copy")}</button></li>
+          <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; setTimeout(() => window.print(), 50); }}><Icon name="file" />{t("deck.print")}</button></li>
+        {/if}
+        <li><a class="drawer-item" href={href.photo(id)}><Icon name="camera" />{t("new.photo")}</a></li>
+        <li><a class="drawer-item" href={href.import(id)}><Icon name="paste" />{t("new.paste")}</a></li>
+        <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; deleting = true; }}><Icon name="trash" />{t("common.delete")}</button></li>
+      </ul>
+    </Sheet>
+  {/if}
 {/if}
 
 <style>
@@ -309,360 +278,79 @@
     display: grid;
     gap: 1rem;
   }
-  .lead-badge :global(.ic-round) {
-    box-shadow: 0 0 0 4px rgb(255 255 255 / 0.35);
-  }
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .bchip {
+  .when-link {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    min-height: 2rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--r-pill);
-    background: var(--band-2);
-    font-size: var(--fs-caption);
-    font-weight: 700;
-  }
-  .tools {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 0.5rem;
-    max-width: 420px;
-  }
-  .tool {
-    display: grid;
-    justify-items: center;
-    align-content: center;
-    gap: 0.25rem;
-    min-height: 64px;
-    padding: 0.5rem;
-    border: 0;
-    border-radius: var(--r-sm);
-    background: var(--band-2);
-    color: #ffffff;
-    font: inherit;
-    font-size: var(--fs-caption);
-    font-weight: 800;
+    min-height: var(--tap);
+    font-weight: 700;
     text-decoration: none;
+  }
+  .practice-btn {
+    min-width: 15rem;
+  }
+  .dir {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--r-pill);
+    background: transparent;
+    color: var(--ink-2);
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color var(--t-base) var(--ease);
   }
-  .tool:hover {
-    background: var(--band-3);
-  }
-  .tool[aria-current] {
-    background: #ffffff;
-    color: var(--on-light-accent);
-  }
-  .tool[disabled] {
-    opacity: 0.5;
-    cursor: progress;
-  }
-  .tool:focus-visible {
-    outline-color: #ffffff;
-  }
-  .flags {
-    gap: 0.375rem;
+  .dir:hover {
+    color: var(--ink);
+    background: var(--surface);
   }
   .empty {
     display: grid;
     gap: 1rem;
   }
-  .due {
+  .due-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
-  }
-  .due-txt {
-    display: grid;
-    justify-items: start;
-    gap: 0.75rem;
-    min-width: 0;
-  }
-  .due-title {
-    font-weight: 800;
-    font-size: var(--fs-lead);
-  }
-  .options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 1.5rem;
-    align-items: flex-end;
-  }
-  .options .segmented {
-    display: flex;
-  }
-  .segmented .disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .modes {
-    display: grid;
-    gap: 0.75rem;
-    margin: 0.5rem 0 0;
-    padding: 0;
-    list-style: none;
-  }
-  @media (min-width: 720px) {
-    .modes {
-      grid-template-columns: 1fr 1fr;
-    }
-  }
-  .mode {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    height: 100%;
-    padding: 1rem 1.25rem;
-    border: 2px solid transparent;
-    color: var(--ink-2);
-    text-decoration: none;
-    transition: border-color var(--t-base) var(--ease);
-  }
-  a.mode:hover {
-    border-color: var(--accent);
-  }
-  .mode.disabled {
-    opacity: 0.6;
-  }
-  .mode-ic {
-    width: 52px;
-    height: 52px;
-  }
-  .featured .mode {
-    border-color: var(--accent);
-  }
-  @media (min-width: 720px) {
-    .featured {
-      grid-column: 1 / -1;
-    }
-  }
-  .rec {
-    display: inline-block;
-    margin-left: 0.5rem;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--r-pill);
-    background: var(--yellow);
-    color: var(--on-light);
-    vertical-align: 0.15em;
-  }
-  .mode-txt {
-    display: grid;
-    gap: 0.125rem;
-    flex: 1;
-    min-width: 0;
-  }
-  .mode-name {
-    color: var(--ink);
-    font-weight: 700;
-    font-size: var(--fs-lead);
-  }
-
-  .progress {
-    display: grid;
-    gap: 1.5rem;
-  }
-  .diff {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  @media (min-width: 720px) {
-    .diff {
-      grid-template-columns: repeat(4, 1fr);
-    }
-  }
-  .diff li {
-    display: grid;
-    gap: 0.125rem;
+    gap: 0.875rem;
     padding: 0.75rem 1rem;
-    border-radius: var(--r-sm);
-  }
-  .d-num {
-    font-size: var(--fs-h1);
-    font-weight: 800;
-    line-height: 1.1;
-  }
-  .diff .d-vaak { background: var(--bad-soft); color: var(--bad); }
-  .diff .d-soms { background: var(--warn-soft); color: var(--warn); }
-  .diff .d-goed { background: var(--good-soft); color: var(--good); }
-  .diff .d-nieuw { background: var(--surface-2); color: var(--ink-2); }
-  .boxes {
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .danger {
-    margin-top: 1.5rem;
-  }
-  .show-all {
-    justify-self: start;
-  }
-  .word-search {
-    position: relative;
-    max-width: 420px;
-  }
-  .word-search :global(.icon) {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--ink-2);
-    pointer-events: none;
-  }
-  .word-search input {
-    padding-left: 2.75rem;
-  }
-
-  /* Printing a list: just the title and the words, in two columns, ink on paper. */
-  @media print {
-    .deck > :global(*:not(.page-band):not(.words):not(.words-head)),
-    .no-print,
-    .tools,
-    .dot,
-    :global(.speak),
-    .star {
-      display: none !important;
-    }
-    .words {
-      box-shadow: none;
-      border: 1px solid #999;
-    }
-    .word {
-      grid-template-columns: 1fr 1fr !important;
-      break-inside: avoid;
-      padding: 0.35rem 0.75rem;
-    }
-    .s-front,
-    .s-back {
-      grid-column: auto !important;
-      grid-row: auto !important;
-    }
-    .w-back {
-      color: #000;
-    }
-  }
-  .set-exam {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: var(--ink-2);
-    text-decoration: none;
-    transition: border-color var(--t-base) var(--ease);
-  }
-  .set-exam:hover {
-    border-color: var(--warn);
-  }
-  .exam-ic {
-    width: 40px;
-    height: 40px;
-    background: var(--yellow);
-    color: var(--on-light);
-  }
-  .set-exam-txt {
-    display: grid;
-    flex: 1;
-    min-width: 0;
-  }
-  .set-exam-title {
+    border-radius: var(--r-md);
+    background: var(--surface);
     color: var(--ink);
-    font-weight: 800;
+    text-decoration: none;
   }
-  .del {
-    color: var(--bad);
-  }
-  .del:hover {
-    background: var(--bad-soft);
+  .due-row > :global(.icon) {
+    color: var(--accent);
   }
   .words-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
   }
-  .words-head .section-title {
-    margin-bottom: 0;
-  }
-  .words {
-    margin: 0;
-    padding: 0.25rem 0;
-    list-style: none;
+  .pick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
   .word {
-    position: relative;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.125rem 0.75rem;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-top: 1px solid var(--line);
-  }
-  .word:first-child {
-    border-top: 0;
-  }
-  @media (min-width: 720px) {
-    .word {
-      grid-template-columns: auto 1fr 1fr auto;
-    }
-  }
-  .s-front {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .s-back {
-    grid-column: 2;
-    grid-row: 2;
-  }
-  .star {
-    grid-column: 3;
-    grid-row: 1 / span 2;
-  }
-  @media (min-width: 720px) {
-    .s-back {
-      grid-column: 3;
-      grid-row: 1;
-    }
-    .star {
-      grid-column: 4;
-      grid-row: 1;
-    }
-  }
-  .star.on {
-    color: #f5a524;
-  }
-  .dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-  @media (min-width: 720px) {
-    .dot {
-      grid-row: 1;
-    }
-  }
-  .dot.d-vaak { background: var(--bad-fill); }
-  .dot.d-soms { background: #f59e0b; }
-  .dot.d-goed { background: var(--good-fill); }
-  .dot.d-nieuw { background: var(--line-strong); }
-  .side {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    padding: 0.375rem 0.5rem 0.375rem 0.25rem;
+    transition: background-color var(--t-base) var(--ease);
+  }
+  .word.sel {
+    background: var(--accent-soft);
+  }
+  .w-text {
+    display: grid;
+    flex: 1;
     min-width: 0;
+    padding: 0.375rem 0;
   }
   .w-front {
     font-weight: 700;
@@ -673,5 +361,110 @@
     color: var(--ink-2);
     overflow-wrap: anywhere;
     white-space: pre-wrap;
+  }
+  .status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+  .status.d-vaak { background: var(--bad-fill); }
+  .status.d-soms { background: var(--warn); }
+  .status.d-goed { background: var(--green); }
+  .status.d-nieuw { background: transparent; }
+  .star.on {
+    color: var(--yellow);
+  }
+  .select {
+    display: grid;
+    place-items: center;
+    width: var(--tap);
+    height: var(--tap);
+    flex: none;
+    cursor: pointer;
+  }
+  .select input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .circle {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px var(--line-strong);
+    color: var(--on-green);
+  }
+  .sel .circle {
+    background: var(--green);
+    box-shadow: none;
+  }
+  .select:has(input:focus-visible) .circle {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .show-all {
+    justify-self: start;
+  }
+  .progress {
+    display: grid;
+    gap: 1.25rem;
+  }
+  .diff {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 560px) {
+    .diff {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  .diff li {
+    display: grid;
+    gap: 0.125rem;
+    padding: 0.75rem;
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+  }
+  .d-num {
+    font-size: var(--fs-title);
+    font-weight: 900;
+    line-height: 1.1;
+  }
+  .diff .d-vaak .d-num { color: var(--bad); }
+  .diff .d-soms .d-num { color: var(--warn); }
+  .diff .d-goed .d-num { color: var(--good); }
+  .boxes {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .count {
+    padding: 0.75rem 1.25rem 0.25rem;
+  }
+  .danger {
+    color: var(--bad);
+  }
+
+  /* Printing a list: the title and the words, ink on paper. */
+  @media print {
+    .deck > :global(*:not(.head):not(.words)),
+    .no-print,
+    .status,
+    .words-head,
+    :global(.speak) {
+      display: none !important;
+    }
+    .word.sel {
+      background: none;
+    }
+    .w-back {
+      color: #000;
+    }
   }
 </style>

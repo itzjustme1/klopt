@@ -28,7 +28,7 @@
 
 <div class="preview">
   <div class="card card-pad head">
-    <SubjectBadge subject={shared.deck.subject || shared.deck.name} size="lg" />
+    <SubjectBadge subject={shared.deck.subject || shared.deck.name} size={40} />
     <div>
       <h2>{shared.deck.name}</h2>
       <p class="small muted meta">

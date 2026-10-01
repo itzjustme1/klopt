@@ -1,4 +1,4 @@
-import "@fontsource-variable/figtree/wght.css";
+import "@fontsource-variable/gabarito/wght.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import { mount } from "svelte";

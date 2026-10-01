@@ -1,6 +1,6 @@
 <script lang="ts" module>
   type Shape =
-    | { p: string; evenodd?: boolean }
+    | { p: string; evenodd?: boolean; fill?: boolean }
     | { c: [number, number, number]; fill?: boolean }
     | { r: [number, number, number, number, number] };
 
@@ -34,6 +34,11 @@
     review: [{ r: [3.5, 5, 17, 15.5, 2.5] }, { p: "M3.5 10h17M8.5 3v4M15.5 3v4" }, { p: "m9.5 15 1.8 1.8 3.5-3.6" }],
     star: [{ p: "M12 3.5l2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9z" }],
     match: [{ r: [2.5, 6, 8, 12, 2] }, { r: [13.5, 6, 8, 12, 2] }, { p: "M10.5 12h3" }],
+    play: [{ p: "M8 5.5v13l10.5-6.5z", fill: true }],
+    calendar: [{ r: [3.5, 5, 17, 15.5, 2.5] }, { p: "M3.5 10h17M8.5 3v4M15.5 3v4" }],
+    menu: [{ p: "M4 7h16M4 12h16M4 17h16" }],
+    quiz: [{ r: [3.5, 3.5, 17, 17, 3] }, { p: "M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5v.7" }, { c: [12, 17, 0.9], fill: true }],
+    spell: [{ p: "M4 18 8.5 6l4.5 12M5.7 14h5.6" }, { p: "m14 15 2.5 2.5L21 12" }],
     more: [{ c: [5.5, 12, 1.6], fill: true }, { c: [12, 12, 1.6], fill: true }, { c: [18.5, 12, 1.6], fill: true }],
     flame: [
       {
@@ -66,7 +71,7 @@
 >
   {#each shapes as s, i (i)}
     {#if "p" in s}
-      <path d={s.p} fill-rule={s.evenodd ? "evenodd" : undefined} />
+      <path d={s.p} fill-rule={s.evenodd ? "evenodd" : undefined} fill={s.fill ? "currentColor" : undefined} />
     {:else if "c" in s}
       <circle cx={s.c[0]} cy={s.c[1]} r={s.c[2]} fill={s.fill ? "currentColor" : undefined} stroke={s.fill ? "none" : undefined} />
     {:else}

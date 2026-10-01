@@ -10,7 +10,7 @@ test("a test date turns into a daily plan on the list, home and progress screens
   await page.getByRole("link", { name: "Naar de lijst" }).click();
 
   // No date yet: a link to set one.
-  await page.getByRole("link", { name: "Toetsdatum instellen" }).click();
+  await page.getByRole("link", { name: "Wanneer is je toets?" }).click();
   await page.getByLabel("Toetsdatum (optioneel)").fill(dayISO(-1));
   await page.getByRole("button", { name: "Lijst opslaan" }).click();
   await expect(page.getByRole("alert")).toContainText("Die datum is al geweest.");
@@ -49,7 +49,7 @@ test("a test date turns into a daily plan on the list, home and progress screens
   // Home lists the test.
   await page.getByRole("link", { name: "Vandaag", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Toetsen" })).toBeVisible();
-  await expect(page.locator(".exam").getByRole("link", { name: "Hoofdstuk 4" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /^Hoofdstuk 4 Nog/ })).toBeVisible();
 
   // Progress shows what comes back in the next week: the 10 practised words, tomorrow and later.
   await page.getByRole("link", { name: "Voortgang" }).click();
