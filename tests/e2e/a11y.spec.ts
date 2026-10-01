@@ -189,6 +189,9 @@ test("accessibility on a laptop screen, light and dark", async ({ browser }) => 
       ["lists", "#/lijsten"],
       ["progress", "#/voortgang"],
       ["settings", "#/instellingen"],
+      ["planner", "#/toetsweek"],
+      ["quizzes", "#/quizzen"],
+      ["verb sets", "#/rijtjes"],
     ];
     for (const [label, hash] of screens) {
       await page.goto(base + hash);

@@ -10,6 +10,7 @@
   import { app } from "../lib/app.svelte";
   import { account } from "../lib/account.svelte";
   import { formatDay } from "../lib/dates";
+  import { FREEZE_MAX, weekDays } from "../lib/history";
   import { newId } from "../lib/db";
   import { demoLists, demoQuiz } from "../lib/demo";
   import { examPlan } from "../lib/plan";
@@ -28,6 +29,8 @@
     app.upcomingExams().slice(0, 3).map((deck) => ({ deck, plan: examPlan(app.cardsIn(deck.id), app.today, deck.examDate!) })),
   );
   const subjects = $derived(app.subjects(t("lists.noSubject")));
+  const week = $derived(weekDays(app.today));
+  const practised = $derived(new Set(app.days.filter((d) => d.answers > 0).map((d) => d.day)));
   const recent = $derived(app.byRecent().slice(0, 4));
   // A practice left halfway today, if its list still exists.
   const saved = peekSession();
@@ -64,6 +67,29 @@
   }
 </script>
 
+{#snippet examsBlock()}
+  {#if exams.length > 0}
+    <div class="sect-head">
+      <h2>{t("home.exams")}</h2>
+      <a class="btn btn-quiet" href={href.planner()}><Icon name="calendar" size={18} />{t("planner.open")}</a>
+    </div>
+    <ul class="rows">
+      {#each exams as { deck, plan } (deck.id)}
+        <li>
+          <a class="row-item" href={href.deck(deck.id)}>
+            <SubjectBadge subject={deck.subject} lang={deck.langFront} />
+            <span class="row-main">
+              <span class="row-title">{deck.name}</span>
+              <span class="row-sub">{plan && plan.target > 0 ? `${tp("exam.left", plan.toLearn)} ${tp("exam.plan", plan.target)}` : t("exam.ready")}</span>
+            </span>
+            <span class="tag">{examTag(deck.examDate!)}</span>
+          </a>
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
+
 {#if app.decks.length === 0}
   <section class="welcome">
     <span class="logo-phone"><Logo /></span>
@@ -77,6 +103,7 @@
   </section>
 {:else}
   <section class="home">
+    <div class="home-main">
     <h1 class="visually-hidden">{greeting}</h1>
     <div class="topline">
       <a class="search-link" href={href.lists()}><Icon name="search" size={20} />{t("home.search")}</a>
@@ -130,26 +157,7 @@
       {/if}
     </ul>
 
-    {#if exams.length > 0}
-      <div class="sect-head">
-        <h2>{t("home.exams")}</h2>
-        <a class="btn btn-quiet" href={href.planner()}><Icon name="calendar" size={18} />{t("planner.open")}</a>
-      </div>
-      <ul class="rows">
-        {#each exams as { deck, plan } (deck.id)}
-          <li>
-            <a class="row-item" href={href.deck(deck.id)}>
-              <SubjectBadge subject={deck.subject} lang={deck.langFront} />
-              <span class="row-main">
-                <span class="row-title">{deck.name}</span>
-                <span class="row-sub">{plan && plan.target > 0 ? `${tp("exam.left", plan.toLearn)} ${tp("exam.plan", plan.target)}` : t("exam.ready")}</span>
-              </span>
-              <span class="tag">{examTag(deck.examDate!)}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {/if}
+    <div class="exams-inline">{@render examsBlock()}</div>
 
     <h2 class="sect">{t("home.subjects")}</h2>
     <ul class="chips">
@@ -169,6 +177,43 @@
     </ul>
 
     <Banners />
+    </div>
+
+    <aside class="home-side" aria-label={t("home.overview")}>
+      <div class="card card-pad side-streak">
+        <div class="ss-top">
+          <span class="ss-flame" class:lit={s.today}><Icon name="flame" size={28} filled /></span>
+          <div class="ss-num">
+            <p class="ss-days num">{num(s.days)}</p>
+            <p class="small muted">{tp("progress.streak", s.days)}</p>
+          </div>
+          {#if s.freezes > 0}
+            <a class="ss-freeze" href={href.progress()} aria-label={t("freeze.title", { n: s.freezes, max: FREEZE_MAX })}><Icon name="freeze" size={18} />{s.freezes}</a>
+          {/if}
+        </div>
+        <ol class="week-dots" aria-label={t("progress.week")}>
+          {#each week as day (day)}
+            <li class:done={practised.has(day)} class:today={day === app.today} aria-label="{formatDay(day, getLang(), { weekday: 'long' })}: {practised.has(day) ? t('home.practised') : t('home.notPractised')}">
+              <span class="dot" aria-hidden="true">{#if practised.has(day)}<Icon name="check" size={14} />{/if}</span>
+              <span class="caption muted" aria-hidden="true">{formatDay(day, getLang(), { weekday: "narrow" })}</span>
+            </li>
+          {/each}
+        </ol>
+        <div class="goal-bar">
+          <div class="bar" aria-hidden="true"><span style:width="{Math.min(100, (app.answersToday() / app.settings.dailyGoal) * 100)}%"></span></div>
+          <p class="caption muted">{t("home.goalToday", { done: num(Math.min(app.answersToday(), app.settings.dailyGoal)), goal: num(app.settings.dailyGoal) })}</p>
+        </div>
+      </div>
+      {#if exams.length > 0}
+        <div class="side-exams">{@render examsBlock()}</div>
+      {:else}
+        <a class="card card-pad plan-cta" href={href.planner()}>
+          <Icon name="calendar" size={24} />
+          <span class="row-main"><span class="row-title">{t("home.planCta")}</span><span class="row-sub">{t("home.planCtaSub")}</span></span>
+          <Icon name="chevron" size={20} />
+        </a>
+      {/if}
+    </aside>
   </section>
 {/if}
 
@@ -183,8 +228,112 @@
   .menu {
     padding: 0.25rem 0;
   }
-  .home {
+  .home,
+  .home-main {
     display: grid;
+  }
+  .home-side {
+    display: none;
+  }
+  @media (min-width: 1100px) {
+    .home {
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 2.5rem;
+      align-items: start;
+    }
+    .home-side {
+      position: sticky;
+      top: 2rem;
+      display: grid;
+      gap: 1rem;
+    }
+    .exams-inline,
+    .topline .flame {
+      display: none;
+    }
+  }
+  .side-streak {
+    display: grid;
+    gap: 1rem;
+  }
+  .ss-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .ss-flame {
+    color: var(--ink-2);
+  }
+  .ss-flame.lit {
+    color: var(--flame);
+  }
+  .ss-num {
+    flex: 1;
+  }
+  .ss-days {
+    font-size: var(--fs-title);
+    font-weight: 900;
+    line-height: 1;
+  }
+  .ss-freeze {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: var(--tap);
+    padding: 0 0.75rem;
+    border-radius: var(--r-pill);
+    background: var(--surface-2);
+    color: var(--accent);
+    font-weight: 800;
+    text-decoration: none;
+  }
+  .week-dots {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: center;
+  }
+  .week-dots li {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+  }
+  .dot {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    color: var(--on-green);
+  }
+  .week-dots .done .dot {
+    background: var(--green);
+  }
+  .week-dots .today .dot {
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+  .goal-bar {
+    display: grid;
+    gap: 0.375rem;
+  }
+  .goal-bar .bar {
+    height: 10px;
+  }
+  .side-exams {
+    display: grid;
+  }
+  .plan-cta {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    color: inherit;
+    text-decoration: none;
+  }
+  .plan-cta > :global(.icon:first-child) {
+    color: var(--yellow);
   }
   .topline {
     display: flex;

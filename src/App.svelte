@@ -123,6 +123,24 @@
   // Phones: Vandaag, Lijsten, [Nieuw], Voortgang, Instellingen.
   const navStart = nav.slice(0, 2);
   const navEnd = nav.slice(2);
+  // Laptops have room for a few shortcuts more in the sidebar.
+  const extras = $derived([
+    { key: "planner.title" as StringKey, icon: "calendar" as IconName, href: href.planner(), match: ["planner"] },
+    { key: "quiz.title" as StringKey, icon: "quiz" as IconName, href: href.quizzes(), match: ["quizzes", "quiz", "quizEditor"] },
+    ...(account.user ? [{ key: "groups.title" as StringKey, icon: "lists" as IconName, href: href.groups(), match: ["groups", "group"] }] : []),
+  ]);
+  let wide = $state(typeof matchMedia === "function" && matchMedia("(min-width: 720px)").matches);
+  $effect(() => {
+    const mq = matchMedia("(min-width: 720px)");
+    const on = () => (wide = mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  });
+  /** On a laptop a shortcut in the sidebar is the current page instead of the item it belongs under. */
+  function current(item: { match: string[] }, extra = false): boolean {
+    if (!item.match.includes(app.route.name)) return false;
+    return extra || !wide || !extras.some((x) => x.match.includes(app.route.name));
+  }
 </script>
 
 <a class="skip" href="#main" onclick={(e) => { e.preventDefault(); main?.focus(); }}>{t("skip")}</a>
@@ -131,7 +149,7 @@
   <nav class="tabbar" aria-label={t("nav.label")}>
     <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo /></a>
     {#snippet tab(item: (typeof nav)[number])}
-      <a class="tab" href={item.href} aria-current={item.match.includes(app.route.name) ? "page" : undefined}>
+      <a class="tab" href={item.href} aria-current={current(item) ? "page" : undefined}>
         <Icon name={item.icon} size={22} />
         <span>{t(item.key)}</span>
       </a>
@@ -142,10 +160,18 @@
       <span>{t("nav.new")}</span>
     </button>
     {#each navEnd as item (item.key)}{@render tab(item)}{/each}
+    <div class="extras">
+      {#each extras as item (item.key)}
+        <a class="tab" href={item.href} aria-current={current(item, true) ? "page" : undefined}>
+          <Icon name={item.icon} size={22} />
+          <span>{t(item.key)}</span>
+        </a>
+      {/each}
+    </div>
   </nav>
 {/if}
 
-<main id="main" class:wrap={!focusMode} class:with-nav={!hideNav} class:focus-mode={focusMode} tabindex="-1" bind:this={main}>
+<main id="main" class:wide={app.route.name === "today" && app.decks.length > 0} class:wrap={!focusMode} class:with-nav={!hideNav} class:focus-mode={focusMode} tabindex="-1" bind:this={main}>
   {#if app.failed}
     <div class="card card-pad">
       <p class="error">{t("common.saveFailed")}</p>
@@ -284,7 +310,8 @@
     background: var(--surface);
     border-top: 1px solid var(--line);
   }
-  .brand {
+  .brand,
+  .extras {
     display: none;
   }
   .tab {
@@ -369,6 +396,14 @@
     .tab[aria-current="page"] {
       background: var(--surface-2);
     }
+    .extras {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--line);
+    }
     .tab-new {
       order: -1;
       margin-bottom: 0.75rem;
@@ -392,6 +427,9 @@
     }
     main.with-nav:global(.wrap) {
       max-width: calc(760px + 232px);
+    }
+    main.with-nav.wide:global(.wrap) {
+      max-width: calc(1120px + 232px);
     }
   }
 
