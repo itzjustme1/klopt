@@ -1,6 +1,6 @@
 # Klopt
 
-A study app for Dutch secondary-school students: vocabulary and key terms, practised the way StudyGo and Quizlet do it, plus a daily spaced-repetition queue and a plan for your next test. It runs entirely in the browser. There are no accounts, no backend, no analytics and no cookies. Everything is stored on the device in IndexedDB, and the app works offline after the first visit and can be installed to the home screen. The interface is Dutch or English. It looks like StudyGo in blue and is light by default; a dark theme is in the settings.
+A study app for Dutch secondary-school students: vocabulary and key terms, practised the way StudyGo and Quizlet do it, plus a daily spaced-repetition queue and a plan for your next test. It runs entirely in the browser. There are no accounts, no backend, no analytics and no cookies. Everything is stored on the device in IndexedDB, and the app works offline after the first visit and can be installed to the home screen. The interface is Dutch or English. It follows the layout of the StudyGo app, in navy (a light theme is in the settings).
 
 "Klopt" is a working name. It lives only in `src/config.ts` (`APP_NAME`); translations use `{app}`.
 
@@ -27,11 +27,12 @@ npm run e2e
 ## What's in it
 
 **Lists**
-- Two languages per list (Dutch, English, French, German, Spanish, Italian, Latin or "other" for terms).
+- **Word lists** with two languages (Dutch, English, French, German, Spanish, Italian, Latin or "other").
+- **Term lists** (begrippen) for subjects like history: a term and its explanation. Flashcards are recommended for them, and an explanation is never asked to be typed.
 - A subject badge per list.
 - An optional test date per list.
 - Search, sort and a subject filter across lists; search within a list of more than 20 words.
-- Copy, delete and print a list.
+- Copy, delete and print a list. Select words (or "Lastige" / "Gemarkeerd") and practise only those.
 - Share a list as a link, a file or through the phone's share sheet; export it as text for Quizlet or Excel.
 
 **Five ways to fill a list**
@@ -54,10 +55,18 @@ npm run e2e
 | Toets (Test) | Everything once, no feedback, and a Dutch grade at the end (1 + 9 × score). |
 | Koppelen (Match) | Tap words and translations that belong together, against the clock, in rounds of six, with a record per list. |
 
-**Before you start** you choose:
-- the direction: front to back, back to front, or mixed
-- which words: all, the difficult ones, or starred ones
+**Before you start:** the green *Oefen* button opens an "Oefen met" menu with the modes (Leren is marked *Aanbevolen*, Flashcards for term lists). You choose:
+- the direction, with the toggle under the button: front to back, back to front, or mixed
+- which words: all, or the ones you selected
 - how many: 10, 20 or all; the words that need it most are picked first
+
+**Quizzes:** make your own test with mixed question types, like StudyGo's quizzes:
+- multiple choice (2 to 6 answers)
+- fill in: a sentence with `[blanks]`, e.g. `De Februaristaking was in [1941] in [Amsterdam].`
+- open questions, which you grade yourself against the right answer
+- true or false
+
+Taking a quiz shows the right answer after each question, gives half points for a half-right fill-in, and ends with a Dutch grade (1 + 9 × score) and what went wrong. The last grade stays on the quiz.
 
 **While you practise:**
 - Leaving halfway is fine: the session continues where you stopped, even after closing the app.
@@ -172,6 +181,8 @@ scripts/               OCR copy, icon rendering, screenshots
 - `Card`: text, box, a `due` local date, and optional `starred`. It also holds caches rebuilt from the log: `hist` (last results) and `lastDay`.
 - `Review`: an append-only log with `at`, local `day`, `grade`, `fromBox`, `toBox`, `mode` and `counts`. Timestamps are kept strictly increasing, so the order is never ambiguous.
 - `DayStat`: answers per day, a cache for the streak and daily goal.
+- `Deck.kind`: `"terms"` for a term list (absent for word lists).
+- `Quiz`: name, subject, questions (`mc`, `cloze`, `open`, `tf`) and the last result. Stored in its own IndexedDB store (schema 3) and included in backups.
 
 A card's box and due date can always be recomputed by replaying its reviews where `counts` is true; a unit test does exactly that.
 
@@ -187,7 +198,7 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 
 ## How it's tested
 
-**Unit tests (Vitest, 215 tests, run with `TZ=Europe/Amsterdam`)**
+**Unit tests (Vitest, 224 tests, run with `TZ=Europe/Amsterdam`)**
 - **Scheduler:** your four table cases, every box × grade × day of 2026 against the reference implementation, DST, and the first-answer-of-the-day rule.
 - **Dates:** rollover and DST.
 - **Answer checking:** alternatives, brackets, accents, typos including swapped letters, decimal commas, hints, and the lenient options.
@@ -196,14 +207,16 @@ A card's box and due date can always be recomputed by replaying its reviews wher
 - **Test plan and forecast:** the daily target is fixed for the day.
 - **Streak.**
 - **OCR columns.**
-- **Database** (on `fake-indexeddb`): the migration, the move to the light default, the day stats, stars, strictly ordered logs, replay, cache rebuilds.
+- **Database** (on `fake-indexeddb`): the migrations, the move to the navy default, the day stats, stars, strictly ordered logs, replay, cache rebuilds.
+- **Quizzes:** fill-in parsing, marking every type (half points, lenient accents), the grade, save checks, backup round trip, merge, and broken quizzes rejected.
+- **Term lists:** an explanation is never typed; the kind survives backups and sharing.
 - **Backup:** round trip, more than 25 kinds of malformed input rejected, v1 files.
 - **Share links:** gzip bomb, invalid UTF-8.
 - **Import quoting, the router and i18n parity.**
 
 The unit suite was also run 30 times in a row to rule out flaky tests.
 
-**End-to-end tests (Playwright, 21 tests, production build)**
+**End-to-end tests (Playwright, 23 tests, production build)**
 - **Learn, review and test by keyboard:** checks the boxes, streak, grade, persistence and offline.
 - **Session size, starred words, lenient accents, swiping flashcards.**
 - **The matching game:** two rounds and a record.
@@ -213,8 +226,10 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Photo:** a real image goes through the on-device OCR.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link, and the backup reminder.**
+- **A term list** made from the Nieuw menu and learnt with flashcards.
+- **A quiz** with all four question types: made, saved, taken by tap and keyboard, graded (half points for a fill-in), and the grade kept after a reload.
 - **Accessibility:**
-  - axe WCAG 2.2 AA on 21 screen states in light and dark at 360px, and on five screens at laptop width in both themes
+  - axe WCAG 2.2 AA on 27 screen states in light and dark at 360px (including the quiz screens), and on five screens at laptop width in both themes
   - 44px tap targets
   - no horizontal scroll, also with very long words
   - reduced motion
@@ -222,4 +237,4 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 
 The flow tests also fail on any request to another origin, any CSP violation and any console error.
 
-The design follows StudyGo's visual language in blue. It was measured against StudyGo, Quizlet and Duolingo and then re-measured on this build; see [DESIGN-RECON.md](DESIGN-RECON.md). Screenshots of every screen, light and dark, are in `docs/screens/` (`node scripts/screens.mjs docs/screens` after a build). A 2000-word list imports in about 0.5 s and opens in about 0.3 s on a laptop.
+The design follows the structure of the real StudyGo app, in navy. It was measured against StudyGo, Quizlet and Duolingo and then re-measured on this build; see [DESIGN-RECON.md](DESIGN-RECON.md). Screenshots of every screen, light and dark, are in `docs/screens/` (`node scripts/screens.mjs docs/screens` after a build). A 2000-word list imports in about 0.5 s and opens in about 0.3 s on a laptop.

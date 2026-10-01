@@ -1,116 +1,64 @@
-# Design recon: Klopt v3
+# Design recon: Klopt v4
 
-**Design read:** a mobile-first study app for Dutch secondary-school students, in StudyGo's visual language: a bright band, white cards, chunky green buttons, yellow callouts, coloured round icons. Clearly its own app, in blue.
-**Measured:** 2026-09-30, all sites at 1440×900 with the design-recon extractor. Raw digests are in the session scratchpad (`recon/*.json`).
+**Design read:** the structure of the real StudyGo app, in navy. It should be compact, flat and friendly, with rows instead of decorated cards, one green action per screen and as little helper text as possible.
 
-**Direction:**
-- **v2** (bright blue, measured tokens, no illustrations) was rejected by Valentijn as too plain: on his phone it opened in dark mode and read as a generic dashboard.
-- For **v3** he chose between two rendered mockups in StudyGo's real visual language, one in StudyGo purple and one in blue. He picked **blue**.
+**How we got here:**
+- **v2** used measured tokens on a light page. Valentijn found it plain.
+- **v3** copied StudyGo's *marketing site*: a blue band, sticker illustrations and coloured icon circles. He called it "nog steeds AI slop".
+- **v4** is built on the logged-in **StudyGo app** itself, which he opened for this (read-only, nothing changed in his account). From two rendered mockups he picked dark navy over light.
 
-## References
+## What the StudyGo app actually does (measured 2026-10-01, 691px wide)
 
-| Site | Role | Final URL | Why |
-|---|---|---|---|
-| StudyGo | locked (named by the user) | studygo.com/nl/ and /oefenen/functies/woordjes-leren/ | Visual language: brand band, white cards, knob buttons, yellow accents, subject icons, the practice flow |
-| Quizlet | direct peer | quizlet.com/nl | Mode tiles, the set page, a calm and dense app type |
-| Duolingo | disagreeing craft benchmark | duolingo.com | Streak and week dots, one loud button style, 3D press |
+| Thing | StudyGo app | Klopt v4 |
+|---|---|---|
+| Ground / surfaces | `#240E3E` / `#3D1868`, plus white at 5% | `#0B1736` / `#14295A` / `#1C3570` |
+| Primary button | green `#29B966` pill, dark text, darker bottom edge | `#29B966`, text `#08200F` (6.7:1), edge `#1A8048` |
+| Type | ModernEra, 14px body, 18px/900 headings, weights 500/700/900 | Gabarito, 15px body, 18 and 24px/900, weights 500/700/900 |
+| Radii | 8, 16, 24 and circles | 8, 12, 16, 20 and pills |
+| Shadows | essentially none | none on surfaces; only the button edge and the bottom-sheet shadow |
+| Navigation | a bottom tab bar (Home, Oefenen, Nieuw, Zoeken, Meer) | Vandaag, Lijsten, a green **Nieuw**, Voortgang, Instellingen; a sidebar on laptops |
+| Home | search pill, streak flame, "Jouw items" chips, "Jouw vakken" chips with flags, Recent | the same, plus the blue "Herhalen" block (Klopt's own spaced-repetition queue) and Toetsen rows |
+| List page | centred title, breadcrumb, "Wanneer is je toets?", one green "Oefen alle woorden", "Origineel" direction, word rows with speaker and a select circle | the same, with stars and a status dot per word |
+| Practice menu | bottom sheet "Oefen met": plain rows, line icons, a yellow AANBEVOLEN label | the same |
+| Create | "Nieuw" sheet: Lijst, Quiz, Map…; quizzes mix multiple choice, fill-ins, open and dictation | Woordenlijst, Begrippenlijst, Quiz, Foto, Plakken, Gedeeld bestand; quizzes: multiple choice, fill in, open, true or false |
 
-## Type
+## Colour and contrast
 
-One family: **Figtree** (variable, self-hosted), a friendly geometric grotesk close to StudyGo's ModernEra.
+All measured with the WCAG formula.
 
-| Role | Size | Weight | Source |
-|---|---|---|---|
-| Hero number (due count, grade) | 64px | 800 | Duolingo and StudyGo stat numbers |
-| Page title in the band | 40px (28px on phones) | 800 | StudyGo display 44/800 |
-| H1 | 28px | 800 | StudyGo H2 32/800 |
-| H2 | 20px | 700–800 | Quizlet 20 |
-| Green button label | 19px | 800 | StudyGo button 18/700; 19px keeps white on green legal as large text |
-| Lead | 17px | 700 | StudyGo button label |
-| Body | 16px | 400 | |
-| Small | 14px | 400 / 700 | StudyGo 14–15, Quizlet 14 |
-| Caption | 13px | 700 | Quizlet 12, Duolingo 15/700 |
+| Pair | Ratio |
+|---|---|
+| White on ground / surface / raised | 17.7 / 14.1 / 11.7 |
+| Secondary text `#A9B9DF` on ground / surface / raised | 9.0 / 7.2 / 6.0 |
+| Accent `#7FA8FF` on ground / surface / raised | 7.5 / 6.0 / 5.0 |
+| Dark text on green | 6.7 |
+| Dark text on the yellow label | 12.2 |
+| White on the blue review block `#1F5CFF` | 5.2 |
+| Navy text on the eight subject colours | 4.8 to 8.2 |
 
-- **Weights:** 3 (400, 700, 800).
-- **Sizes:** 10 across the app, including the 22px wordmark, and 5 to 9 per screen.
-
-## Color
-
-| Role | Light | Dark | Source |
-|---|---|---|---|
-| Brand band (header, page titles, browser bar) | `#1660FF` | `#1447C9` | Valentijn's blue in StudyGo's band pattern |
-| Page ground | `#F3F6FC` | `#0F1422` | StudyGo ground `#faf9fa`, shifted to blue |
-| Card | `#FFFFFF` | `#171D2E` | |
-| Primary button (green knob) | `#16A34A` on a `#0F7A35` edge | same | StudyGo's green "Start" knob |
-| Yellow (callouts, streak, test dates) | `#FFD43B` / soft `#FFF6D1` | `#CAA52A` / `#3A3312` | StudyGo's yellow highlights |
-| Round icons (subjects, modes) | eight hues, `--ic-1` … `--ic-8` | same | StudyGo's coloured subject icons |
-| Text | `#131A2E` / secondary `#56607A` | `#EEF1F8` / `#A7B0C8` | |
-
-Contrast, all measured with the WCAG formula:
-- **Band:** white on the band is 5.06:1 (7.57:1 in dark). Chips and tiles on the band use the darker `--band-2` (6.23:1). No text on the band is translucent.
-- **Green:** white on green is 3.30:1, which only passes as large bold text. Every green button is therefore 19px/800, including the large ones (a test caught one that wasn't).
-- **Yellow:** ink on yellow is 12.13:1. On yellow and white surfaces that stay light in dark mode, text uses the fixed `--on-light` tokens.
-- **Round icons:** white on the eight icon hues is 4.60 to 5.93:1.
-- **Text on the ground:** 15.97:1, and secondary text 5.79:1.
-
-## Space
-
-- **Base unit:** 4px (82–90% of measured values align).
-- **Rhythm:** 16px between cards and 24–32px between sections.
-- **Container:** 1040px for list screens and 640–720px for practice and settings.
-
-## Surface
-
-- **Radii:** 10px (small keys and cells), 14px (inputs, tiles, options), 24px (cards, callouts, sheets), and pill for every button, chip and segmented option. StudyGo uses 8/24/pill.
-- **Shadows:**
-  - one card shadow: `0 2px 0` plus `0 10px 28px` at 8% ink
-  - the knob edge, `0 var(--edge-size) 0 var(--edge-color)`, one recipe coloured per button variant (grey, green, red)
-- **Press:** buttons move down by the edge and the edge disappears, as with StudyGo's knob.
-
-## Composition
-
-- **Band with a wave:** the header continues into a full-width blue band that carries the page title and ends in a soft wave. On home, progress and settings the first card lifts onto the wave.
-- **Home:**
-  - in the band: a greeting, a white streak chip with a flame, the daily-goal line and a week of dots
-  - below: the "Herhalen" card with an illustration and a green Start knob
-  - then tests as yellow callouts, recently practised lists, and subject tiles with round icons
-- **List page:**
-  - in the band: the subject icon, title, meta chips, and Edit, Share and Copy tiles
-  - below: a due card with an illustration, a yellow "set a test date" callout, and mode tiles with a coloured round icon each ("Leren" marked *Aanbevolen*)
-  - then progress and the words
-- **Practice:** a white card with a header row (mode icon and name, star), a large prompt, and green knob actions. After checking, the green or red feedback sheet slides up. That sheet is the one signature motion.
-- **Illustrations:** four small original stickers (cards, trophy, stack, camera), with ink outlines and bright fills on a themed backdrop circle.
-
-## Motion
-
-- **Base:** 180ms `cubic-bezier(0.2, 0.8, 0.2, 1)` for every state change; the button press takes 110ms.
-- **Signature:** the answer sheet, 260ms, `translateY(12px → 0)` plus opacity.
-- **Reduced motion:** with `prefers-reduced-motion`, changes are instant.
+The light theme uses the same structure on `#F2F5FB` with white surfaces and keeps the same ratios as v3.
 
 ## Deliberate divergences
 
-1. **Blue, not purple, and nothing of StudyGo's.** No logo, mascot, illustrations or copy is taken from StudyGo; the illustrations are drawn for Klopt.
-2. **Light by default.** Dark stays a choice in the settings. Installs from before v3 that simply followed the system theme move to light once.
-3. **The Leitner "Herhalen" queue is the home hero.** StudyGo has no daily spaced-repetition queue.
-4. **Subject icons are a symbol or two letters** (€, π, `</>`, Fr), not a clip-art set.
+1. **Navy, not purple.** Nothing of StudyGo's identity is reused: no logo, mascot, illustrations, font or copy.
+2. **No illustrations at all.** StudyGo has them in empty states; Klopt keeps those screens text-only.
+3. **The Herhalen block stays on top of home.** StudyGo has no daily spaced-repetition queue.
+4. **Subject marks:** a round flag for a language, otherwise a coloured circle with a symbol (€, π, `</>`) or a letter.
 
-## Audit (v3)
+## Audit (v4)
 
-Measured on the production build with the same extractor at 1440×900, on the home, list, practice and settings screens.
+Measured on the production build with the design-recon extractor at 1440×900, on the home, list, practice and settings screens.
 
-| Metric | References (median) | Target | Build | Verdict |
-|---|---|---|---|---|
-| Font families | 1 | 1 | 1 | pass |
-| Font weights | 3 | 3 | 3 (400, 700, 800) | pass (first pass: 4, a stray 600; fixed) |
-| Distinct sizes per screen | 8 | ≤ 10 | 5–9 | pass |
-| Body size / line-height | 16 / 1.5 | 16 / 1.5 | 16 / 1.5 | pass |
-| Text colour roles | 7.5 | ≤ 8 | 4–7 | pass |
-| Distinct radii | 5.5 | ≤ 5 | 3–4 | pass |
-| Shadows per screen | 2.5 | ≤ 3 | 2–4 | the one knob-edge recipe counts once per colour; settings shows grey, green and red buttons |
-| Space base alignment | 4px @ 74% | ≥ 70% | 4px @ 82–90% | pass |
-| Container max-width | 1148 | 1040 | 1040 | pass |
-| Easing and duration | ease-out, 0.12–0.25s | 180ms, one curve | 180ms `cubic-bezier(0.2, 0.8, 0.2, 1)`, one curve | pass |
-| Looping animations | 0 | 0 | 0 | pass |
-| Signature effects | 1 | 1 | 1 (answer sheet) | pass |
-| Reduced motion respected | | required | yes | pass |
-| Contrast (axe, WCAG 2.2 AA) | | 0 violations | 0 on 21 phone states × 2 themes and 5 laptop screens × 2 themes | pass |
+| Metric | Target | Build | Verdict |
+|---|---|---|---|
+| Font families | 1 | 1 (Gabarito) | pass |
+| Font weights | 3 | 3 (500, 700, 900), as in StudyGo | pass |
+| Distinct sizes per screen | ≤ 10 | 5–7 | pass |
+| Text colour roles | ≤ 8 | 4–7 | pass |
+| Distinct radii | ≤ 5 | 4 | pass |
+| Shadows per screen | ≤ 3 | 0–3 (button edges and a sheet) | pass |
+| Space base alignment | ≥ 70% | 4px @ 67–88% | just under on three screens. The 6 and 10px gaps in rows and chips follow StudyGo, which measures 63% itself. |
+| Easing | one curve | 180ms `cubic-bezier(0.2, 0.8, 0.2, 1)` | pass |
+| Looping animations | 0 | 0 | pass |
+| Reduced motion respected | required | yes | pass |
+| Contrast (axe, WCAG 2.2 AA) | 0 violations | 0 on 27 phone states × 2 themes and 5 laptop screens × 2 themes | pass |
