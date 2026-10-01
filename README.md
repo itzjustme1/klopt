@@ -69,6 +69,7 @@ npm run e2e
 - fill in: a sentence with `[blanks]`, e.g. `De Februaristaking was in [1941] in [Amsterdam].`
 - open questions, which you grade yourself against the right answer
 - true or false
+- dictee: a word or short sentence the device reads aloud in the language you pick; you write it down. A small spelling slip is half a point. On a device without a voice for that language the question is skipped and left out of the grade.
 
 Taking a quiz shows the right answer after each question, gives half points for a half-right fill-in, and ends with a Dutch grade (1 + 9 × score) and what went wrong. The last grade stays on the quiz.
 

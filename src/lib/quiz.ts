@@ -28,7 +28,8 @@ export type Response =
   | { type: "mc"; chosen: number }
   | { type: "open"; selfGrade: "goed" | "fout" }
   | { type: "cloze"; given: string[] }
-  | { type: "tf"; chosen: boolean };
+  | { type: "tf"; chosen: boolean }
+  | { type: "dictee"; given: string };
 
 export interface Marked {
   points: number;
@@ -48,6 +49,13 @@ export function mark(q: QuizQuestion, r: Response, opts: CheckOptions = {}): Mar
     });
     const right = blanks.filter(Boolean).length;
     return { points: answers.length ? right / answers.length : 0, blanks };
+  }
+  if (q.type === "dictee" && r.type === "dictee") {
+    // Spelling is the point: a typo the settings let through counts half.
+    const given = r.given.trim();
+    if (!given) return { points: 0 };
+    const v = checkAnswer(given, q.text, opts).verdict;
+    return { points: v === "correct" ? 1 : v === "close" ? 0.5 : 0 };
   }
   return { points: 0 };
 }
@@ -73,5 +81,14 @@ export function questionProblem(q: QuizQuestion): "empty" | "options" | "blanks"
       return q.prompt.trim() ? null : "empty";
     case "cloze":
       return blanksOf(q.text).length ? null : "blanks";
+    case "dictee":
+      return q.text.trim() ? null : "empty";
   }
+}
+
+/** One line that shows what a question is about: fill-ins with their blanks as dots. */
+export function questionPreview(q: QuizQuestion): string {
+  if (q.type === "cloze") return q.text.replace(/\[[^\]\n]+\]/g, "…");
+  if (q.type === "dictee") return q.text;
+  return q.prompt;
 }

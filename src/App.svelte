@@ -80,7 +80,7 @@
   // On every route change: update the title, scroll up and move focus to the page heading.
   $effect(() => {
     const route = app.route;
-    const key = titles[route.name];
+    const key = route.name === "quizEditor" && !route.id ? "quiz.new" : titles[route.name];
     document.title = key ? `${t(key)} · ${APP_NAME}` : APP_NAME;
     if (!app.ready) return;
     if (first) {

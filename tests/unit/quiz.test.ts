@@ -10,6 +10,7 @@ const mc: QuizQuestion = { id: id(1), type: "mc", prompt: "Wanneer was D-Day?", 
 const tf: QuizQuestion = { id: id(2), type: "tf", prompt: "Nederland was neutraal in 1940.", answer: false };
 const open: QuizQuestion = { id: id(3), type: "open", prompt: "Wat is verzet?", answer: "Strijd tegen de bezetter." };
 const cloze: QuizQuestion = { id: id(4), type: "cloze", text: "De Februaristaking was in [1941] in [Amsterdam]." };
+const dictee: QuizQuestion = { id: id(5), type: "dictee", text: "the weather", lang: "en" };
 
 describe("fill-in text", () => {
   it("splits text and blanks; empty brackets and line breaks stay text", () => {
@@ -35,6 +36,12 @@ describe("marking", () => {
     // A missing accent or one typo still counts in a fill-in; an empty blank never does.
     expect(mark({ ...cloze, text: "[café]" }, { type: "cloze", given: ["cafe"] }).points).toBe(1);
     expect(mark(cloze, { type: "cloze", given: ["", ""] }).points).toBe(0);
+    // Dictee: spelling is the point, so a typo the settings allow is half a point.
+    expect(mark(dictee, { type: "dictee", given: " The weather " }).points).toBe(1);
+    expect(mark(dictee, { type: "dictee", given: "the wheather" }).points).toBe(0.5);
+    expect(mark(dictee, { type: "dictee", given: "the wheather" }, { lenientTypos: true }).points).toBe(1);
+    expect(mark(dictee, { type: "dictee", given: "whether" }).points).toBe(0);
+    expect(mark(dictee, { type: "dictee", given: "" }).points).toBe(0);
   });
 
   it("turns points into a Dutch grade", () => {
@@ -48,11 +55,12 @@ describe("marking", () => {
     expect(questionProblem({ ...mc, options: ["1944", ""], correct: 1 })).toBe("options");
     expect(questionProblem({ ...open, answer: " " })).toBe("empty");
     expect(questionProblem({ ...cloze, text: "Geen haken" })).toBe("blanks");
+    expect(questionProblem({ ...dictee, text: "  " })).toBe("empty");
   });
 });
 
 describe("quizzes in the database and backups", () => {
-  const quiz: Quiz = { id: id(9), name: "WO2", subject: "Geschiedenis", questions: [mc, tf, open, cloze], createdAt: "2026-10-01T10:00:00.000Z", updatedAt: "2026-10-01T10:00:00.000Z", last: { points: 3.5, total: 4, at: "2026-10-01T11:00:00.000Z" } };
+  const quiz: Quiz = { id: id(9), name: "WO2", subject: "Geschiedenis", questions: [mc, tf, open, cloze, dictee], createdAt: "2026-10-01T10:00:00.000Z", updatedAt: "2026-10-01T10:00:00.000Z", last: { points: 3.5, total: 4, at: "2026-10-01T11:00:00.000Z" } };
 
   it("survive a backup round trip and a wipe", async () => {
     const store = await Store.open("quiz-rt");
@@ -74,6 +82,9 @@ describe("quizzes in the database and backups", () => {
       [{ ...quiz, questions: [{ ...tf, answer: "nee" }] }, "quizzes[0].questions[0].answer"],
       [{ ...quiz, questions: [{ ...open, type: "essay" }] }, "quizzes[0].questions[0].type"],
       [{ ...quiz, questions: [mc, mc] }, "quizzes[0].questions[1].id"],
+      [{ ...quiz, questions: [{ ...dictee, lang: "xx" }] }, "quizzes[0].questions[0].lang"],
+      [{ ...quiz, questions: [{ ...dictee, lang: "klingon" }] }, "quizzes[0].questions[0].lang"],
+      [{ ...quiz, questions: [{ ...dictee, text: " " }] }, "quizzes[0].questions[0].text"],
       [{ ...quiz, last: { points: 5, total: 4, at: quiz.createdAt } }, "quizzes[0].last.points"],
       [{ ...quiz, script: "<x>" }, "quizzes[0].script"],
     ];

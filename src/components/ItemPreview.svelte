@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t, tp } from "../i18n/index.svelte";
   import type { SharedItem } from "../lib/backup";
+  import { questionPreview } from "../lib/quiz";
   import { app } from "../lib/app.svelte";
   import { href } from "../lib/router";
   import Icon from "./Icon.svelte";
@@ -54,7 +55,7 @@
     <ul class="rows">
       {#if item.kind === "quiz"}
         {#each item.data.quiz.questions.slice(0, 20) as q, i (i)}
-          <li class="row-item"><span class="row-main"><span class="row-sub">{t(`quiz.type.${q.type}`)}</span><span class="row-title">{q.type === "cloze" ? q.text.replace(/\[[^\]\n]+\]/g, "…") : q.prompt}</span></span></li>
+          <li class="row-item"><span class="row-main"><span class="row-sub">{t(`quiz.type.${q.type}`)}</span><span class="row-title">{questionPreview(q)}</span></span></li>
         {/each}
       {:else}
         {#each item.data.decks as d, i (i)}

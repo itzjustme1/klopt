@@ -9,16 +9,16 @@
   import { blanksOf, QUIZ_LIMITS, questionProblem } from "../lib/quiz";
   import { href } from "../lib/router";
   import { SUBJECTS } from "../lib/subjects";
-  import type { QuizQuestion, QuizQuestionType } from "../lib/types";
+  import { CONTENT_LANGS, type ContentLang, type QuizQuestion, type QuizQuestionType } from "../lib/types";
 
   let { id }: { id?: string } = $props();
 
   /** One editable question: every field of every type, so switching type keeps what was typed. */
-  type Draft = { key: number; id: string; type: QuizQuestionType; prompt: string; options: string[]; correct: number; answer: string; truth: boolean; text: string };
+  type Draft = { key: number; id: string; type: QuizQuestionType; prompt: string; options: string[]; correct: number; answer: string; truth: boolean; text: string; lang: ContentLang };
 
   const existing = untrack(() => (id ? app.quiz(id) : undefined));
   let nextKey = 0;
-  const blank = (type: QuizQuestionType = "mc"): Draft => ({ key: nextKey++, id: newId(), type, prompt: "", options: ["", "", "", ""], correct: 0, answer: "", truth: true, text: "" });
+  const blank = (type: QuizQuestionType = "mc", lang: ContentLang = "en"): Draft => ({ key: nextKey++, id: newId(), type, prompt: "", options: ["", "", "", ""], correct: 0, answer: "", truth: true, text: "", lang });
   function toDraft(q: QuizQuestion): Draft {
     const d = blank(q.type);
     d.id = q.id;
@@ -26,6 +26,7 @@
     if (q.type === "open") Object.assign(d, { prompt: q.prompt, answer: q.answer });
     if (q.type === "tf") Object.assign(d, { prompt: q.prompt, truth: q.answer });
     if (q.type === "cloze") d.text = q.text;
+    if (q.type === "dictee") Object.assign(d, { text: q.text, lang: q.lang });
     return d;
   }
   function fromDraft(d: Draft): QuizQuestion {
@@ -41,6 +42,8 @@
         return { id: d.id, type: "tf", prompt: d.prompt.trim(), answer: d.truth };
       case "cloze":
         return { id: d.id, type: "cloze", text: d.text.trim() };
+      case "dictee":
+        return { id: d.id, type: "dictee", text: d.text.trim(), lang: d.lang };
     }
   }
   const empty = (d: Draft) => !d.prompt.trim() && !d.text.trim() && !d.answer.trim() && d.options.every((o) => !o.trim());
@@ -51,14 +54,16 @@
   let errors = $state<string[]>([]);
   let busy = $state(false);
   let nameInput: HTMLInputElement | undefined = $state();
-  const TYPES: QuizQuestionType[] = ["mc", "cloze", "open", "tf"];
+  const TYPES: QuizQuestionType[] = ["mc", "cloze", "open", "tf", "dictee"];
+  const SPOKEN = CONTENT_LANGS.filter((l) => l !== "xx");
 
   $effect(() => {
     if (!existing) nameInput?.focus();
   });
 
   function addQuestion() {
-    drafts.push(blank(drafts.at(-1)?.type ?? "mc"));
+    // A new question starts as the type before it; a dictee speaks the language of the last one.
+    drafts.push(blank(drafts.at(-1)?.type ?? "mc", drafts.findLast((d) => d.type === "dictee")?.lang));
     const k = drafts.length;
     queueMicrotask(() => document.getElementById(`q${k}-first`)?.focus());
   }
@@ -128,6 +133,18 @@
             <label for="q{n}-first">{t("quiz.clozeLabel")}</label>
             <textarea id="q{n}-first" rows="3" bind:value={d.text} maxlength={QUIZ_LIMITS.text} placeholder="De Februaristaking was in [1941] in [Amsterdam]."></textarea>
             <span class="small muted">{t("quiz.clozeHelp")} {#if blanksOf(d.text).length}<strong>{tp("quiz.clozeCount", blanksOf(d.text).length)}</strong>{/if}</span>
+          </div>
+        {:else if d.type === "dictee"}
+          <div class="field">
+            <label for="q{n}-first">{t("quiz.dicteeLabel")}</label>
+            <input id="q{n}-first" type="text" bind:value={d.text} maxlength={QUIZ_LIMITS.text} autocomplete="off" lang={d.lang} />
+            <span class="small muted">{t("quiz.dicteeHelp")}</span>
+          </div>
+          <div class="field">
+            <label for="q{n}-lang">{t("quiz.dicteeLang")}</label>
+            <select id="q{n}-lang" bind:value={d.lang}>
+              {#each SPOKEN as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
+            </select>
           </div>
         {:else}
           <div class="field">

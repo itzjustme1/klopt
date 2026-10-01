@@ -117,7 +117,9 @@ export type QuizQuestion =
   | { id: string; type: "mc"; prompt: string; options: string[]; correct: number }
   | { id: string; type: "open"; prompt: string; answer: string }
   | { id: string; type: "cloze"; text: string }
-  | { id: string; type: "tf"; prompt: string; answer: boolean };
+  | { id: string; type: "tf"; prompt: string; answer: boolean }
+  /** Read aloud by the device in `lang`; the student writes it down. */
+  | { id: string; type: "dictee"; text: string; lang: ContentLang };
 
 export type QuizQuestionType = QuizQuestion["type"];
 

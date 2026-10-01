@@ -80,3 +80,60 @@ test("make a quiz with every question type, take it and get a grade", async ({ p
   await expect(page.getByRole("link", { name: /WO2 hoofdstuk 4/ })).toContainText("Laatste cijfer 6,6");
   await check();
 });
+
+/** A device voice for English that records what it says, so dictee can be tested without real speech. */
+async function fakeVoice(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __spoken: string[] };
+    w.__spoken = [];
+    const voice = { name: "Test", lang: "en-GB", localService: true, default: true, voiceURI: "test" };
+    class Utterance {
+      text: string;
+      voice: unknown = null;
+      lang = "";
+      rate = 1;
+      constructor(text: string) {
+        this.text = text;
+      }
+    }
+    Object.defineProperty(window, "SpeechSynthesisUtterance", { value: Utterance });
+    Object.defineProperty(window, "speechSynthesis", {
+      value: { getVoices: () => [voice], speak: (u: Utterance) => w.__spoken.push(u.text), cancel: () => {}, addEventListener: () => {} },
+    });
+  });
+}
+
+test("a dictee question is read aloud and marked on spelling; without a voice it does not count", async ({ page }) => {
+  const check = await guard(page);
+  await fakeVoice(page);
+  await page.goto("/#/quiz/nieuw");
+  await page.getByLabel("Naam van de quiz").fill("Engels dictee");
+  await page.getByText("Dictee", { exact: true }).click();
+  await page.locator("#q1-first").fill("the weather");
+  await expect(page.getByLabel("Taal van het voorlezen")).toHaveValue("en");
+  await page.getByRole("button", { name: "Vraag toevoegen" }).click();
+  // The next question keeps the type and the language.
+  await expect(page.getByLabel("Taal van het voorlezen").nth(1)).toHaveValue("en");
+  await page.locator("#q2-first").fill("Je ne sais pas");
+  await page.getByLabel("Taal van het voorlezen").nth(1).selectOption("fr");
+  await page.getByRole("button", { name: "Quiz opslaan" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Engels dictee" })).toBeVisible();
+  await page.getByRole("link", { name: "Start quiz" }).click();
+
+  await expect(page.getByText("Luister en schrijf op")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken)).toEqual(["the weather"]);
+  await page.getByRole("button", { name: "Nog een keer afspelen" }).click();
+  await page.getByLabel("Wat je hoort, in het Engels").fill("the wheather");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Deels goed")).toBeVisible();
+  await expect(page.getByText("Goed antwoord: the weather")).toBeVisible();
+  await page.keyboard.press("Enter");
+
+  // No French voice on this device: the question is skipped and left out of the score.
+  await expect(page.getByText("Dit apparaat heeft geen stem voor Frans. Deze vraag telt niet mee.")).toBeVisible();
+  await page.getByRole("button", { name: "Overslaan" }).click();
+  await expect(page.getByText("0,5 van 1 punten")).toBeVisible();
+  await expect(page.locator(".grade")).toHaveText("5,5");
+  await expect(page.getByText("Dictee (Engels)")).toBeVisible();
+  await check();
+});

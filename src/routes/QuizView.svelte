@@ -9,9 +9,8 @@
   import Sheet from "../components/Sheet.svelte";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
-  import { quizGrade } from "../lib/quiz";
+  import { questionPreview, quizGrade } from "../lib/quiz";
   import { href } from "../lib/router";
-  import type { QuizQuestion } from "../lib/types";
 
   let { id, share = false }: { id: string; share?: boolean } = $props();
 
@@ -26,9 +25,7 @@
     app.showFlash(folder ? t("folder.moved", { name: folder }) : t("folder.removed"));
   }
 
-  function preview(q: QuizQuestion): string {
-    return q.type === "cloze" ? q.text.replace(/\[[^\]\n]+\]/g, "…") : q.prompt;
-  }
+  const preview = questionPreview;
 
   async function remove() {
     await app.deleteQuiz(id);

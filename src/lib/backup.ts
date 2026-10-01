@@ -302,6 +302,14 @@ function parseQuestion(raw: unknown, w: string): QuizQuestion {
       if (n < 1 || n > QUIZ_LIMITS.blanks) throw new Invalid(`${w}.text`);
       return { id: uuid(o.id, `${w}.id`), type, text: t };
     }
+    case "dictee": {
+      const o = obj(raw, w, ["id", "type", "text", "lang"], ["id", "type", "text", "lang"]);
+      const l = lang(o.lang, `${w}.lang`);
+      if (l === "xx") throw new Invalid(`${w}.lang`);
+      const t = text(o.text, `${w}.text`);
+      if (!t.trim()) throw new Invalid(`${w}.text`);
+      return { id: uuid(o.id, `${w}.id`), type, text: t, lang: l };
+    }
     default:
       throw new Invalid(`${w}.type`);
   }
