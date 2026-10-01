@@ -5,6 +5,8 @@ const p = (one: string, other: string): Plural => ({ one, other });
 /** Dutch is the source of truth for the key list. Never put the app name in a string: use {app}. */
 export const nl = {
   "skip": "Naar de inhoud",
+  "nav.collapse": "Zijbalk inklappen",
+  "nav.expand": "Zijbalk uitklappen",
   "nav.label": "Hoofdmenu",
   "nav.today": "Vandaag",
   "nav.lists": "Lijsten",
@@ -175,6 +177,11 @@ export const nl = {
   "deck.clearSelection": "Selectie wissen",
   "deck.directionNow": "Richting: {dir}. Tik om te wisselen.",
   "deck.whenTest": "Wanneer is je toets?",
+  "deck.rename": "Naam wijzigen",
+  "deck.newName": "Nieuwe naam",
+  "deck.renamed": "Naam gewijzigd.",
+  "deck.editWords": "Woorden bewerken",
+  "deck.actions": "Opties voor {name}",
   "deck.more": "Meer opties",
   "deck.practiceWith": "Oefen met",
   "deck.practiceSelection": p("Oefen {n} woord", "Oefen {n} woorden"),

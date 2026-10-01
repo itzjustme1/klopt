@@ -235,7 +235,8 @@
   .home-side {
     display: none;
   }
-  @media (min-width: 1100px) {
+  /* Room for a second column: sized by the page, so a folded sidebar also counts. */
+  @container (min-width: 860px) {
     .home {
       grid-template-columns: minmax(0, 1fr) 300px;
       gap: 2.5rem;

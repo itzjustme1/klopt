@@ -136,6 +136,28 @@
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   });
+  // The sidebar can be folded to icons; remembered on this device.
+  const SIDEBAR_KEY = "klopt-sidebar";
+  let collapsed = $state(readCollapsed());
+  function readCollapsed(): boolean {
+    try {
+      return localStorage.getItem(SIDEBAR_KEY) === "collapsed";
+    } catch {
+      return false;
+    }
+  }
+  function toggleSidebar() {
+    collapsed = !collapsed;
+    try {
+      localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "open");
+    } catch {
+      // Private mode: it just isn't remembered.
+    }
+  }
+  $effect(() => {
+    document.documentElement.dataset.sidebar = collapsed ? "collapsed" : "open";
+  });
+
   /** On a laptop a shortcut in the sidebar is the current page instead of the item it belongs under. */
   function current(item: { match: string[] }, extra = false): boolean {
     if (!item.match.includes(app.route.name)) return false;
@@ -146,28 +168,32 @@
 <a class="skip" href="#main" onclick={(e) => { e.preventDefault(); main?.focus(); }}>{t("skip")}</a>
 
 {#if !hideNav}
-  <nav class="tabbar" aria-label={t("nav.label")}>
+  <nav class="tabbar" class:collapsed id="sidebar" aria-label={t("nav.label")}>
     <a class="brand" href={href.today()} aria-label="{APP_NAME}, {t('nav.today')}"><Logo /></a>
     {#snippet tab(item: (typeof nav)[number])}
-      <a class="tab" href={item.href} aria-current={current(item) ? "page" : undefined}>
+      <a class="tab" href={item.href} aria-current={current(item) ? "page" : undefined} title={collapsed && wide ? t(item.key) : undefined}>
         <Icon name={item.icon} size={22} />
-        <span>{t(item.key)}</span>
+        <span class="tab-label">{t(item.key)}</span>
       </a>
     {/snippet}
     {#each navStart as item (item.key)}{@render tab(item)}{/each}
-    <button type="button" class="tab tab-new" aria-haspopup="dialog" onclick={() => (newOpen = true)}>
+    <button type="button" class="tab tab-new" aria-haspopup="dialog" title={collapsed && wide ? t("nav.new") : undefined} onclick={() => (newOpen = true)}>
       <span class="plus"><Icon name="plus" size={20} /></span>
-      <span>{t("nav.new")}</span>
+      <span class="tab-label">{t("nav.new")}</span>
     </button>
     {#each navEnd as item (item.key)}{@render tab(item)}{/each}
     <div class="extras">
       {#each extras as item (item.key)}
-        <a class="tab" href={item.href} aria-current={current(item, true) ? "page" : undefined}>
+        <a class="tab" href={item.href} aria-current={current(item, true) ? "page" : undefined} title={collapsed && wide ? t(item.key) : undefined}>
           <Icon name={item.icon} size={22} />
-          <span>{t(item.key)}</span>
+          <span class="tab-label">{t(item.key)}</span>
         </a>
       {/each}
     </div>
+    <button type="button" class="tab fold" aria-expanded={!collapsed} aria-controls="sidebar" title={collapsed ? t("nav.expand") : undefined} onclick={toggleSidebar}>
+      <Icon name="panel" size={22} />
+      <span class="tab-label">{collapsed ? t("nav.expand") : t("nav.collapse")}</span>
+    </button>
   </nav>
 {/if}
 
@@ -311,7 +337,8 @@
     border-top: 1px solid var(--line);
   }
   .brand,
-  .extras {
+  .extras,
+  .tab.fold {
     display: none;
   }
   .tab {
@@ -366,9 +393,17 @@
 
   /* Laptops: the same items in a sidebar on the left. */
   @media (min-width: 720px) {
+    :global(:root) {
+      --side: 232px;
+      --content: 712px;
+    }
+    :global(:root[data-sidebar="collapsed"]) {
+      --side: 76px;
+    }
     .tabbar {
       inset: 0 auto 0 0;
-      width: 232px;
+      width: var(--side);
+      overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
@@ -420,16 +455,49 @@
       width: auto;
       background: none;
     }
+    .tab.fold {
+      display: flex;
+      margin-top: auto;
+    }
+    /* Folded: icons only, the names stay for screen readers and show as a tooltip. */
+    .tabbar.collapsed .tab {
+      justify-content: center;
+      padding: 0;
+    }
+    .tabbar.collapsed .tab-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .tabbar.collapsed .brand {
+      justify-content: center;
+      margin-inline: 0;
+    }
+    .tabbar.collapsed .brand :global(.name) {
+      display: none;
+    }
+    .tabbar.collapsed .tab-new {
+      width: var(--tap);
+      align-self: center;
+      padding: 0;
+    }
+    /* The page sits next to the sidebar, centred in the space that is left, never against it. */
     main.with-nav {
-      padding-left: 232px;
+      margin-left: var(--side);
+      container-type: inline-size;
       padding-top: 2rem;
       padding-bottom: 4rem;
     }
     main.with-nav:global(.wrap) {
-      max-width: calc(760px + 232px);
+      width: auto;
+      max-width: none;
+      padding-inline: max(28px, calc((100vw - var(--side) - var(--content)) / 2));
     }
-    main.with-nav.wide:global(.wrap) {
-      max-width: calc(1120px + 232px);
+    main.with-nav.wide {
+      --content: 1072px;
     }
   }
 

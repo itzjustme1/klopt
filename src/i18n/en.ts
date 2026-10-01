@@ -4,6 +4,8 @@ const p = (one: string, other: string): Plural => ({ one, other });
 
 export const en: Messages = {
   "skip": "Skip to content",
+  "nav.collapse": "Collapse sidebar",
+  "nav.expand": "Expand sidebar",
   "nav.label": "Main menu",
   "nav.today": "Today",
   "nav.lists": "Lists",
@@ -174,6 +176,11 @@ export const en: Messages = {
   "deck.clearSelection": "Clear selection",
   "deck.directionNow": "Direction: {dir}. Tap to switch.",
   "deck.whenTest": "When is your test?",
+  "deck.rename": "Rename",
+  "deck.newName": "New name",
+  "deck.renamed": "Renamed.",
+  "deck.editWords": "Edit words",
+  "deck.actions": "Options for {name}",
   "deck.more": "More options",
   "deck.practiceWith": "Practise with",
   "deck.practiceSelection": p("Practise {n} word", "Practise {n} words"),
