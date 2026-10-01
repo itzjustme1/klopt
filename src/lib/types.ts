@@ -92,6 +92,8 @@ export interface Settings {
   lenientTypos: boolean;
   /** Short sounds for right and wrong, and a vibration on wrong where supported. */
   sounds: boolean;
+  /** Weekdays without time to study (0 = Sunday), skipped by the test-week planner. */
+  studyDaysOff?: number[];
   /** Local bookkeeping, not part of backups. */
   changesSinceExport: number;
   reminderSnoozedAt: number;

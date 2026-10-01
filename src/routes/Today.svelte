@@ -131,7 +131,10 @@
     </ul>
 
     {#if exams.length > 0}
-      <h2 class="sect">{t("home.exams")}</h2>
+      <div class="sect-head">
+        <h2>{t("home.exams")}</h2>
+        <a class="btn btn-quiet" href={href.planner()}><Icon name="calendar" size={18} />{t("planner.open")}</a>
+      </div>
       <ul class="rows">
         {#each exams as { deck, plan } (deck.id)}
           <li>

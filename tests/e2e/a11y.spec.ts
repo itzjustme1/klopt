@@ -66,6 +66,14 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     await page.getByRole("button", { name: "la maison markeren" }).click();
     await check("list");
+    await page.goto(base + "#/toetsweek");
+    await page.locator(".day").first().waitFor();
+    await check("planner");
+    await page.getByRole("button", { name: "Toets toevoegen" }).click();
+    await check("planner: add a test");
+    await page.keyboard.press("Escape");
+    await page.goBack();
+    await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     await practise(page, /^Leren/);
     await page.locator(".options").waitFor();
     await check("learn: multiple choice");

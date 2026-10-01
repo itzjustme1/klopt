@@ -9,6 +9,7 @@
   import Account from "./routes/Account.svelte";
   import Forms from "./routes/Forms.svelte";
   import VerbSets from "./routes/VerbSets.svelte";
+  import Planner from "./routes/Planner.svelte";
   import Inbox from "./routes/Inbox.svelte";
   import Groups from "./routes/Groups.svelte";
   import GroupPage from "./routes/GroupPage.svelte";
@@ -40,7 +41,7 @@
   import NewFolder from "./routes/NewFolder.svelte";
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
-    { key: "nav.today", icon: "home", href: href.today(), match: ["today"] },
+    { key: "nav.today", icon: "home", href: href.today(), match: ["today", "planner"] },
     { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder", "verbs"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
     { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help", "account", "inbox", "groups", "group"] },
@@ -69,6 +70,7 @@
     newFolder: "folder.new",
     account: "account.title",
     verbs: "verbs.title",
+    planner: "planner.title",
     inbox: "inbox.title",
     groups: "groups.title",
     group: "groups.title",
@@ -204,6 +206,8 @@
       {#key app.route.id}<QuizView id={app.route.id} share={app.route.share ?? false} />{/key}
     {:else if app.route.name === "quizEditor"}
       {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+    {:else if app.route.name === "planner"}
+      <Planner />
     {:else if app.route.name === "verbs"}
       <VerbSets />
     {:else if app.route.name === "account"}

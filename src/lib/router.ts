@@ -26,6 +26,7 @@ export type Route =
   | { name: "folders" }
   | { name: "account" }
   | { name: "verbs" }
+  | { name: "planner" }
   | { name: "inbox" }
   | { name: "groups" }
   | { name: "group"; id: string }
@@ -110,6 +111,8 @@ export function parseHash(hash: string): Route {
       return n === 1 ? { name: "quizzes" } : notFound;
     case "rijtjes":
       return n === 1 ? { name: "verbs" } : notFound;
+    case "toetsweek":
+      return n === 1 ? { name: "planner" } : notFound;
     case "account":
       return n === 1 ? { name: "account" } : notFound;
     case "inbox":
@@ -168,6 +171,7 @@ export const href = {
   folders: () => "#/mappen",
   account: () => "#/account",
   verbs: () => "#/rijtjes",
+  planner: () => "#/toetsweek",
   inbox: () => "#/inbox",
   groups: () => "#/groepen",
   group: (id: string) => `#/groep/${enc(id)}`,
