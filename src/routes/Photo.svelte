@@ -36,9 +36,16 @@
   const mb = $derived(Math.round(4 + tesseractLangs(kind === "terms" ? [textLang] : [langFront, langBack]).reduce((sum, l) => sum + (LANG_MB[l] ?? 2), 0)));
 
   async function choose() {
-    const file = input?.files?.[0];
+    await handle(input?.files?.[0]);
+  }
+
+  async function handle(file: File | undefined) {
     error = "";
-    if (!file) return;
+    if (!file || progress) return;
+    if (file.type && !file.type.startsWith("image/")) {
+      error = t("photo.notImage");
+      return;
+    }
     try {
       progress = { status: "loading", progress: 0 };
       if (kind === "terms") await readTerms(file);
@@ -102,6 +109,25 @@
     }
   }
 
+  // On a laptop: drop a photo on the page, or paste one (a screenshot of a digital textbook, say).
+  let dragging = $state(false);
+  function ondrop(e: DragEvent) {
+    e.preventDefault();
+    dragging = false;
+    void handle(e.dataTransfer?.files?.[0]);
+  }
+  function ondragover(e: DragEvent) {
+    if (!e.dataTransfer?.types.includes("Files")) return;
+    e.preventDefault();
+    dragging = true;
+  }
+  function onpaste(e: ClipboardEvent) {
+    const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
+    if (!file) return;
+    e.preventDefault();
+    void handle(file);
+  }
+
   function startOver() {
     found = [];
     pages = 0;
@@ -111,7 +137,8 @@
 </script>
 
 <PageHead title={t("photo.title")} subtitle={found.length ? undefined : t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
-<section class="photo">
+<svelte:window {onpaste} />
+<section class="photo" class:dragging {ondrop} {ondragover} ondragleave={() => (dragging = false)} aria-label={t("photo.title")}>
   {#if found.length}
     <div class="card card-pad review">
       <div class="review-head">
@@ -218,6 +245,7 @@
       {/if}
 
       {#if error}<p class="error" role="alert">{error}</p>{/if}
+      <p class="small muted desk-hint"><Icon name="image" size={16} />{t("photo.dropHint")}</p>
       <p class="small muted">{t("photo.firstTime", { mb })} {t("photo.handwriting")}</p>
     </div>
   {/if}
@@ -228,6 +256,21 @@
     display: grid;
     gap: 1rem;
     max-width: 640px;
+    border-radius: var(--r-lg);
+    transition: box-shadow var(--t-base) var(--ease);
+  }
+  .photo.dragging {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  .desk-hint {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  @media (pointer: fine) {
+    .desk-hint {
+      display: flex;
+    }
   }
   .box,
   .review {

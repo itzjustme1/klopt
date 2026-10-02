@@ -100,3 +100,27 @@ test("rename and delete a quiz from its ⋯ menu", async ({ page }) => {
   await expect(page.getByRole("link", { name: /WO2 toets/ })).toHaveCount(0);
   await check();
 });
+
+test("laptop shortcuts: N new, / search, [ sidebar, ? overview", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "nl-NL" });
+  const page = await ctx.newPage();
+  await page.goto("http://localhost:4173/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.keyboard.press("n");
+  await expect(page.getByRole("dialog", { name: "Nieuwe lijst" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.keyboard.press("/");
+  await expect(page).toHaveURL(/#\/lijsten/);
+  await expect(page.getByRole("searchbox")).toBeFocused();
+  // Typing in the search box never triggers a shortcut.
+  await page.keyboard.type("n/");
+  await expect(page.getByRole("searchbox")).toHaveValue("n/");
+  await page.locator("h1").click();
+  await page.keyboard.press("[");
+  await expect(page.getByRole("button", { name: "Zijbalk uitklappen" })).toBeVisible();
+  await page.keyboard.press("?");
+  await expect(page.getByRole("dialog", { name: "Sneltoetsen" })).toContainText("Zoeken in je lijsten");
+  await ctx.close();
+});

@@ -46,3 +46,46 @@ test("a photo of a two-column word list becomes a list, on the device", async ({
 
   await check();
 });
+
+test("on a laptop a photo can be dropped on the page", async ({ page }) => {
+  test.setTimeout(120_000);
+  const check = await guard(page);
+  await page.goto("/#/foto");
+  // The hint is for a mouse; this test runs as a touch phone, where it stays hidden.
+  await expect(page.getByText("Op een laptop kun je een foto ook hierheen slepen")).toBeHidden();
+  // Drop a text file first: refused politely. Then a drawn word list.
+  await page.evaluate(async () => {
+    const zone = document.querySelector("section.photo")!;
+    const drop = (file: File) => {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      zone.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, bubbles: true, cancelable: true }));
+      zone.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
+    };
+    drop(new File(["hallo"], "notitie.txt", { type: "text/plain" }));
+  });
+  await expect(page.getByRole("alert")).toContainText("Dat is geen foto");
+  await page.getByLabel("Taal links").selectOption("fr");
+  await page.getByLabel("Taal rechts").selectOption("nl");
+  await page.evaluate(async () => {
+    const c = document.createElement("canvas");
+    c.width = 1400;
+    c.height = 360;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#111";
+    ctx.font = "56px Georgia, serif";
+    [["la maison", "het huis"], ["le chien", "de hond"]].forEach(([a, b], i) => {
+      ctx.fillText(a!, 80, 120 + i * 130);
+      ctx.fillText(b!, 800, 120 + i * 130);
+    });
+    const blob = await new Promise<Blob>((r) => c.toBlob((b) => r(b!), "image/png"));
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], "lijst.png", { type: "image/png" }));
+    document.querySelector("section.photo")!.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
+  });
+  await expect(page.getByRole("heading", { name: "Lijst plakken" })).toBeVisible({ timeout: 90_000 });
+  await expect(page.getByLabel("Je lijst")).toHaveValue(/la maison\thet huis/);
+  await check();
+});

@@ -103,6 +103,29 @@
   /** Making a list has its own save bar at the bottom, so the tab bar steps aside (as in StudyGo). */
   const hideNav = $derived(focusMode || app.route.name === "editor" || app.route.name === "quizEditor");
   let newOpen = $state(false);
+  let keysOpen = $state(false);
+
+  /** Laptop shortcuts, outside practice: N new, / search, [ fold the sidebar, ? this list. */
+  function onGlobalKey(e: KeyboardEvent) {
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || focusMode || newOpen || keysOpen) return;
+    const el = e.target as HTMLElement | null;
+    if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
+    if (document.querySelector("[role=dialog]")) return;
+    if (e.key === "n" || e.key === "N") {
+      e.preventDefault();
+      newOpen = true;
+    } else if (e.key === "/") {
+      e.preventDefault();
+      if (app.route.name !== "lists") location.hash = href.lists();
+      void tick().then(() => setTimeout(() => document.getElementById("list-search")?.focus(), 30));
+    } else if (e.key === "[" && wide && !hideNav) {
+      e.preventDefault();
+      toggleSidebar();
+    } else if (e.key === "?") {
+      e.preventDefault();
+      keysOpen = true;
+    }
+  }
 
   // Signed in: sync a few seconds after something changes here, and when the connection comes back.
   let syncTimer: ReturnType<typeof setTimeout> | undefined;
@@ -284,6 +307,18 @@
   {/if}
 </main>
 
+<svelte:window onkeydown={onGlobalKey} />
+
+{#if keysOpen}
+  <Sheet title={t("shortcuts.title")} onclose={() => (keysOpen = false)}>
+    <dl class="keys">
+      {#each [["N", "keys.new"], ["/", "keys.search"], ["[", "keys.sidebar"], ["?", "keys.help"], ["Enter", "keys.check"], ["1–4", "keys.choose"], ["Spatie", "keys.flip"], ["Esc", "keys.close"]] as [k, label] (k)}
+        <div class="key-row"><dt><kbd>{k === "Spatie" ? t("keys.space") : k}</kbd></dt><dd>{t(label as StringKey)}</dd></div>
+      {/each}
+    </dl>
+  </Sheet>
+{/if}
+
 {#if newOpen}
   <Sheet title={t("new.title")} onclose={() => (newOpen = false)}>
     <NewMenu onpick={() => (newOpen = false)} />
@@ -323,6 +358,39 @@
   }
   .skip:focus {
     top: 0.5rem;
+  }
+
+  .keys {
+    display: grid;
+    margin: 0;
+    padding: 0.5rem 1.25rem 0.75rem;
+  }
+  .key-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 2.75rem;
+  }
+  .key-row + .key-row {
+    border-top: 1px solid var(--line);
+  }
+  .keys dt {
+    width: 4.5rem;
+    flex: none;
+  }
+  .keys dd {
+    margin: 0;
+  }
+  kbd {
+    display: inline-block;
+    min-width: 2rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--r-xs);
+    background: var(--surface-3);
+    font: inherit;
+    font-weight: 800;
+    text-align: center;
+    box-shadow: 0 2px 0 var(--line-strong);
   }
 
   /* Phones: a tab bar at the bottom. */
