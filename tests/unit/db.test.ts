@@ -302,3 +302,19 @@ describe("ids", () => {
     for (const id of ids) expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
   });
 });
+
+describe("row order in the editor", () => {
+  it("keeps the order the rows were put in, also for new rows in between", async () => {
+    const deck = await store.createDeck({ name: "Volgorde", langFront: "nl", langBack: "en" });
+    await store.saveDeckCards(deck.id, [{ front: "a", back: "1" }, { front: "b", back: "2" }, { front: "c", back: "3" }], new Date("2026-10-01T10:00:00Z"));
+    const first = (await store.listCards(deck.id)).toSorted((x, y) => x.createdAt.localeCompare(y.createdAt));
+    expect(first.map((c) => c.front)).toEqual(["a", "b", "c"]);
+    const [a, b, c] = first;
+    // Move c to the top, add x between a and b, and edit b.
+    await store.saveDeckCards(deck.id, [{ id: c!.id, front: "c", back: "3" }, { id: a!.id, front: "a", back: "1" }, { front: "x", back: "9" }, { id: b!.id, front: "b!", back: "2" }], new Date("2026-10-02T10:00:00Z"));
+    const after = (await store.listCards(deck.id)).toSorted((x, y) => x.createdAt.localeCompare(y.createdAt));
+    expect(after.map((k) => k.front)).toEqual(["c", "a", "x", "b!"]);
+    // Same cards, so their progress stays.
+    expect(after.filter((k) => k.front !== "x").map((k) => k.id).sort()).toEqual([a!.id, b!.id, c!.id].sort());
+  });
+});

@@ -278,12 +278,20 @@ export class Store {
     let updated = 0;
     let i = 0;
     const base = orderBase([...existing.values()], now);
-    for (const row of rows) {
+    // Cards are listed by createdAt. When the rows were put in a different order, the cards take
+    // consecutive times in the new order, starting where the list started.
+    const createdTimes = rows.map((r) => (r.id ? existing.get(r.id) : undefined)).map((c) => (c ? Date.parse(c.createdAt) : Infinity));
+    const inOrder = createdTimes.every((tm, k) => k === 0 || tm > createdTimes[k - 1]! || (tm === Infinity && createdTimes[k - 1] === Infinity));
+    const start = existing.size ? Math.min(...[...existing.values()].map((c) => Date.parse(c.createdAt))) : now.getTime();
+    for (const [k, row] of rows.entries()) {
       const old = row.id ? existing.get(row.id) : undefined;
+      const at = inOrder ? null : new Date(start + k).toISOString();
       if (old) {
         keep.add(old.id);
-        if (old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "") || (old.image ?? "") !== (row.image ?? "") || (old.forms ?? []).join("\u0000") !== (row.forms ?? []).join("\u0000")) {
+        const moved = !!at && old.createdAt !== at;
+        if (moved || old.front !== row.front || old.back !== row.back || (old.topic ?? "") !== (row.topic ?? "") || (old.image ?? "") !== (row.image ?? "") || (old.forms ?? []).join("\u0000") !== (row.forms ?? []).join("\u0000")) {
           const next: Card = { ...old, front: row.front, back: row.back, updatedAt: now.toISOString() };
+          if (moved) next.createdAt = at;
           if (row.topic) next.topic = row.topic;
           else delete next.topic;
           if (row.image) next.image = row.image;
@@ -294,7 +302,7 @@ export class Store {
           updated++;
         }
       } else {
-        await cards.add(makeCard(deckId, row, new Date(base + i++)));
+        await cards.add(makeCard(deckId, row, at ? new Date(at) : new Date(base + i++)));
         added++;
       }
     }

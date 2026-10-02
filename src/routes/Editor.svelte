@@ -70,7 +70,62 @@
     input(row, side)?.focus();
   }
 
+  // Reordering rows: Alt+↑/↓ in a cell, arrow keys on the grip, or dragging the grip.
+  let dragKey = $state<number | null>(null);
+  let moved = $state("");
+
+  async function moveRow(from: number, to: number, side: "front" | "back" | "grip" = "grip") {
+    if (to < 0 || to >= rows.length || from === to) return;
+    const [row] = rows.splice(from, 1);
+    rows.splice(to, 0, row!);
+    moved = t("editor.moved", { from: from + 1, to: to + 1 });
+    await tick();
+    if (side === "grip") table?.querySelector<HTMLElement>(`[data-grip="${to}"]`)?.focus();
+    else input(to, side)?.focus();
+  }
+
+  function gripKey(e: KeyboardEvent, i: number) {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+      void moveRow(i, i + (e.key === "ArrowUp" ? -1 : 1));
+    }
+  }
+
+  function startDrag(e: PointerEvent, i: number) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const grip = e.currentTarget as HTMLElement;
+    grip.setPointerCapture(e.pointerId);
+    dragKey = rows[i]!.key;
+    const onmove = (ev: PointerEvent) => {
+      const items = [...(table?.querySelectorAll<HTMLElement>(".erow") ?? [])];
+      const from = rows.findIndex((r) => r.key === dragKey);
+      // The row goes where the pointer is: past the middle of a neighbour, they swap.
+      let to = from;
+      items.forEach((el, k) => {
+        const r = el.getBoundingClientRect();
+        if (k < from && ev.clientY < r.top + r.height / 2) to = Math.min(to, k);
+        if (k > from && ev.clientY > r.top + r.height / 2) to = Math.max(to, k);
+      });
+      if (to !== from) void moveRow(from, to);
+    };
+    const onup = () => {
+      dragKey = null;
+      grip.removeEventListener("pointermove", onmove);
+      grip.removeEventListener("pointerup", onup);
+      grip.removeEventListener("pointercancel", onup);
+    };
+    grip.addEventListener("pointermove", onmove);
+    grip.addEventListener("pointerup", onup);
+    grip.addEventListener("pointercancel", onup);
+  }
+
   function onkeydown(e: KeyboardEvent, row: number, side: "front" | "back") {
+    if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault();
+      void moveRow(row, row + (e.key === "ArrowUp" ? -1 : 1), side);
+      return;
+    }
     if (e.key !== "Enter" || e.shiftKey || e.isComposing) return;
     e.preventDefault();
     if (side === "front") void focusCell(row, "back");
@@ -262,7 +317,7 @@
     </div>
     <ol class="erows">
       {#each rows as row, i (row.key)}
-        <li class="erow" class:term={isTerms}>
+        <li class="erow" class:term={isTerms} class:dragging={dragKey === row.key}>
           <span class="rownum caption num" aria-hidden="true">{i + 1}</span>
           <div class="cells">
             <input
@@ -327,6 +382,9 @@
             {/if}
           </div>
           <div class="tools">
+            {#if rows.length > 1}
+              <button type="button" class="icon-btn grip" data-grip={i} aria-label={t("editor.moveRow", { n: i + 1 })} title={t("editor.moveHint")} onpointerdown={(e) => startDrag(e, i)} onkeydown={(e) => gripKey(e, i)}><Icon name="grip" size={20} /></button>
+            {/if}
             <button type="button" class="icon-btn" aria-label={row.image ? t("editor.replaceImage", { n: i + 1 }) : t("editor.addImage", { n: i + 1 })} title={t("editor.image")} onclick={() => pickImage(i)}><Icon name="image" size={20} /></button>
             <button type="button" class="icon-btn" aria-label={t("editor.removeRow", { n: i + 1 })} onclick={() => removeRow(i)}><Icon name="x" size={20} /></button>
           </div>
@@ -339,7 +397,8 @@
     </button>
   </div>
 
-  <p class="small muted">{t("editor.tip")} {t("editor.altTip")}</p>
+  <p class="visually-hidden" aria-live="polite">{moved}</p>
+  <p class="small muted">{t("editor.tip")} {t("editor.altTip")} {t("editor.moveTip")}</p>
 
   {#if errors.length}
     <ul class="errors" role="alert">
@@ -412,7 +471,7 @@
     align-items: start;
   }
   .thead {
-    grid-template-columns: 1.75rem 1fr 1fr calc(var(--tap) * 2 + 0.25rem);
+    grid-template-columns: 1.75rem 1fr 1fr calc(var(--tap) * 3 + 0.5rem);
     padding: 0.5rem 0 0.25rem;
     color: var(--ink-2);
   }
@@ -456,6 +515,19 @@
   .tools {
     display: flex;
     gap: 0.25rem;
+  }
+  .grip {
+    cursor: grab;
+    touch-action: none;
+    color: var(--ink-2);
+  }
+  .erow.dragging {
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  }
+  .erow.dragging .grip {
+    cursor: grabbing;
   }
   .cols {
     grid-column: 1 / -1;

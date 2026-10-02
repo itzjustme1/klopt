@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { guard } from "./helpers";
+import { createFrenchList, guard } from "./helpers";
 
 test("rename, copy, move and delete a list from its ⋯ menu in an overview", async ({ page }) => {
   const check = await guard(page);
@@ -149,5 +149,31 @@ test("a deleted list or quiz can be brought back", async ({ page }) => {
   await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
   await page.locator(".toast").getByRole("button", { name: "Ongedaan maken" }).click();
   await expect(page.getByRole("link", { name: /WO2: oefentoets/ })).toBeVisible();
+  await check();
+});
+
+test("reorder rows in the editor by keyboard and by dragging", async ({ page }) => {
+  const check = await guard(page);
+  await createFrenchList(page);
+  await page.getByRole("button", { name: "Meer opties" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Bewerken" }).click();
+  await expect(page.getByLabel("Rij 3, Woord of begrip")).toHaveValue("l'école");
+  // Alt+↑ in a cell moves the row up and keeps the cursor in it.
+  await page.getByLabel("Rij 3, Woord of begrip").click();
+  await page.keyboard.press("Alt+ArrowUp");
+  await expect(page.getByLabel("Rij 2, Woord of begrip")).toHaveValue("l'école");
+  await expect(page.getByLabel("Rij 2, Woord of begrip")).toBeFocused();
+  // Drag row 4 to the top by its grip.
+  const grip = page.getByRole("button", { name: "Rij 4 verplaatsen" });
+  const first = (await page.locator(".erow").first().boundingBox())!;
+  const g = (await grip.boundingBox())!;
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + g.width / 2, first.y + 4, { steps: 12 });
+  await page.mouse.up();
+  await expect(page.getByLabel("Rij 1, Woord of begrip")).toHaveValue("le livre");
+  await page.getByRole("button", { name: "Lijst opslaan" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Frans H1" })).toBeVisible();
+  await expect(page.locator(".w-front")).toHaveText(["le livre", "la maison", "l'école", "le chien"]);
   await check();
 });
