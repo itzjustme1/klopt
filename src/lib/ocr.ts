@@ -4,7 +4,9 @@
  * Loaded lazily: the engine is only downloaded the first time a student uses it.
  */
 import { cardsFromWords, styleWords, toGray, type PageWord, type TermCard } from "./emphasis";
+import { groupLabels, type LabelBox, type OcrLabelWord } from "./occlusion";
 import { rowsFromWords, type OcrWord } from "./ocrRows";
+import type { PSM } from "tesseract.js";
 import type { ContentLang } from "./types";
 
 const TESS: Record<ContentLang, string[]> = {
@@ -109,6 +111,31 @@ export async function recognizeTerms(file: Blob, lang: ContentLang, onProgress: 
     const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const { cards, title, unclear } = cardsFromWords(styleWords(toGray(img.data, canvas.width, canvas.height), words));
     return { cards, title, unclear, words: words.length };
+  } finally {
+    await w.terminate();
+  }
+}
+
+/** The labels on a diagram (for "Plaatje met namen"), as boxes in fractions of the picture. */
+export async function recognizeLabels(file: Blob, lang: ContentLang, onProgress: (p: OcrProgress) => void): Promise<LabelBox[]> {
+  const w = await worker([lang], onProgress);
+  try {
+    const canvas = await prepare(file, 2600);
+    // Sparse text: labels scattered over a picture rather than paragraphs.
+    // A fixed resolution, so the engine does not guess (and log about it).
+    await w.setParameters({ tessedit_pageseg_mode: "11" as PSM, user_defined_dpi: "300" });
+    const { data } = await w.recognize(canvas, {}, { blocks: true });
+    const words: OcrLabelWord[] = [];
+    let line = 0;
+    for (const block of (data.blocks ?? []) as TessBlock[]) {
+      for (const p of block.paragraphs) {
+        for (const l of p.lines) {
+          line++;
+          for (const x of l.words) words.push({ text: x.text, confidence: x.confidence, line, ...x.bbox });
+        }
+      }
+    }
+    return groupLabels(words, canvas.width, canvas.height);
   } finally {
     await w.terminate();
   }

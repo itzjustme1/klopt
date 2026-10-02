@@ -17,6 +17,7 @@ export type Route =
   | { name: "practice"; scope: Scope; mode: Mode; dir: Direction; which: Which; count: Count }
   | { name: "import"; deckId?: string }
   | { name: "photo"; deckId?: string }
+  | { name: "diagram"; deckId?: string }
   | { name: "file" }
   | { name: "progress" }
   | { name: "settings" }
@@ -97,6 +98,11 @@ export function parseHash(hash: string): Route {
       if (n > 2) return notFound;
       return deckId ? { name: "photo", deckId } : { name: "photo" };
     }
+    case "plaatje": {
+      const deckId = seg(a);
+      if (n > 2) return notFound;
+      return deckId ? { name: "diagram", deckId } : { name: "diagram" };
+    }
     case "bestand":
       return n === 1 ? { name: "file" } : notFound;
     case "voortgang":
@@ -162,6 +168,7 @@ export const href = {
   review: (deckId?: string) => `#/oefenen/${enc(deckId ?? "alles")}/herhalen/front/due`,
   import: (deckId?: string) => (deckId ? `#/importeren/${enc(deckId)}` : "#/importeren"),
   photo: (deckId?: string) => (deckId ? `#/foto/${enc(deckId)}` : "#/foto"),
+  diagram: (deckId?: string) => (deckId ? `#/plaatje/${enc(deckId)}` : "#/plaatje"),
   file: () => "#/bestand",
   progress: () => "#/voortgang",
   settings: () => "#/instellingen",

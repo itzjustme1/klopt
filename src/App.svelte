@@ -10,6 +10,7 @@
   import Forms from "./routes/Forms.svelte";
   import VerbSets from "./routes/VerbSets.svelte";
   import Planner from "./routes/Planner.svelte";
+  import Diagram from "./routes/Diagram.svelte";
   import Inbox from "./routes/Inbox.svelte";
   import Groups from "./routes/Groups.svelte";
   import GroupPage from "./routes/GroupPage.svelte";
@@ -42,7 +43,7 @@
 
   const nav: { key: StringKey; icon: IconName; href: string; match: string[] }[] = [
     { key: "nav.today", icon: "home", href: href.today(), match: ["today", "planner"] },
-    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder", "verbs"] },
+    { key: "nav.lists", icon: "lists", href: href.lists(), match: ["lists", "deck", "editor", "new", "import", "photo", "diagram", "file", "quizzes", "quiz", "quizEditor", "folders", "folder", "newFolder", "verbs"] },
     { key: "nav.progress", icon: "progress", href: href.progress(), match: ["progress"] },
     { key: "nav.settings", icon: "settings", href: href.settings(), match: ["settings", "help", "account", "inbox", "groups", "group"] },
   ];
@@ -56,6 +57,7 @@
     practice: "deck.practice",
     import: "import.title",
     photo: "photo.title",
+    diagram: "diagram.title",
     file: "new.file",
     progress: "nav.progress",
     settings: "nav.settings",
@@ -267,6 +269,8 @@
       {#key app.route.deckId}
         <Import deckId={app.route.deckId} />
       {/key}
+    {:else if app.route.name === "diagram"}
+      {#key app.route.deckId}<Diagram deckId={app.route.deckId} />{/key}
     {:else if app.route.name === "photo"}
       {#key app.route.deckId}
         <Photo deckId={app.route.deckId} />

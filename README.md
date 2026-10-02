@@ -47,6 +47,7 @@ npm run e2e
 - **Photo of your book:** the text is recognised on the device. Two kinds:
   - a word list (two columns) becomes rows to check in the paste screen;
   - a page of running text (history, economics, biology…) becomes a term list: every **bold** or *italic* word or phrase is a term, explained by the sentence it stands in (with the term blanked as "…"). "Dat noemen we …" takes the sentences before it; a short sentence takes the next one; "Term: explanation" glossary lines and margin boxes are read as such; the page heading names the list. You tick off what is not a term and can add more pages before saving.
+- **Labelled picture** (*Plaatje met namen*, for biology, geography…): pick a diagram or map; the names on it are found on the device and covered. Remove boxes, draw new ones by dragging, rename them. Each name becomes a card whose question is the picture with all names covered and the one asked marked "?".
 - **Paste:** from Quizlet, Excel or Google Sheets. Tab or semicolon separated, and spreadsheet quotes are handled.
 - **Shared file:** open a list someone else shared.
 - **From another app:** Android's share sheet sends text straight into the paste screen.

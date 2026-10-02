@@ -14,6 +14,7 @@
     { icon: "quiz", label: "new.quiz", href: href.quizNew() },
     { icon: "folder", label: "new.folder", href: href.newFolder() },
     { icon: "camera", label: "new.photo", href: href.photo() },
+    { icon: "image", label: "new.diagram", href: href.diagram() },
     { icon: "paste", label: "new.paste", href: href.import() },
     { icon: "file", label: "new.file", href: href.file() },
   ];
