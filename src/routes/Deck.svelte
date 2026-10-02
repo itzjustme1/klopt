@@ -312,6 +312,7 @@
         {/if}
         <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; moving = true; }}><Icon name="folder" />{t("folder.move")}{#if deck.folder}<span class="hint">{deck.folder}</span>{/if}</button></li>
         <li><a class="drawer-item" href={href.photo(id)}><Icon name="camera" />{t("new.photo")}</a></li>
+        <li><a class="drawer-item" href={href.diagram(id)}><Icon name="image" />{t("new.diagram")}</a></li>
         <li><a class="drawer-item" href={href.import(id)}><Icon name="paste" />{t("new.paste")}</a></li>
         <li><button type="button" class="drawer-item danger" onclick={() => { moreOpen = false; deleting = true; }}><Icon name="trash" />{t("common.delete")}</button></li>
       </ul>

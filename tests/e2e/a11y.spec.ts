@@ -66,6 +66,19 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     await page.getByRole("button", { name: "la maison markeren" }).click();
     await check("list");
+    await page.goto(base + "#/plaatje");
+    await page.getByRole("heading", { level: 1, name: "Plaatje met namen" }).waitFor();
+    await check("labelled picture");
+    await page.goto(base + "#/foto");
+    await page.getByText("Tekst met begrippen").click();
+    await check("photo: terms");
+    await page.goto(base + "#/lijsten");
+    await page.getByRole("button", { name: "Selecteren" }).click();
+    await page.getByRole("checkbox").first().check();
+    await check("lists: selecting");
+    await page.getByRole("button", { name: "Klaar met selecteren" }).click();
+    await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
+    await page.getByRole("heading", { name: "Frans: basiswoorden" }).waitFor();
     await page.goto(base + "#/toetsweek");
     await page.locator(".day").first().waitFor();
     await check("planner");
@@ -192,6 +205,8 @@ test("accessibility on a laptop screen, light and dark", async ({ browser }) => 
       ["planner", "#/toetsweek"],
       ["quizzes", "#/quizzen"],
       ["verb sets", "#/rijtjes"],
+      ["photo", "#/foto"],
+      ["labelled picture", "#/plaatje"],
     ];
     for (const [label, hash] of screens) {
       await page.goto(base + hash);
