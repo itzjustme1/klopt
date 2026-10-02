@@ -66,6 +66,11 @@ test("make a list, learn it with the keyboard, persist, work offline", async ({ 
   await page.goto("/#/lijsten");
   await expect(page.getByRole("heading", { name: "Lijsten" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Frans H1/ })).toBeVisible();
+  // Screens that load on demand come from the cache too.
+  for (const [hash, heading] of [["#/toetsweek", "Toetsweek"], ["#/plaatje", "Plaatje met namen"], ["#/uitleg", "Hoe werkt Klopt?"]]) {
+    await page.goto(`/${hash}`);
+    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+  }
   await context.setOffline(false);
 
   await check();

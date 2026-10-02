@@ -6,14 +6,7 @@
   import { app } from "./lib/app.svelte";
   import { applyUpdate, pwa } from "./lib/pwa.svelte";
   import { account } from "./lib/account.svelte";
-  import Account from "./routes/Account.svelte";
   import Forms from "./routes/Forms.svelte";
-  import VerbSets from "./routes/VerbSets.svelte";
-  import Planner from "./routes/Planner.svelte";
-  import Diagram from "./routes/Diagram.svelte";
-  import Inbox from "./routes/Inbox.svelte";
-  import Groups from "./routes/Groups.svelte";
-  import GroupPage from "./routes/GroupPage.svelte";
   import { href } from "./lib/router";
   import Icon, { type IconName } from "./components/Icon.svelte";
   import Logo from "./components/Logo.svelte";
@@ -27,15 +20,12 @@
   import Practice from "./routes/Practice.svelte";
   import Match from "./routes/Match.svelte";
   import Import from "./routes/Import.svelte";
-  import Photo from "./routes/Photo.svelte";
   import OpenFile from "./routes/OpenFile.svelte";
   import Progress from "./routes/Progress.svelte";
   import Settings from "./routes/Settings.svelte";
-  import Help from "./routes/Help.svelte";
   import ShareReceive from "./routes/ShareReceive.svelte";
   import Quizzes from "./routes/Quizzes.svelte";
   import QuizView from "./routes/QuizView.svelte";
-  import QuizEditor from "./routes/QuizEditor.svelte";
   import QuizPlay from "./routes/QuizPlay.svelte";
   import Folders from "./routes/Folders.svelte";
   import Folder from "./routes/Folder.svelte";
@@ -91,9 +81,14 @@
       first = false;
       return;
     }
-    void tick().then(() => {
+    void tick().then(async () => {
       window.scrollTo(0, 0);
-      const h = main?.querySelector<HTMLElement>("h1");
+      // A screen that loads on demand needs a moment before its heading exists.
+      let h = main?.querySelector<HTMLElement>("h1");
+      for (let i = 0; !h && i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 25));
+        h = main?.querySelector<HTMLElement>("h1");
+      }
       if (h) {
         h.tabIndex = -1;
         h.focus({ preventScroll: true });
@@ -270,10 +265,10 @@
         <Import deckId={app.route.deckId} />
       {/key}
     {:else if app.route.name === "diagram"}
-      {#key app.route.deckId}<Diagram deckId={app.route.deckId} />{/key}
+      {#key app.route.deckId}{#await import("./routes/Diagram.svelte") then { default: Diagram }}<Diagram deckId={app.route.deckId} />{/await}{/key}
     {:else if app.route.name === "photo"}
       {#key app.route.deckId}
-        <Photo deckId={app.route.deckId} />
+        {#await import("./routes/Photo.svelte") then { default: Photo }}<Photo deckId={app.route.deckId} />{/await}
       {/key}
     {:else if app.route.name === "file"}
       <OpenFile />
@@ -282,7 +277,7 @@
     {:else if app.route.name === "settings"}
       <Settings />
     {:else if app.route.name === "help"}
-      <Help />
+      {#await import("./routes/Help.svelte") then { default: Help }}<Help />{/await}
     {:else if app.route.name === "share"}
       {#key app.route.payload}
         <ShareReceive payload={app.route.payload} />
@@ -292,19 +287,19 @@
     {:else if app.route.name === "quiz"}
       {#key app.route.id}<QuizView id={app.route.id} share={app.route.share ?? false} />{/key}
     {:else if app.route.name === "quizEditor"}
-      {#key app.route.id}<QuizEditor id={app.route.id} />{/key}
+      {#key app.route.id}{#await import("./routes/QuizEditor.svelte") then { default: QuizEditor }}<QuizEditor id={app.route.id} />{/await}{/key}
     {:else if app.route.name === "planner"}
-      <Planner />
+      {#await import("./routes/Planner.svelte") then { default: Planner }}<Planner />{/await}
     {:else if app.route.name === "verbs"}
-      <VerbSets />
+      {#await import("./routes/VerbSets.svelte") then { default: VerbSets }}<VerbSets />{/await}
     {:else if app.route.name === "account"}
-      <Account />
+      {#await import("./routes/Account.svelte") then { default: Account }}<Account />{/await}
     {:else if app.route.name === "inbox"}
-      <Inbox />
+      {#await import("./routes/Inbox.svelte") then { default: Inbox }}<Inbox />{/await}
     {:else if app.route.name === "groups"}
-      <Groups />
+      {#await import("./routes/Groups.svelte") then { default: Groups }}<Groups />{/await}
     {:else if app.route.name === "group"}
-      {#key app.route.id}<GroupPage id={app.route.id} />{/key}
+      {#key app.route.id}{#await import("./routes/GroupPage.svelte") then { default: GroupPage }}<GroupPage id={app.route.id} />{/await}{/key}
     {:else if app.route.name === "folders"}
       <Folders />
     {:else if app.route.name === "folder"}
