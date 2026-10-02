@@ -39,6 +39,7 @@ npm run e2e
 - **Practise several lists at once:** *Selecteren* on the Lists screen, tick the lists (chapters 1 to 3 before a test) and practise them as one; or *Oefen deze map* in a folder. Every mode except the verb drill works across lists.
 - **Folders (mappen):** put lists and quizzes that belong together in a folder, from *Nieuw → Map* or a list's ⋮ menu. Rename or remove a folder; removing keeps what was in it. Folders are kept in backups but never in a shared list.
 - Copy, delete and print a list. Select words (or "Lastige" / "Gemarkeerd") and practise only those.
+- **QR code:** the share panel shows the share link as a QR code (drawn locally with the small MIT library `qrcode-generator`, loaded only when used); a classmate scans it with their camera. Lists too big for a scannable code get the link or file instead.
 - **Send lists, quizzes and whole folders** as a link, a file or through the phone's share sheet (WhatsApp and so on). The receiver sees a preview and adds a copy; progress, grades and your folders are never sent. Lists can also be exported as text for Quizlet or Excel.
 
 **Five ways to fill a list**

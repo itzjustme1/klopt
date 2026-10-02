@@ -85,3 +85,33 @@ test("send a quiz and a folder by link; the receiver adds them", async ({ page, 
   await expect(them.getByRole("link", { name: /WO2: begrippen/ })).toBeVisible();
   await other.close();
 });
+
+test("share a list as a QR code that scans back to the same link", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.getByRole("button", { name: "Opties voor Frans: basiswoorden" }).click();
+  await page.getByRole("dialog").getByRole("link", { name: "Delen" }).click();
+  const link = await page.getByLabel("Link").inputValue();
+  await page.getByRole("button", { name: "QR-code" }).click();
+  const qr = page.getByRole("img", { name: "QR-code met de link naar Frans: basiswoorden" });
+  await expect(qr).toBeVisible();
+  await expect(page.getByText("Laat je klasgenoot dit scannen")).toBeVisible();
+  // Decode the code with the browser's own barcode reader, where there is one.
+  const decoded = await page.evaluate(async () => {
+    const BD = (window as unknown as { BarcodeDetector?: new (o: object) => { detect(s: ImageBitmapSource): Promise<{ rawValue: string }[]> } }).BarcodeDetector;
+    if (!BD) return null;
+    const svg = document.querySelector("svg.qr")!;
+    const img = new Image();
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+    await img.decode();
+    const c = document.createElement("canvas");
+    c.width = c.height = 800;
+    c.getContext("2d")!.drawImage(img, 0, 0, 800, 800);
+    const found = await new BD({ formats: ["qr_code"] }).detect(c);
+    return found[0]?.rawValue ?? "";
+  });
+  if (decoded !== null) expect(decoded).toBe(link);
+  await check();
+});

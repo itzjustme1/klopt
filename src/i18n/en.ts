@@ -497,6 +497,10 @@ export const en: Messages = {
 
   "share.title": "Share list",
   "share.intro": "You share only the content, not your progress.",
+  "share.qr": "QR code",
+  "share.qrLabel": "QR code with the link to {name}",
+  "share.qrHelp": "Let a classmate scan this with their camera. The list opens in {app}.",
+  "share.qrTooLong": "This list is too big for a QR code. Send the link or the file.",
   "share.copyLink": "Copy link",
   "share.copied": "Link copied.",
   "share.copyFailed": "Couldn't copy. Select the link below and copy it yourself.",

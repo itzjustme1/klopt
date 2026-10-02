@@ -26,6 +26,7 @@
     "@tesseract.js-data/nld": "^1.0.0",
     "@tesseract.js-data/spa": "^1.0.0",
     "idb": "^8.0.3",
+    "qrcode-generator": "2.0.4",
     "svelte": "^5.57.1",
     "tesseract.js": "^7.0.0",
     "workbox-window": "^7.4.1"

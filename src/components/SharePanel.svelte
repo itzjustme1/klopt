@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from "./Icon.svelte";
+  import QrCode from "./QrCode.svelte";
   import { t } from "../i18n/index.svelte";
   import { APP_NAME } from "../config";
   import { backupFileName } from "../lib/backup";
@@ -49,6 +51,9 @@
   }
 
   let link = $state<string | null | undefined>(undefined);
+  let showQr = $state(false);
+  /** Longer links make a code too dense to scan from a phone screen. */
+  const QR_MAX = 1800;
   let copied = $state<"" | "ok" | "failed">("");
   let heading: HTMLElement | undefined = $state();
 
@@ -135,8 +140,19 @@
     <div class="row">
       {#if canNativeShare}<button type="button" class="btn btn-primary" onclick={nativeShare}>{t("share.native")}</button>{/if}
       {#if link}<button type="button" class={canNativeShare ? "btn" : "btn btn-primary"} onclick={copy}>{t("share.copyLink")}</button>{/if}
+      {#if link}<button type="button" class="btn" aria-expanded={showQr} onclick={() => (showQr = !showQr)}><Icon name="qr" size={18} />{t("share.qr")}</button>{/if}
       <button type="button" class={link === null && !canNativeShare ? "btn btn-primary" : "btn"} onclick={download}>{t("share.file")}</button>
     </div>
+    {#if showQr && link}
+      <div class="qr-box">
+        {#if link.length <= QR_MAX}
+          <QrCode text={link} label={t("share.qrLabel", { name })} />
+          <p class="small muted">{t("share.qrHelp")}</p>
+        {:else}
+          <p class="small">{t("share.qrTooLong")}</p>
+        {/if}
+      </div>
+    {/if}
 
     {#if accountsEnabled && account.user}
       <form class="person" onsubmit={sendTo}>
@@ -173,6 +189,15 @@
 </section>
 
 <style>
+  .qr-box {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    text-align: center;
+  }
   .share {
     display: grid;
     gap: 0.75rem;

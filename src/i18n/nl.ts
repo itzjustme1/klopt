@@ -498,6 +498,10 @@ export const nl = {
 
   "share.title": "Lijst delen",
   "share.intro": "Je deelt alleen de inhoud, niet je voortgang.",
+  "share.qr": "QR-code",
+  "share.qrLabel": "QR-code met de link naar {name}",
+  "share.qrHelp": "Laat je klasgenoot dit scannen met de camera. De lijst opent dan in {app}.",
+  "share.qrTooLong": "Deze lijst is te groot voor een QR-code. Stuur de link of het bestand.",
   "share.copyLink": "Link kopiëren",
   "share.copied": "Link gekopieerd.",
   "share.copyFailed": "Kopiëren lukte niet. Selecteer de link hieronder en kopieer hem zelf.",
