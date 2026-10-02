@@ -29,6 +29,13 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run check
       - run: npm run e2e
+      # On a failure, keep the screenshots and page snapshots to see what went wrong.
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: test-results/
+          retention-days: 7
       # The tests ran against a stand-in account server; build again with the real settings (.env.production).
       - run: npm run build
       - uses: actions/upload-pages-artifact@v5
