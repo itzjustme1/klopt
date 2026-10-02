@@ -100,6 +100,64 @@
     document.getElementById(`box-text-${id}`)?.focus();
   }
 
+  // Moving a box by dragging it, resizing it by its corner; arrow keys do the same (Shift+arrow resizes).
+  function editBox(e: PointerEvent, b: Box, mode: "move" | "resize") {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    const r = stage!.getBoundingClientRect();
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const start = { x: b.x, y: b.y, w: b.w, h: b.h };
+    let dragged = false;
+    const onmove = (ev: PointerEvent) => {
+      const dx = (ev.clientX - sx) / r.width;
+      const dy = (ev.clientY - sy) / r.height;
+      if (!dragged && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 4) return;
+      dragged = true;
+      const i = boxes.findIndex((x) => x.id === b.id);
+      if (i < 0) return;
+      const box = boxes[i]!;
+      if (mode === "move") {
+        box.x = Math.min(1 - start.w, Math.max(0, start.x + dx));
+        box.y = Math.min(1 - start.h, Math.max(0, start.y + dy));
+      } else {
+        box.w = Math.min(1 - start.x, Math.max(0.02, start.w + dx));
+        box.h = Math.min(1 - start.y, Math.max(0.015, start.h + dy));
+      }
+    };
+    const onup = () => {
+      el.removeEventListener("pointermove", onmove);
+      el.removeEventListener("pointerup", onup);
+      el.removeEventListener("pointercancel", onup);
+      // A tap (no drag) picks the box to rename it.
+      if (!dragged) void focusBox(b.id);
+      else selected = b.id;
+    };
+    el.addEventListener("pointermove", onmove);
+    el.addEventListener("pointerup", onup);
+    el.addEventListener("pointercancel", onup);
+  }
+
+  function boxKey(e: KeyboardEvent, b: Box) {
+    const step = 0.01;
+    const d: Record<string, [number, number]> = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+    const move = d[e.key];
+    if (!move) return;
+    e.preventDefault();
+    const box = boxes.find((x) => x.id === b.id)!;
+    if (e.shiftKey) {
+      box.w = Math.min(1 - box.x, Math.max(0.02, box.w + move[0]));
+      box.h = Math.min(1 - box.y, Math.max(0.015, box.h + move[1]));
+    } else {
+      box.x = Math.min(1 - box.w, Math.max(0, box.x + move[0]));
+      box.y = Math.min(1 - box.h, Math.max(0, box.y + move[1]));
+    }
+    selected = b.id;
+  }
+
   function remove(id: number) {
     boxes = boxes.filter((b) => b.id !== id);
     if (selected === id) selected = null;
@@ -176,6 +234,7 @@
   {:else}
     <div class="card card-pad editor">
       <p class="small muted">{t("diagram.drawHint")}</p>
+      <p class="visually-hidden" id="diagram-keys">{t("diagram.keys")}</p>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div class="stage" bind:this={stage} {onpointerdown} {onpointermove} onpointerup={onpointerup} onpointercancel={() => (drawing = null)}>
         <img src={imgUrl} alt={t("diagram.picture")} bind:this={img} draggable="false" />
@@ -190,8 +249,14 @@
             style:width="{b.w * 100}%"
             style:height="{b.h * 100}%"
             aria-label={t("diagram.boxLabel", { n: i + 1, text: b.text || "…" })}
-            onclick={() => focusBox(b.id)}
-          ><span class="num">{i + 1}</span></button>
+            aria-describedby="diagram-keys"
+            onpointerdown={(e) => editBox(e, b, "move")}
+            onclick={(e) => {
+              // Keyboard Enter; a pointer is handled by editBox.
+              if (e.detail === 0) void focusBox(b.id);
+            }}
+            onkeydown={(e) => boxKey(e, b)}
+          ><span class="num">{i + 1}</span>{#if selected === b.id}<span class="corner" aria-hidden="true" onpointerdown={(e) => editBox(e, b, "resize")}></span>{/if}</button>
         {/each}
         {#if drawing}
           <span class="box drawing" style:left="{Math.min(drawing.x0, drawing.x1) * 100}%" style:top="{Math.min(drawing.y0, drawing.y1) * 100}%" style:width="{Math.abs(drawing.x1 - drawing.x0) * 100}%" style:height="{Math.abs(drawing.y1 - drawing.y0) * 100}%"></span>
@@ -277,17 +342,18 @@
     user-select: none;
     cursor: crosshair;
     border-radius: var(--r-sm);
-    overflow: hidden;
     background: #fff;
   }
   .stage img {
     display: block;
+    border-radius: var(--r-sm);
     max-width: 100%;
     max-height: 70vh;
     pointer-events: none;
   }
   .stage .box {
     position: absolute;
+    cursor: move;
     display: block;
     min-width: 0;
     min-height: 0;
@@ -300,6 +366,27 @@
   .stage .box.sel {
     background: rgb(31 92 255 / 0.4);
     box-shadow: 0 0 0 3px var(--yellow);
+  }
+  .stage .box {
+    touch-action: none;
+  }
+  /* Just outside the corner, so even a small box can still be grabbed in the middle to move it. */
+  .corner {
+    position: absolute;
+    right: -20px;
+    bottom: -20px;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: var(--brand);
+    cursor: nwse-resize;
+  }
+  /* A bigger area to grab with a finger than the dot shows. */
+  .corner::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
   }
   .stage .box.empty {
     border-style: dashed;

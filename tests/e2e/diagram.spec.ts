@@ -65,6 +65,28 @@ test("a labelled picture: names are found, covered, and quizzed one by one", asy
   await page.mouse.up();
   await expect(page.getByPlaceholder("Wat staat er hier?").or(page.getByPlaceholder("Wat staat hier?")).last()).toBeFocused();
   await page.keyboard.type("hartspier");
+
+  // Move the new box by dragging it, then make it bigger by its corner, then nudge it with the keyboard.
+  const drawn = page.locator(".stage .box").last();
+  await drawn.scrollIntoViewIfNeeded();
+  const before = (await drawn.boundingBox())!;
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(before.x + before.width / 2 + 40, before.y + before.height / 2 + 20, { steps: 6 });
+  await page.mouse.up();
+  const moved = (await drawn.boundingBox())!;
+  expect(moved.x - before.x).toBeGreaterThan(30);
+  expect(moved.y - before.y).toBeGreaterThan(12);
+  const corner = (await drawn.locator(".corner").boundingBox())!;
+  await page.mouse.move(corner.x + corner.width / 2, corner.y + corner.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(corner.x + 40, corner.y + 30, { steps: 6 });
+  await page.mouse.up();
+  const bigger = (await drawn.boundingBox())!;
+  expect(bigger.width - moved.width).toBeGreaterThan(25);
+  await drawn.focus();
+  await page.keyboard.press("ArrowLeft");
+  expect((await drawn.boundingBox())!.x).toBeLessThan(bigger.x);
   await page.getByLabel("Vak", { exact: true }).fill("Biologie");
   await page.getByRole("button", { name: "Lijst maken met 4 vragen" }).click();
 
