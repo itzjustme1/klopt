@@ -30,6 +30,8 @@ class App {
   today = $state(localDay());
   /** Short-lived message for the whole app, announced politely. */
   flash = $state("");
+  /** A button in the message, such as "Ongedaan maken" after deleting. */
+  flashAction = $state.raw<{ label: string; run: () => void } | null>(null);
 
   private store: Store | null = null;
   private flashTimer: ReturnType<typeof setTimeout> | undefined;
@@ -118,10 +120,15 @@ class App {
     await account.pushWeek(week, stats);
   }
 
-  showFlash(message: string): void {
+  showFlash(message: string, action?: { label: string; run: () => void }): void {
     this.flash = message;
+    this.flashAction = action ?? null;
     clearTimeout(this.flashTimer);
-    this.flashTimer = setTimeout(() => (this.flash = ""), 4000);
+    // A message with a button stays longer, so there is time to press it.
+    this.flashTimer = setTimeout(() => {
+      this.flash = "";
+      this.flashAction = null;
+    }, action ? 8000 : 4000);
   }
 
   // Derived views
@@ -314,10 +321,29 @@ class App {
     return copy;
   }
 
+  /** Deletes a list with its words and answers, and offers to undo it for a few seconds. */
   async deleteDeck(id: string): Promise<void> {
+    const snap = await this.db.snapshot();
+    const cardIds = new Set(snap.cards.filter((c) => c.deckId === id).map((c) => c.id));
+    const saved: Snapshot = {
+      decks: snap.decks.filter((d) => d.id === id),
+      cards: snap.cards.filter((c) => cardIds.has(c.id)),
+      reviews: snap.reviews.filter((r) => cardIds.has(r.cardId)),
+      quizzes: [],
+    };
     await this.db.deleteDeck(id);
     this.decks = this.decks.filter((d) => d.id !== id);
     this.cards = this.cards.filter((c) => c.deckId !== id);
+    this.showFlash(t("deck.deleted"), {
+      label: t("common.undo"),
+      run: () => {
+        void this.db
+          .merge(saved)
+          .then(() => this.reload())
+          .then(() => this.showFlash(t("common.restored", { name: saved.decks[0]?.name ?? "" })))
+          .catch(() => this.showFlash(t("common.saveFailed")));
+      },
+    });
   }
 
   // Folders ("mappen"): a name on lists and quizzes. A folder exists while something is in it.
@@ -382,9 +408,24 @@ class App {
     this.quizzes = this.quizzes.map((x) => (x.id === id ? next : x));
   }
 
+  /** Deletes a quiz, and offers to undo it for a few seconds. */
   async deleteQuiz(id: string): Promise<void> {
+    const quiz = this.quiz(id);
     await this.db.deleteQuiz(id);
     this.quizzes = this.quizzes.filter((q) => q.id !== id);
+    if (!quiz) return;
+    this.showFlash(t("quiz.deleted"), {
+      label: t("common.undo"),
+      run: () => {
+        void this.db
+          .saveQuiz(quiz)
+          .then(() => {
+            this.quizzes = [...this.quizzes.filter((q) => q.id !== quiz.id), quiz];
+            this.showFlash(t("common.restored", { name: quiz.name }));
+          })
+          .catch(() => this.showFlash(t("common.saveFailed")));
+      },
+    });
   }
 
   // Cards

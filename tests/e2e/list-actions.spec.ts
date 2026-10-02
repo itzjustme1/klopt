@@ -25,7 +25,7 @@ test("rename, copy, move and delete a list from its ⋯ menu in an overview", as
   await page.getByRole("dialog").getByRole("button", { name: "Verwijderen" }).click();
   await expect(page.getByRole("dialog")).toContainText("verwijderen, met alle woorden");
   await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
-  await expect(page.locator(".toast")).toHaveText("Lijst verwijderd.");
+  await expect(page.locator(".toast")).toContainText("Lijst verwijderd.");
   await expect(page.getByRole("link", { name: /Frans H1 \(kopie\)/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Frans H1/ })).toHaveCount(1);
   await check();
@@ -96,7 +96,7 @@ test("rename and delete a quiz from its ⋯ menu", async ({ page }) => {
   await page.getByRole("button", { name: "Opties voor WO2 toets" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Verwijderen" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
-  await expect(page.locator(".toast")).toHaveText("Quiz verwijderd.");
+  await expect(page.locator(".toast")).toContainText("Quiz verwijderd.");
   await expect(page.getByRole("link", { name: /WO2 toets/ })).toHaveCount(0);
   await check();
 });
@@ -123,4 +123,31 @@ test("laptop shortcuts: N new, / search, [ sidebar, ? overview", async ({ browse
   await page.keyboard.press("?");
   await expect(page.getByRole("dialog", { name: "Sneltoetsen" })).toContainText("Zoeken in je lijsten");
   await ctx.close();
+});
+
+test("a deleted list or quiz can be brought back", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.goto("/#/lijsten");
+  await page.getByRole("button", { name: "Opties voor Frans: basiswoorden" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Verwijderen" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
+  await expect(page.getByRole("link", { name: /Frans: basiswoorden/ })).toHaveCount(0);
+  await page.locator(".toast").getByRole("button", { name: "Ongedaan maken" }).click();
+  await expect(page.locator(".toast")).toContainText('"Frans: basiswoorden" is terug.');
+  await page.getByRole("link", { name: /Frans: basiswoorden/ }).click();
+  await expect(page.getByText("Frans · 8 woorden")).toBeVisible();
+  // It survives a reload.
+  await page.reload();
+  await expect(page.getByText("Frans · 8 woorden")).toBeVisible();
+
+  await page.goto("/#/quizzen");
+  await page.getByRole("button", { name: "Opties voor WO2: oefentoets" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Verwijderen" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
+  await page.locator(".toast").getByRole("button", { name: "Ongedaan maken" }).click();
+  await expect(page.getByRole("link", { name: /WO2: oefentoets/ })).toBeVisible();
+  await check();
 });

@@ -102,6 +102,14 @@
   const focusMode = $derived(app.route.name === "practice" || app.route.name === "quizPlay");
   /** Making a list has its own save bar at the bottom, so the tab bar steps aside (as in StudyGo). */
   const hideNav = $derived(focusMode || app.route.name === "editor" || app.route.name === "quizEditor");
+  // Read the action before clearing the message: clearing it also clears the action.
+  function runFlashAction() {
+    const action = app.flashAction;
+    app.flash = "";
+    app.flashAction = null;
+    action?.run();
+  }
+
   let newOpen = $state(false);
   let keysOpen = $state(false);
 
@@ -334,7 +342,12 @@
 
 <p class="visually-hidden" aria-live="polite">{app.flash}</p>
 {#if app.flash}
-  <div class="toast" class:raised={!hideNav} role="presentation">{app.flash}</div>
+  <div class="toast" class:raised={!hideNav} class:with-action={!!app.flashAction}>
+    <span>{app.flash}</span>
+    {#if app.flashAction}
+      <button type="button" class="toast-btn" onclick={runFlashAction}>{app.flashAction.label}</button>
+    {/if}
+  </div>
 {/if}
 
 <style>
@@ -608,6 +621,29 @@
     border-radius: var(--r-sm);
     font-weight: 700;
     animation: toast-in var(--t-base) var(--ease);
+  }
+  .toast.with-action {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-right: 0.5rem;
+  }
+  .toast-btn {
+    min-height: var(--tap);
+    padding: 0 0.875rem;
+    border: 0;
+    border-radius: var(--r-xs);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .toast-btn:hover {
+    background: color-mix(in srgb, var(--bg) 10%, transparent);
   }
   @media (max-width: 719px) {
     .toast.raised {

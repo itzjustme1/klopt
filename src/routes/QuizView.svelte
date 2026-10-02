@@ -29,7 +29,6 @@
 
   async function remove() {
     await app.deleteQuiz(id);
-    app.showFlash(t("quiz.deleted"));
     location.hash = href.quizzes();
   }
 </script>

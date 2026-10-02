@@ -88,7 +88,6 @@
     try {
       await app.deleteDeck(deck.id);
       setSelection(deck.id, []);
-      app.showFlash(t("deck.deleted"));
       onclose();
     } catch {
       app.showFlash(t("common.saveFailed"));

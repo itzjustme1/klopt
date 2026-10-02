@@ -44,7 +44,6 @@
     busy = true;
     try {
       await app.deleteQuiz(quiz.id);
-      app.showFlash(t("quiz.deleted"));
       close();
     } catch {
       app.showFlash(t("common.saveFailed"));

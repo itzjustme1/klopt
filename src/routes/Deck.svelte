@@ -148,7 +148,6 @@
   async function remove() {
     await app.deleteDeck(id);
     setSelection(id, []);
-    app.showFlash(t("deck.deleted"));
     location.hash = href.lists();
   }
 </script>

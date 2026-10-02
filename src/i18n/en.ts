@@ -581,6 +581,8 @@ export const en: Messages = {
   "quiz.blank": "Blank {n}",
   "quiz.stop": "Stop",
   "nav.creations": "What you made",
+  "common.undo": "Undo",
+  "common.restored": "\"{name}\" is back.",
   "common.save": "Save",
   "folder.title": "Folders",
   "folder.new": "New folder",

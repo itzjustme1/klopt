@@ -582,6 +582,8 @@ export const nl = {
   "quiz.blank": "Lege plek {n}",
   "quiz.stop": "Stoppen",
   "nav.creations": "Wat je maakte",
+  "common.undo": "Ongedaan maken",
+  "common.restored": "\"{name}\" is terug.",
   "common.save": "Opslaan",
   "folder.title": "Mappen",
   "folder.new": "Nieuwe map",
