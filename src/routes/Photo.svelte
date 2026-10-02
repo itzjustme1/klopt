@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import Icon from "../components/Icon.svelte";
@@ -24,7 +25,9 @@
   let input: HTMLInputElement | undefined = $state();
 
   // Found terms, to check before they become a list. More pages can be added.
-  let found = $state<{ term: string; explanation: string; keep: boolean }[]>([]);
+  let found = $state<{ id: number; term: string; explanation: string; keep: boolean }[]>([]);
+  let editing = $state<number | null>(null);
+  let nextId = 0;
   let pages = $state(0);
   let name = $state("");
   let subject = $state("");
@@ -85,7 +88,7 @@
       error = pages ? t("photo.noNewTerms") : t("photo.noTerms");
       return;
     }
-    found = [...found, ...fresh.map((c) => ({ term: c.term.slice(0, LIMITS.sideChars), explanation: c.explanation.slice(0, LIMITS.sideChars), keep: true }))];
+    found = [...found, ...fresh.map((c) => ({ id: nextId++, term: c.term.slice(0, LIMITS.sideChars), explanation: c.explanation.slice(0, LIMITS.sideChars), keep: true }))];
     if (!pages && !name) name = res.title.slice(0, LIMITS.deckNameChars) || t("photo.defaultName");
     pages++;
   }
@@ -128,6 +131,12 @@
     void handle(file);
   }
 
+  async function edit(id: number) {
+    editing = id;
+    await tick();
+    document.getElementById(`ph-exp-${id}`)?.focus();
+  }
+
   function startOver() {
     found = [];
     pages = 0;
@@ -146,15 +155,30 @@
         <p class="small muted">{t("photo.checkTerms")}</p>
       </div>
       <ul class="found">
-        {#each found as f, i (f.term)}
-          <li>
-            <label class="term" class:off={!f.keep}>
-              <input type="checkbox" bind:checked={found[i]!.keep} />
-              <span class="term-text">
-                <span class="t-front">{f.term}</span>
-                <span class="t-back small">{f.explanation}</span>
-              </span>
-            </label>
+        {#each found as f, i (f.id)}
+          <li class="found-item">
+            {#if editing === f.id}
+              <div class="edit">
+                <div class="field">
+                  <label for="ph-term-{f.id}">{t("photo.term")}</label>
+                  <input id="ph-term-{f.id}" type="text" bind:value={found[i]!.term} maxlength={LIMITS.sideChars} autocomplete="off" />
+                </div>
+                <div class="field">
+                  <label for="ph-exp-{f.id}">{t("photo.explanation")}</label>
+                  <textarea id="ph-exp-{f.id}" rows="3" bind:value={found[i]!.explanation} maxlength={LIMITS.sideChars}></textarea>
+                </div>
+                <button type="button" class="btn btn-primary done" onclick={() => (editing = null)}>{t("photo.editDone")}</button>
+              </div>
+            {:else}
+              <label class="term" class:off={!f.keep}>
+                <input type="checkbox" bind:checked={found[i]!.keep} />
+                <span class="term-text">
+                  <span class="t-front">{f.term}</span>
+                  <span class="t-back small">{f.explanation}</span>
+                </span>
+              </label>
+              <button type="button" class="icon-btn edit-btn" aria-label={t("photo.editTerm", { term: f.term })} title={t("common.edit")} onclick={() => edit(f.id)}><Icon name="edit" size={18} /></button>
+            {/if}
           </li>
         {/each}
       </ul>
@@ -315,6 +339,27 @@
   }
   .found li + li {
     border-top: 1px solid var(--line);
+  }
+  .found-item {
+    display: flex;
+    align-items: flex-start;
+  }
+  .found-item .term {
+    flex: 1;
+    min-width: 0;
+  }
+  .edit-btn {
+    margin: 0.375rem 0.375rem 0 0;
+    color: var(--ink-2);
+  }
+  .edit {
+    display: grid;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 1rem;
+  }
+  .done {
+    justify-self: start;
   }
   .term {
     display: flex;

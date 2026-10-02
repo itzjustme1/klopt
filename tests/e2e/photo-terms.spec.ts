@@ -59,6 +59,13 @@ test("a photo of a textbook page: its bold and italic words become a term list",
   expect(axe.violations.map((v) => `${v.id} ${v.nodes.map((n) => n.target.join(" ")).slice(0, 2).join(" | ")}`)).toEqual([]);
   await page.screenshot({ path: "test-results/photo-terms-review.png", fullPage: true });
 
+  // Fix an explanation before saving.
+  await page.getByRole("button", { name: "Blitzkrieg bewerken" }).click();
+  await expect(page.getByLabel("Uitleg")).toBeFocused();
+  await page.getByLabel("Uitleg").fill("Een snelle aanval met tanks en vliegtuigen tegelijk.");
+  await page.getByRole("button", { name: "Klaar" }).click();
+  await expect(page.locator(".term", { hasText: "Blitzkrieg" })).toContainText("Een snelle aanval met tanks en vliegtuigen tegelijk.");
+
   // A second page adds its terms; untick one.
   await page.locator('input[type="file"]').setInputFiles({ name: "bladzijde2.jpg", mimeType: "image/jpeg", buffer: economics });
   await expect(page.getByRole("heading", { name: "10 begrippen gevonden" })).toBeVisible({ timeout: 120_000 });
@@ -70,6 +77,7 @@ test("a photo of a textbook page: its bold and italic words become a term list",
   await expect(page.getByRole("heading", { level: 1, name: "Nederland in de oorlog" })).toBeVisible();
   await expect(page.getByText("Geschiedenis · 9 begrippen")).toBeVisible();
   await expect(page.getByText("Februaristaking", { exact: true })).toBeVisible();
+  await expect(page.getByText("Een snelle aanval met tanks en vliegtuigen tegelijk.", { exact: true })).toBeVisible();
   await check();
 });
 
