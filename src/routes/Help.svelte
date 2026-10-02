@@ -12,14 +12,19 @@
     { mode: "flashcards", icon: "cards", desc: "modeDesc.flashcards" },
     { mode: "meerkeuze", icon: "choice", desc: "modeDesc.meerkeuze" },
     { mode: "typen", icon: "type", desc: "modeDesc.typen" },
+    { mode: "spelling", icon: "spell", desc: "modeDesc.spelling" },
     { mode: "dictee", icon: "listen", desc: "modeDesc.dictee" },
+    { mode: "vervoegen", icon: "rows", desc: "modeDesc.vervoegen" },
     { mode: "toets", icon: "test", desc: "modeDesc.toets" },
     { mode: "koppelen", icon: "match", desc: "modeDesc.koppelen" },
   ];
   const sections: { title: StringKey; items: StringKey[] }[] = [
     { title: "help.checkTitle", items: ["help.check1", "help.check2", "help.check3", "help.check4", "help.check5", "help.check6"] },
-    { title: "help.examTitle", items: ["help.exam1", "help.exam2"] },
-    { title: "help.dataTitle", items: ["help.data1", "help.data2", "help.data3", "help.data4"] },
+    { title: "help.makeTitle", items: ["help.make1", "help.make2", "help.make3", "help.make4", "help.make5"] },
+    { title: "help.examTitle", items: ["help.exam1", "help.exam2", "help.exam3", "help.exam4", "help.exam5"] },
+    { title: "help.habitTitle", items: ["help.habit1", "help.habit2"] },
+    { title: "help.dataTitle", items: ["help.data1", "help.data2", "help.data3", "help.data4", "help.data5"] },
+    { title: "help.laptopTitle", items: ["help.laptop1", "help.laptop2", "help.laptop3"] },
   ];
 </script>
 
