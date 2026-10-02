@@ -820,6 +820,7 @@ export const en: Messages = {
   "planner.icsExam": "Test: {name}",
   "planner.learn": p("Learn {n} new word", "Learn {n} new words"),
   "planner.review": p("Review the word", "Review all {n} words"),
+  "verbs.have": "Added",
   "verbs.title": "Ready-made verb tables",
   "verbs.sub": "Verbs to conjugate, ready to practise.",
   "verbs.count": p("{n} verb", "{n} verbs"),

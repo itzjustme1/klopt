@@ -821,6 +821,7 @@ export const nl = {
   "planner.icsExam": "Toets: {name}",
   "planner.learn": p("Leer {n} nieuw woord", "Leer {n} nieuwe woorden"),
   "planner.review": p("Herhaal het woord", "Herhaal alle {n} woorden"),
+  "verbs.have": "Al toegevoegd",
   "verbs.title": "Kant-en-klare rijtjes",
   "verbs.sub": "Werkwoorden om te vervoegen, klaar om te oefenen.",
   "verbs.count": p("{n} werkwoord", "{n} werkwoorden"),

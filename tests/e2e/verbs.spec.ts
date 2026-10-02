@@ -12,6 +12,11 @@ test("add a ready-made verb set and drill its forms", async ({ page }) => {
   await page.getByRole("listitem").filter({ hasText: "Frans: présent" }).getByRole("button", { name: "Toevoegen" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Frans: présent" })).toBeVisible();
+  // Adding it again is not possible: it links to the list instead.
+  await page.goto("/#/rijtjes");
+  await expect(page.getByRole("listitem").filter({ hasText: "Frans: présent" }).getByRole("link", { name: "Al toegevoegd" })).toBeVisible();
+  await page.getByRole("listitem").filter({ hasText: "Frans: présent" }).getByRole("link", { name: "Al toegevoegd" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Frans: présent" })).toBeVisible();
   const menu = await openPractice(page);
   await expect(menu.getByRole("link", { name: /^Rijtjes/ })).toContainText("AANBEVOLEN");
   await menu.getByRole("link", { name: /^Rijtjes/ }).click();

@@ -10,6 +10,9 @@
   let busy = $state("");
   const lang = $derived(getLang());
 
+  /** A list made from this set before (same name), so it is not added twice. */
+  const existing = (set: VerbSet) => app.decks.find((d) => d.kind === "forms" && d.name === set.name[lang]);
+
   async function add(set: VerbSet) {
     busy = set.id;
     try {
@@ -34,7 +37,12 @@
         <span class="row-sub">{tp("verbs.count", set.verbs.length)}</span>
         <span class="row-sub cols">{set.columns.join(" · ")}</span>
       </span>
-      <button type="button" class="btn btn-primary add" disabled={!!busy} onclick={() => add(set)}><Icon name="plus" size={18} />{t("receive.addThis")}</button>
+      {#if existing(set)}
+        {@const have = existing(set)!}
+        <a class="btn add" href={href.deck(have.id)}><Icon name="check" size={18} />{t("verbs.have")}</a>
+      {:else}
+        <button type="button" class="btn btn-primary add" disabled={!!busy} onclick={() => add(set)}><Icon name="plus" size={18} />{t("receive.addThis")}</button>
+      {/if}
     </li>
   {/each}
 </ul>
