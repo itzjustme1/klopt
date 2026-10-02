@@ -15,10 +15,9 @@
   const allTerms = $derived(decks.every((d) => d.kind === "terms"));
   const allForms = $derived(decks.every((d) => d.kind === "forms"));
   const modes = $derived<Exclude<Mode, "herhalen">[]>(
-    // The verb-forms drill works on one list at a time, so it is not offered here.
-    allForms ? ["leren", "flashcards", "meerkeuze", "typen"] : allTerms ? ["flashcards", "leren", "meerkeuze", "toets", "koppelen"] : ["leren", "toets", "flashcards", "meerkeuze", "typen", "spelling", "koppelen"],
+    allForms ? ["vervoegen", "leren", "flashcards", "meerkeuze", "typen"] : allTerms ? ["flashcards", "leren", "meerkeuze", "toets", "koppelen"] : ["leren", "toets", "flashcards", "meerkeuze", "typen", "spelling", "koppelen"],
   );
-  const recommended = $derived(allTerms ? "flashcards" : "leren");
+  const recommended = $derived(allForms ? "vervoegen" : allTerms ? "flashcards" : "leren");
   let count = $state<"10" | "20" | "all">("all");
   const countValue = $derived<Count>(count === "all" ? "all" : (Number(count) as 10 | 20));
 </script>

@@ -4,19 +4,21 @@
   import Icon from "../components/Icon.svelte";
   import { app } from "../lib/app.svelte";
   import { FormsDrill, markRow, type FormsResult } from "../lib/forms";
-  import { href, type Count, type Which } from "../lib/router";
+  import type { Count, Which } from "../lib/router";
+  import { scopeExit } from "../lib/scopeExit";
   import { playRight, playWrong } from "../lib/sounds";
 
   let { scope, which, count }: { scope: string; which: Which; count: Count } = $props();
 
-  const deck = $derived(app.deck(scope));
-  const columns = $derived(deck?.columns ?? []);
+  /** The lists in this round: one, or several (a folder, or lists picked together). */
+  const decks = $derived(app.scopeDecks(scope) ?? []);
   let drill = $state.raw<FormsDrill | null>(null);
   let version = $state(0);
   let given = $state<string[]>([]);
   let result = $state<FormsResult | null>(null);
   let box: HTMLElement | undefined = $state();
-  const exitHref = $derived(href.deck(scope));
+  const exitHref = $derived(scopeExit(scope).href);
+  const exitLabel = $derived(scopeExit(scope).label);
 
   function start() {
     const cards = app.practiceCards(scope, which, count).flatMap((c) => (c.forms ? [{ id: c.id, front: c.front, back: c.back, forms: c.forms }] : []));
@@ -32,6 +34,9 @@
     void version;
     return drill?.current ?? null;
   });
+  // Each verb uses the columns (je, tu, il … or ich, du, er …) and language of its own list.
+  const deck = $derived(card ? app.deck(app.cards.find((c) => c.id === card.id)?.deckId ?? "") : decks[0]);
+  const columns = $derived(deck?.columns ?? []);
   const stats = $derived.by(() => {
     void version;
     return drill ? { done: drill.done, total: drill.total, right: drill.right, wrong: drill.wrong } : { done: 0, total: 0, right: 0, wrong: 0 };
@@ -88,17 +93,17 @@
 
   <div class="p-body" bind:this={box}>
     <h1 class="visually-hidden">{t("mode.vervoegen")}</h1>
-    {#if !deck || !drill}
+    {#if !decks.length || !drill}
       <p>{t("deck.notFound")}</p>
     {:else if drill.total === 0}
-      <div class="card card-pad"><p>{t("forms.nothing")}</p><a class="btn btn-primary" href={exitHref}>{t("practice.backToList")}</a></div>
+      <div class="card card-pad"><p>{t("forms.nothing")}</p><a class="btn btn-primary" href={exitHref}>{exitLabel}</a></div>
     {:else if !card}
       <section class="done card card-pad">
         <h2 tabindex="-1">{t("result.title")}</h2>
         <p class="muted">{t("result.firstTry", { right: [...drill.first.values()].filter((g) => g === "goed").length, total: drill.total })}</p>
         <div class="row actions-row">
           <button type="button" class="btn btn-primary btn-lg" onclick={start}>{t("result.again")}</button>
-          <a class="btn btn-lg" href={exitHref}>{t("practice.backToList")}</a>
+          <a class="btn btn-lg" href={exitHref}>{exitLabel}</a>
         </div>
       </section>
       {#if mistakes.length}
@@ -132,7 +137,7 @@
                     autocomplete="off"
                     autocapitalize="off"
                     spellcheck="false"
-                    lang={deck.langFront === "xx" ? undefined : deck.langFront}
+                    lang={!deck || deck.langFront === "xx" ? undefined : deck.langFront}
                     onkeydown={(e) => onkey(e, i)}
                   />
                   {#if result && ok === false}<span class="right-form">{card.forms[i]}</span>{/if}

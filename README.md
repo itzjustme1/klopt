@@ -37,7 +37,7 @@ npm run e2e
 - **Pictures on cards:** add a picture to any row in the editor (it is shrunk to a small JPEG on the device). With a picture the front may stay empty, so the picture is the question, as in biology or geography.
 - **Reorder rows** in the editor: drag a row by its grip (mouse or finger), or Alt+↑/↓ in a cell; the order is kept when saving, and the words keep their progress.
 - **Undo:** deleting a list (with its words and progress) or a quiz shows *Ongedaan maken* for a few seconds.
-- **Practise several lists at once:** *Selecteren* on the Lists screen, tick the lists (chapters 1 to 3 before a test) and practise them as one; or *Oefen deze map* in a folder. Every mode except the verb drill works across lists.
+- **Practise several lists at once:** *Selecteren* on the Lists screen, tick the lists (chapters 1 to 3 before a test) and practise them as one; or *Oefen deze map* in a folder. Every mode works across lists; in the verb drill each verb keeps the columns of its own list.
 - **Folders (mappen):** put lists and quizzes that belong together in a folder, from *Nieuw → Map* or a list's ⋮ menu. Rename or remove a folder; removing keeps what was in it. Folders are kept in backups but never in a shared list.
 - Copy, delete and print a list. Select words (or "Lastige" / "Gemarkeerd") and practise only those.
 - **QR code:** the share panel shows the share link as a QR code (drawn locally with the small MIT library `qrcode-generator`, loaded only when used); a classmate scans it with their camera. Lists too big for a scannable code get the link or file instead.

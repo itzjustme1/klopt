@@ -66,3 +66,34 @@ test("spell words from letter tiles, by tapping and by keyboard", async ({ page 
   await expect(page.getByRole("heading", { name: "Klaar!" })).toBeVisible();
   await check();
 });
+
+test("drill the verbs of two languages together, each with its own columns", async ({ page }) => {
+  const check = await guard(page);
+  for (const name of ["Frans: présent", "Duits: Präsens"]) {
+    await page.goto("/#/rijtjes");
+    await page.getByRole("listitem").filter({ hasText: name }).getByRole("button", { name: "Toevoegen" }).click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  }
+  await page.goto("/#/lijsten");
+  await page.getByRole("button", { name: "Selecteren" }).click();
+  await page.getByRole("checkbox", { name: /Frans: présent/ }).check();
+  await page.getByRole("checkbox", { name: /Duits: Präsens/ }).check();
+  await page.getByRole("button", { name: "Oefen 2 lijsten" }).click();
+  const sheet = page.getByRole("dialog", { name: "Oefen met" });
+  await expect(sheet.getByRole("link", { name: /^Rijtjes/ })).toContainText("AANBEVOLEN");
+  await sheet.getByRole("link", { name: /^Rijtjes/ }).click();
+  // Two rows: each shows the pronouns of its own language and is marked right.
+  for (let n = 0; n < 2; n++) {
+    const verb = (await page.locator(".verb").textContent())!.trim();
+    const set = VERB_SETS.find((s) => s.verbs.some((v) => v.verb === verb) && (s.id === "fr-present" || s.id === "de-praesens"))!;
+    const row = set.verbs.find((v) => v.verb === verb)!;
+    await expect(page.locator("label.label").first()).toHaveText(set.columns[0]!);
+    for (let i = 0; i < set.columns.length; i++) await page.getByLabel(set.columns[i]!, { exact: true }).fill(row.forms[i]!);
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("status")).toContainText("Goed zo!");
+    await page.getByRole("button", { name: "Volgende" }).click();
+  }
+  await page.getByRole("link", { name: "Stoppen" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Lijsten" })).toBeVisible();
+  await check();
+});
