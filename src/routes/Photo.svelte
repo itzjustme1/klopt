@@ -3,6 +3,7 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import Icon from "../components/Icon.svelte";
+  import CameraCapture from "../components/CameraCapture.svelte";
   import PageHead from "../components/PageHead.svelte";
   import { app } from "../lib/app.svelte";
   import { setPendingImport } from "../lib/handoff";
@@ -23,6 +24,12 @@
   let progress = $state<OcrProgress | null>(null);
   let error = $state("");
   let input: HTMLInputElement | undefined = $state();
+  /** A camera through the browser: for laptops, whose file picker has no camera. */
+  // Laptops only: a touch device (phone, tablet) already offers its camera in the photo picker.
+  // A phone or tablet: a coarse pointer and several touch points. Everything else counts as a laptop.
+  const laptop = typeof navigator !== "undefined" && !(matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 1);
+  const canCamera = laptop && !!navigator.mediaDevices?.getUserMedia;
+  let cameraOpen = $state(false);
 
   // Found terms, to check before they become a list. More pages can be added.
   let found = $state<{ id: number; term: string; explanation: string; keep: boolean }[]>([]);
@@ -162,6 +169,10 @@
 
 <PageHead title={t("photo.title")} subtitle={found.length ? undefined : t("photo.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
 <svelte:window {onpaste} />
+
+{#if cameraOpen}
+  <CameraCapture onclose={() => (cameraOpen = false)} onphoto={(f) => { cameraOpen = false; void handle(f); }} />
+{/if}
 <section class="photo" class:dragging {ondrop} {ondragover} ondragleave={() => (dragging = false)} aria-label={t("photo.title")}>
   {#if found.length}
     <div class="card card-pad review">
@@ -228,6 +239,7 @@
             <Icon name="camera" size={20} />{t("photo.morePage")}
             <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
           </label>
+          {#if canCamera}<button type="button" class="btn" onclick={() => (cameraOpen = true)}><Icon name="camera" size={20} />{t("camera.morePage")}</button>{/if}
           <button type="button" class="btn btn-quiet" onclick={startOver}>{t("photo.startOver")}</button>
         </div>
       {/if}
@@ -278,14 +290,17 @@
           <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
         </div>
       {:else}
-        <label class="btn btn-primary btn-lg pick">
-          <Icon name="camera" size={22} />{t("photo.choose")}
-          <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
-        </label>
+        <div class="row picks">
+          <label class="btn btn-primary btn-lg pick">
+            <Icon name="camera" size={22} />{t("photo.choose")}
+            <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={choose} />
+          </label>
+          {#if canCamera}<button type="button" class="btn btn-lg" onclick={() => (cameraOpen = true)}><Icon name="camera" size={22} />{t("camera.open")}</button>{/if}
+        </div>
       {/if}
 
       {#if error}<p class="error" role="alert">{error}</p>{/if}
-      <p class="small muted desk-hint"><Icon name="image" size={16} />{t("photo.dropHint")}</p>
+      {#if laptop}<p class="small muted desk-hint"><Icon name="image" size={16} />{t("photo.dropHint")}</p>{/if}
       <p class="small muted">{t("photo.firstTime", { mb })} {t("photo.handwriting")}</p>
     </div>
   {/if}
@@ -302,15 +317,14 @@
   .photo.dragging {
     box-shadow: 0 0 0 3px var(--accent);
   }
+  .picks {
+    flex-wrap: wrap;
+  }
+
   .desk-hint {
-    display: none;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-  }
-  @media (pointer: fine) {
-    .desk-hint {
-      display: flex;
-    }
   }
   .box,
   .review {

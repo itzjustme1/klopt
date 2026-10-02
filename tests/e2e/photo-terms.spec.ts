@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { writeFile } from "node:fs/promises";
 import { expect, test, type Browser } from "@playwright/test";
 import { ECONOMICS_HTML, ECONOMICS_TERMS, TEXTBOOK_HTML, TEXTBOOK_TERMS } from "../fixtures/textbook";
 import { guard } from "./helpers";
@@ -99,4 +100,43 @@ test("a photo too blurry to tell bold from regular says so instead of guessing",
   await page.locator('input[type="file"]').setInputFiles({ name: "wazig.jpg", mimeType: "image/jpeg", buffer: blurry });
   await expect(page.getByRole("alert")).toContainText("niet scherp genoeg", { timeout: 90_000 });
   await check();
+});
+
+test("on a laptop, take the photo with the camera", async ({ browser, playwright }) => {
+  test.setTimeout(180_000);
+  // A fake webcam that shows the textbook page (Chrome plays a JPEG as a camera stream).
+  const jpeg = await photoOf(browser, TEXTBOOK_HTML, 2);
+  const cam = test.info().outputPath("camera.mjpeg");
+  await writeFile(cam, jpeg);
+  const camBrowser = await playwright.chromium.launch({ args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream", `--use-file-for-fake-video-capture=${cam}`] });
+  const ctx = await camBrowser.newContext({ viewport: { width: 1280, height: 860 }, locale: "nl-NL", permissions: ["camera"] });
+  const page = await ctx.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("http://localhost:4173/#/foto");
+  await page.getByText("Tekst met begrippen").click();
+  await page.getByRole("button", { name: "Camera", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Foto maken" });
+  await expect(dialog.getByRole("button", { name: "Foto maken" })).toBeEnabled({ timeout: 20_000 });
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: "test-results/camera-dialog.png" });
+  await dialog.getByRole("button", { name: "Foto maken" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("heading", { name: "6 begrippen gevonden" })).toBeVisible({ timeout: 120_000 });
+  expect(errors).toEqual([]);
+  await camBrowser.close();
+});
+
+test("the camera window explains a refused camera", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "mediaDevices", { value: { getUserMedia: () => Promise.reject(new DOMException("no", "NotAllowedError")), enumerateDevices: () => Promise.resolve([]) } });
+    // Act as a laptop: no touch points.
+    Object.defineProperty(navigator, "maxTouchPoints", { value: 0 });
+  });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/#/plaatje");
+  await page.getByRole("button", { name: "Camera", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Foto maken" }).getByRole("alert")).toContainText("Je browser mag de camera niet gebruiken");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });

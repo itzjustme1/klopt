@@ -51,8 +51,7 @@ test("on a laptop a photo can be dropped on the page", async ({ page }) => {
   test.setTimeout(120_000);
   const check = await guard(page);
   await page.goto("/#/foto");
-  // The hint is for a mouse; this test runs as a touch phone, where it stays hidden.
-  await expect(page.getByText("Op een laptop kun je een foto ook hierheen slepen")).toBeHidden();
+  await page.getByRole("heading", { level: 1, name: "Foto van je boek" }).waitFor();
   // Drop a text file first: refused politely. Then a drawn word list.
   await page.evaluate(async () => {
     const zone = document.querySelector("section.photo")!;

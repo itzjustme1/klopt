@@ -45,7 +45,7 @@ npm run e2e
 
 **Five ways to fill a list**
 - **Type it yourself:** a table editor. Enter moves to the next cell, there are accent keys, and you can paste several lines into one cell.
-- **Laptop:** drag a photo onto *Foto van je boek* or paste one (⌘V / Ctrl+V). Shortcuts: N new, / search, [ fold the sidebar, ? all shortcuts.
+- **Laptop:** take a photo with the *Camera* button (the webcam, or an iPhone through Continuity Camera, at the camera's full resolution where the browser allows), drag a photo onto *Foto van je boek* or paste one (⌘V / Ctrl+V). Shortcuts: N new, / search, [ fold the sidebar, ? all shortcuts.
 - **Photo of your book:** the text is recognised on the device. Two kinds:
   - a word list (two columns) becomes rows to check in the paste screen;
   - a page of running text (history, economics, biology…) becomes a term list: every **bold** or *italic* word or phrase is a term, explained by the sentence it stands in (with the term blanked as "…"). "Dat noemen we …" takes the sentences before it; a short sentence takes the next one; "Term: explanation" glossary lines and margin boxes are read as such; the page heading names the list. You tick off what is not a term and can add more pages before saving.

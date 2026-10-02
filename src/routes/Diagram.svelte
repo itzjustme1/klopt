@@ -3,6 +3,7 @@
   import { getLang, t, tp } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import Icon from "../components/Icon.svelte";
+  import CameraCapture from "../components/CameraCapture.svelte";
   import PageHead from "../components/PageHead.svelte";
   import { app } from "../lib/app.svelte";
   import { coveredPicture, type LabelBox } from "../lib/occlusion";
@@ -32,6 +33,9 @@
   let subject = $state(deck?.subject ?? "");
   let saving = $state(false);
   let input: HTMLInputElement | undefined = $state();
+  // Laptops only: a phone or tablet (coarse pointer, several touch points) offers its camera in the photo picker.
+  const canCamera = typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia && !(matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 1);
+  let cameraOpen = $state(false);
   let stage: HTMLElement | undefined = $state();
   let drawing = $state<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
   let selected = $state<number | null>(null);
@@ -201,6 +205,10 @@
 
 <svelte:window {onpaste} />
 
+{#if cameraOpen}
+  <CameraCapture onclose={() => (cameraOpen = false)} onphoto={(f) => { cameraOpen = false; void choose(f); }} />
+{/if}
+
 <PageHead title={t("diagram.title")} subtitle={imgUrl ? undefined : t("diagram.intro")} back={{ href: deck ? href.deck(deck.id) : href.newList(), label: t("common.back") }} />
 
 <section
@@ -228,10 +236,13 @@
           {#each CONTENT_LANGS.filter((l) => l !== "xx") as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
         </select>
       </div>
-      <label class="btn btn-primary btn-lg pick">
-        <Icon name="image" size={22} />{t("diagram.choose")}
-        <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={() => choose(input?.files?.[0])} />
-      </label>
+      <div class="row picks">
+        <label class="btn btn-primary btn-lg pick">
+          <Icon name="image" size={22} />{t("diagram.choose")}
+          <input class="visually-hidden" type="file" accept="image/*" bind:this={input} onchange={() => choose(input?.files?.[0])} />
+        </label>
+        {#if canCamera}<button type="button" class="btn btn-lg" onclick={() => (cameraOpen = true)}><Icon name="camera" size={22} />{t("camera.open")}</button>{/if}
+      </div>
       <p class="small muted">{t("diagram.how")}</p>
       {#if error}<p class="error" role="alert">{error}</p>{/if}
     </div>
@@ -334,6 +345,10 @@
   .pick {
     justify-self: start;
   }
+  .picks {
+    flex-wrap: wrap;
+  }
+
   .pick:focus-within {
     outline: 3px solid var(--accent);
     outline-offset: 2px;
