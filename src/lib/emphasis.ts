@@ -143,7 +143,10 @@ export function strokeWidth(g: Gray, b: Box): number | null {
       runs.push(width);
     }
   }
-  return runs.length >= 6 ? median(runs) : null;
+  // Only cuts through upright strokes: long runs are horizontal bars (e, t) or joined letters, whose
+  // length says nothing about the weight and differs per font.
+  const short = runs.filter((r) => r <= bm.h * 0.3);
+  return short.length >= 6 ? median(short) : null;
 }
 
 /** The shear (dx per pixel up) that makes a word's strokes most upright; about 0.2 for italic type. */
@@ -209,10 +212,12 @@ export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] & 
   // ordinary words scatters, so bold has to stand out further before it counts.
   const ratios = measured.flatMap((m) => (m.stroke === null ? [] : [m.stroke / lineStroke.get(`${m.w.para}:${m.w.line}`)!])).sort((a, b) => a - b);
   const q = (f: number) => ratios[Math.min(ratios.length - 1, Math.floor(ratios.length * f))] ?? 1;
-  const noise = ratios.length >= 20 ? Math.max(0, q(0.9) - q(0.5)) : 0;
+  // The spread of the middle half: bold words (the top few percent) do not count in it.
+  const noise = ratios.length >= 20 ? Math.max(0, q(0.75) - q(0.25)) : 0;
   // Too much scatter and bold cannot be told from noise at all; italic (a slant) still can.
-  const blurry = noise > 0.12;
-  const boldLong = blurry ? Infinity : Math.max(1.18, 1 + 2.5 * noise);
+  // Measured: sharp pages 0.03 to 0.07 whatever the font, a WhatsApp photo 0.08, a blurry one 0.2.
+  const blurry = noise > 0.075;
+  const boldLong = blurry ? Infinity : Math.max(1.18, 1 + 4 * noise);
   const boldShort = boldLong + 0.07;
   const styled: StyledWord[] = measured.map((m) => {
     const ref = lineStroke.get(`${m.w.para}:${m.w.line}`)!;

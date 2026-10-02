@@ -50,8 +50,6 @@ test("a photo of a textbook page: its bold and italic words become a term list",
   await page.locator('input[type="file"]').setInputFiles({ name: "bladzijde.jpg", mimeType: "image/jpeg", buffer: history });
 
   // Recognised on the device; every term with the sentence it stands in, the term itself blanked.
-  await expect(page.getByRole("heading", { name: /gevonden$/ }).or(page.getByRole("alert"))).toBeVisible({ timeout: 120_000 });
-  console.log("found:", await page.locator(".t-front").allTextContents(), await page.getByRole("alert").allTextContents());
   await expect(page.getByRole("heading", { name: "6 begrippen gevonden" })).toBeVisible({ timeout: 120_000 });
   for (const term of TEXTBOOK_TERMS) await expect(page.locator(".t-front", { hasText: new RegExp(`^${term}$`) })).toBeVisible();
   await expect(page.locator(".term", { hasText: "Blitzkrieg" })).toContainText("De Duitsers gebruikten de …, een snelle aanval met tanks en vliegtuigen tegelijk.");
