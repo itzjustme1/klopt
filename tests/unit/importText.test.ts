@@ -118,3 +118,32 @@ describe("spreadsheet quoting", () => {
     expect(unquote('""')).toBe("");
   });
 });
+
+describe("pasting notes", () => {
+  it("reads 'term: explanation', '=', and dashes with spaces, and drops bullets", () => {
+    const r = parseImport("- Blitzkrieg: snelle aanval met tanks\n• huis = house\n1. VOC - Verenigde Oost-Indische Compagnie\ninflatie – stijgende prijzen\nOost-Indische Compagnie");
+    expect(r.cards.map((c) => [c.front, c.back])).toEqual([
+      ["Blitzkrieg", "snelle aanval met tanks"],
+      ["huis", "house"],
+      ["VOC", "Verenigde Oost-Indische Compagnie"],
+      ["inflatie", "stijgende prijzen"],
+    ]);
+    // A hyphen inside a word is not a separator.
+    expect(r.skipped).toEqual([{ line: 5, reason: "noSeparator" }]);
+  });
+
+  it("keeps an explanation that runs on to the next line, but not a heading", () => {
+    const r = parseImport("Collaboratie: samenwerken met\nde bezetter tijdens de oorlog.\nHoofdstuk 4\nVerzet: strijd tegen de bezetter.");
+    expect(r.cards.map((c) => [c.front, c.back])).toEqual([
+      ["Collaboratie", "samenwerken met de bezetter tijdens de oorlog."],
+      ["Verzet", "strijd tegen de bezetter."],
+    ]);
+    expect(r.skipped).toEqual([{ line: 3, reason: "noSeparator" }]);
+  });
+
+  it("never treats a tab or semicolon paste as notes", () => {
+    const r = parseImport("a;b\nno separator here\nc\td");
+    expect(r.skipped).toEqual([{ line: 2, reason: "noSeparator" }]);
+    expect(parseImport("10:30\turen").cards[0]).toMatchObject({ front: "10:30", back: "uren" });
+  });
+});

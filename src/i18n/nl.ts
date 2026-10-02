@@ -341,7 +341,7 @@ export const nl = {
   "progress.empty": "Zodra je gaat oefenen, zie je hier je voortgang.",
 
   "import.title": "Lijst plakken",
-  "import.intro": "Eén woord per regel, met een tab of ; ertussen. Werkt met Quizlet en Excel.",
+  "import.intro": "Eén woord per regel, met een tab, ; of : ertussen. Werkt met Quizlet, Excel en je eigen aantekeningen.",
   "import.textLabel": "Je lijst",
   "import.placeholder": "la maison;het huis",
   "import.target": "Toevoegen aan",
@@ -352,7 +352,7 @@ export const nl = {
   "import.col.line": "Regel",
   "import.moreRows": p("En nog {n} woord.", "En nog {n} woorden."),
   "import.skipped": p("{n} regel overgeslagen", "{n} regels overgeslagen"),
-  "import.err.noSeparator": "Regel {line} overgeslagen. Zet een tab of puntkomma tussen woord en vertaling.",
+  "import.err.noSeparator": "Regel {line} overgeslagen. Zet een tab, puntkomma, dubbele punt of = tussen woord en vertaling.",
   "import.err.emptyFront": "Regel {line} overgeslagen. Het woord ontbreekt.",
   "import.err.emptyBack": "Regel {line} overgeslagen. De vertaling ontbreekt.",
   "import.err.tooLong": "Regel {line} overgeslagen. Een kant is langer dan {n} tekens.",

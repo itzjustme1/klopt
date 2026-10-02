@@ -340,7 +340,7 @@ export const en: Messages = {
   "progress.empty": "Once you start practising, your progress shows up here.",
 
   "import.title": "Paste a list",
-  "import.intro": "One word per line, with a tab or ; in between. Works with Quizlet and Excel.",
+  "import.intro": "One word per line, with a tab, ; or : in between. Works with Quizlet, Excel and your own notes.",
   "import.textLabel": "Your list",
   "import.placeholder": "la maison;the house",
   "import.target": "Add to",
@@ -351,7 +351,7 @@ export const en: Messages = {
   "import.col.line": "Line",
   "import.moreRows": p("And {n} more word.", "And {n} more words."),
   "import.skipped": p("{n} line skipped", "{n} lines skipped"),
-  "import.err.noSeparator": "Line {line} skipped. Put a tab or semicolon between word and translation.",
+  "import.err.noSeparator": "Line {line} skipped. Put a tab, semicolon, colon or = between word and translation.",
   "import.err.emptyFront": "Line {line} skipped. The word is missing.",
   "import.err.emptyBack": "Line {line} skipped. The translation is missing.",
   "import.err.tooLong": "Line {line} skipped. One side is longer than {n} characters.",

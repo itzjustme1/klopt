@@ -35,6 +35,20 @@ export function separatorIndex(line: string): number {
   return tab !== -1 ? tab : find(";");
 }
 
+/**
+ * Separators people use in notes and summaries, for lines without a tab or semicolon:
+ * "Blitzkrieg: snelle aanval", "huis = house", "VOC - handelscompagnie", "inflatie – stijgende prijzen".
+ * Returns where the separator starts and how long it is.
+ */
+export function noteSeparator(line: string): { at: number; length: number } | null {
+  const m = /\s+[=–—-]\s+|\s*=\s*|:\s+/.exec(line);
+  if (!m || m.index === 0) return null;
+  return { at: m.index, length: m[0].length };
+}
+
+/** Bullets and numbers that start a line in notes: "- ", "• ", "1. ", "a) ". */
+const BULLET = /^\s*(?:[-–—•*·▪]|\d{1,3}[.)]|[a-z][.)])\s+/;
+
 /** Removes spreadsheet quoting: "say ""hi""" becomes say "hi". Unquoted text is left alone. */
 export function unquote(side: string): string {
   const s = side.trim();
@@ -57,19 +71,42 @@ export function parseImport(text: string, existing: ReadonlySet<string> = new Se
   const skipped: ParseResult["skipped"] = [];
   const seen = new Set(existing);
   const lines = text.split(/\r\n|\r|\n/);
+  // The card a following line may continue (only for cards from notes, not from spreadsheets).
+  let lastFromNotes = false;
+  let lastLine = -1;
 
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i]!;
     const line = i + 1;
     if (raw.trim() === "") continue;
 
-    const at = separatorIndex(raw);
+    let at = separatorIndex(raw);
+    let sepLength = 1;
+    let text = raw;
+    let fromNotes = false;
     if (at === -1) {
-      skipped.push({ line, reason: "noSeparator" });
-      continue;
+      text = raw.replace(BULLET, "");
+      const note = noteSeparator(text);
+      if (!note) {
+        // In notes, an explanation often runs on to the next line: keep it with its term.
+        const prev = cards.at(-1);
+        const t = raw.trim();
+        // A run-on starts in lowercase, or finishes a sentence the card left open; a heading does neither.
+        const runsOn = /^\p{Ll}/u.test(t) || (!/[.!?]$/.test(prev?.back ?? "") && /[.!?]$/.test(t));
+        if (prev && lastFromNotes && runsOn && prev.line === lastLine && prev.back.length + raw.length < LIMITS.sideChars) {
+          prev.back = `${prev.back} ${raw.trim()}`;
+          lastLine = line;
+          continue;
+        }
+        skipped.push({ line, reason: "noSeparator" });
+        continue;
+      }
+      at = note.at;
+      sepLength = note.length;
+      fromNotes = true;
     }
-    const front = unquote(raw.slice(0, at));
-    const back = unquote(raw.slice(at + 1));
+    const front = unquote(text.slice(0, at));
+    const back = unquote(text.slice(at + sepLength));
     if (!front) skipped.push({ line, reason: "emptyFront" });
     else if (!back) skipped.push({ line, reason: "emptyBack" });
     else if (front.length > LIMITS.sideChars || back.length > LIMITS.sideChars) skipped.push({ line, reason: "tooLong" });
@@ -79,6 +116,8 @@ export function parseImport(text: string, existing: ReadonlySet<string> = new Se
       else {
         seen.add(key);
         cards.push({ line, front, back });
+        lastFromNotes = fromNotes;
+        lastLine = line;
       }
     }
   }

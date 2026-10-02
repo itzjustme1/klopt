@@ -16,7 +16,7 @@ test("paste a list, back up, wipe, restore", async ({ page }) => {
   ].join("\n");
   await page.getByLabel("Je lijst").fill(list);
   await expect(page.getByText("3 woorden herkend")).toBeVisible();
-  await expect(page.getByText("Regel 4 overgeslagen. Zet een tab of puntkomma tussen woord en vertaling.")).toBeVisible();
+  await expect(page.getByText("Regel 4 overgeslagen. Zet een tab, puntkomma, dubbele punt of = tussen woord en vertaling.")).toBeVisible();
   await expect(page.getByText("Regel 6 overgeslagen. Dit woord staat al in de lijst.")).toBeVisible();
   // HTML shows as literal text, not markup.
   await expect(page.locator("tbody td", { hasText: "<script>alert(1)</script>" })).toBeVisible();
