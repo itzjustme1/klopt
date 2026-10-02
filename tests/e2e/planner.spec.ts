@@ -54,3 +54,18 @@ test("plan a test week: add a test, skip a weekday, practise today's part and ex
   await expect(page).toHaveURL(/#\/oefenen\/.+\/leren\//);
   await check();
 });
+
+test("a daily reminder goes into the calendar", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/#/instellingen");
+  await page.getByLabel("Dagelijkse herinnering om").fill("19:30");
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Zet in je agenda" }).click();
+  const file = await download;
+  const ics = await readFile((await file.path())!, "utf8");
+  expect(ics).toMatch(/DTSTART:\d{8}T193000/);
+  expect(ics).toContain("RRULE:FREQ=DAILY");
+  expect(ics).toContain("SUMMARY:Even oefenen in Klopt");
+  await page.screenshot({ path: "test-results/settings-reminder.png", fullPage: true });
+  await check();
+});

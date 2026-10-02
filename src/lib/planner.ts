@@ -79,8 +79,14 @@ export interface CalendarEvent {
   day: string;
   title: string;
   description?: string;
-  /** A reminder at 18:00 the evening before. */
+  /** A reminder at 18:00 the evening before (all-day events), or at the start (timed events). */
   remind?: boolean;
+  /** "HH:MM": a timed event in the device's own time zone instead of an all-day one. */
+  time?: string;
+  /** Length of a timed event in minutes. */
+  minutes?: number;
+  /** Repeats every day. */
+  daily?: boolean;
 }
 
 /** Escapes text for an iCalendar property value (RFC 5545 §3.3.11). */
@@ -116,17 +122,20 @@ export function calendarFile(name: string, events: readonly CalendarEvent[], now
   const stamp = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Klopt//Toetsweek//NL", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", `X-WR-CALNAME:${icsText(name)}`];
   for (const e of events) {
-    lines.push(
-      "BEGIN:VEVENT",
-      `UID:${e.uid}`,
-      `DTSTAMP:${stamp}`,
-      `DTSTART;VALUE=DATE:${compact(e.day)}`,
-      `DTEND;VALUE=DATE:${compact(addDays(e.day, 1))}`,
-      `SUMMARY:${icsText(e.title)}`,
-      "TRANSP:TRANSPARENT",
-    );
+    lines.push("BEGIN:VEVENT", `UID:${e.uid}`, `DTSTAMP:${stamp}`);
+    if (e.time && /^\d{2}:\d{2}$/.test(e.time)) {
+      // Floating local time: the calendar shows it at that hour wherever the student is.
+      const [hh, mm] = e.time.split(":").map(Number) as [number, number];
+      const end = hh * 60 + mm + (e.minutes ?? 15);
+      const t = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}${String(m % 60).padStart(2, "0")}00`;
+      lines.push(`DTSTART:${compact(e.day)}T${t(hh * 60 + mm)}`, `DTEND:${compact(end >= 1440 ? addDays(e.day, 1) : e.day)}T${t(end)}`);
+    } else {
+      lines.push(`DTSTART;VALUE=DATE:${compact(e.day)}`, `DTEND;VALUE=DATE:${compact(addDays(e.day, 1))}`);
+    }
+    if (e.daily) lines.push("RRULE:FREQ=DAILY");
+    lines.push(`SUMMARY:${icsText(e.title)}`, "TRANSP:TRANSPARENT");
     if (e.description) lines.push(`DESCRIPTION:${icsText(e.description)}`);
-    if (e.remind) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsText(e.title)}`, "TRIGGER:-PT6H", "END:VALARM");
+    if (e.remind) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsText(e.title)}`, `TRIGGER:${e.time ? "PT0M" : "-PT6H"}`, "END:VALARM");
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");

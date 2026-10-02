@@ -10,7 +10,8 @@
   import { parseBackup } from "../lib/backup";
   import { formatDay, localDay } from "../lib/dates";
   import type { Snapshot } from "../lib/db";
-  import { readTextFile } from "../lib/files";
+  import { downloadText, readTextFile } from "../lib/files";
+  import { calendarFile } from "../lib/planner";
   import { backupErrorText } from "../lib/messages";
   import { isPersisted } from "../lib/persist";
   import { href } from "../lib/router";
@@ -22,6 +23,13 @@
   let uiLang = $state<Lang>(app.settings.uiLang);
   let theme = $state<Theme>(app.settings.theme);
   let goal = $state(String(app.settings.dailyGoal));
+  // A daily reminder through the calendar: the only reliable way for a web app without a server.
+  let reminderTime = $state("19:00");
+  function addReminder() {
+    const ics = calendarFile(t("reminder.calendar"), [{ uid: "daily-reminder@klopt", day: localDay(), title: t("reminder.title"), description: t("reminder.body", { goal: app.settings.dailyGoal }), time: reminderTime, minutes: 15, daily: true, remind: true }], new Date());
+    downloadText("klopt-herinnering.ics", ics, "text/calendar");
+    app.showFlash(t("reminder.made"));
+  }
   let autoSpeak = $state(app.settings.autoSpeak);
   let lenientAccents = $state(app.settings.lenientAccents);
   let lenientTypos = $state(app.settings.lenientTypos);
@@ -157,6 +165,15 @@
         {/each}
       </div>
     </fieldset>
+
+    <div class="reminder">
+      <div class="field">
+        <label for="reminder-time">{t("reminder.label")}</label>
+        <input id="reminder-time" type="time" bind:value={reminderTime} />
+      </div>
+      <button type="button" class="btn" disabled={!reminderTime} onclick={addReminder}><Icon name="calendar" size={18} />{t("reminder.add")}</button>
+      <p class="small muted">{t("reminder.help")}</p>
+    </div>
   </div>
 
   <div class="card group" aria-labelledby="checking-title">
@@ -242,6 +259,20 @@
 </section>
 
 <style>
+  .reminder {
+    justify-self: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+  }
+  .reminder .field {
+    flex: 1 1 10rem;
+    max-width: 14rem;
+  }
+  .reminder p {
+    flex-basis: 100%;
+  }
   .account-row {
     display: flex;
     align-items: center;

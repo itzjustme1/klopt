@@ -76,3 +76,14 @@ describe("calendar file", () => {
     expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
   });
 });
+
+describe("daily reminder", () => {
+  it("writes a timed, daily repeating event with an alarm at the start", () => {
+    const ics = calendarFile("Klopt", [{ uid: "daily@klopt", day: "2026-10-02", title: "Even oefenen", time: "19:30", minutes: 15, daily: true, remind: true }], new Date("2026-10-02T08:00:00Z"));
+    expect(ics).toContain("DTSTART:20261002T193000\r\nDTEND:20261002T194500");
+    expect(ics).toContain("RRULE:FREQ=DAILY");
+    expect(ics).toContain("TRIGGER:PT0M");
+    const late = calendarFile("Klopt", [{ uid: "x", day: "2026-10-02", title: "Laat", time: "23:50", minutes: 15 }], new Date("2026-10-02T08:00:00Z"));
+    expect(late).toContain("DTSTART:20261002T235000\r\nDTEND:20261003T000500");
+  });
+});

@@ -97,6 +97,7 @@ Taking a quiz shows the right answer after each question, gives half points for 
 
 **Progress and planning**
 - A streak, a daily goal and a 12-week calendar.
+- **Daily reminder:** Settings → *Zet in je agenda* downloads a daily repeating calendar event with a notification at the time you pick. A web app cannot schedule notifications without a server; the calendar can.
 - **Streak freezes:** every 7 days in a row earn one (at most 2). A missed day uses one automatically, so the streak survives; the calendar marks the frozen day. They are worked out from the answers themselves, so every device shows the same.
 - How many cards come back in the next 7 days.
 - Per list: often wrong, sometimes wrong, mostly right, and not practised yet, plus the Leitner boxes.

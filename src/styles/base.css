@@ -473,6 +473,7 @@ label.chip input {
 input[type="text"],
 input[type="search"],
 input[type="date"],
+input[type="time"],
 input[type="email"],
 input[type="password"],
 textarea,
@@ -488,7 +489,7 @@ select {
   font-weight: 500;
   transition: border-color var(--t-base) var(--ease);
 }
-:root[data-theme="light"] :is(input[type="text"], input[type="search"], input[type="date"], input[type="email"], input[type="password"], textarea, select) {
+:root[data-theme="light"] :is(input[type="text"], input[type="search"], input[type="date"], input[type="time"], input[type="email"], input[type="password"], textarea, select) {
   background: var(--surface);
   border-color: var(--line-strong);
 }
@@ -500,6 +501,7 @@ textarea::placeholder {
 input[type="text"]:focus-visible,
 input[type="search"]:focus-visible,
 input[type="date"]:focus-visible,
+input[type="time"]:focus-visible,
 input[type="email"]:focus-visible,
 input[type="password"]:focus-visible,
 textarea:focus-visible,
