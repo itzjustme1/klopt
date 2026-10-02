@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blankTerm, cardsFromWords, relayout, slant, strokeWidth, styleWords, type Gray, type PageWord, type StyledWord } from "../../src/lib/emphasis";
+import { blankTerm, cardsFromWords, relayout, shorten, slant, strokeWidth, styleWords, type Gray, type PageWord, type StyledWord } from "../../src/lib/emphasis";
 
 /** A white page with "words" drawn as rows of vertical strokes: `width` px thick, leaning `lean` px per px up. */
 function page(words: { x: number; y: number; strokes: number; width: number; lean?: number }[], w = 1200, h = 200): Gray {
@@ -148,5 +148,15 @@ describe("pages from real photos", () => {
   it("reads a run-in heading in capitals as a term, explained by its paragraph", () => {
     const { cards } = cardsFromWords(styled("STOOMMACHINES Nog belangrijker was de uitvinding van een machine die op stoom liep. Zo konden fabrieken overal staan. ¶ AAN HET BEGIN VAN DE EEUW was alles anders."));
     expect(cards).toEqual([{ term: "Stoommachines", explanation: "Nog belangrijker was de uitvinding van een machine die op stoom liep. Zo konden fabrieken overal staan." }]);
+  });
+});
+
+describe("explanation length", () => {
+  it("keeps short explanations, ends long ones at a full stop, or cuts them", () => {
+    expect(shorten("Een korte uitleg.")).toBe("Een korte uitleg.");
+    const long = `${"woord ".repeat(20).trim()}. ${"meer ".repeat(40).trim()}.`;
+    expect(shorten(long)).toBe(`${"woord ".repeat(20).trim()}.`);
+    const noStop = "woord ".repeat(60).trim();
+    expect(shorten(noStop)).toBe(`${"woord ".repeat(45).trim()} …`);
   });
 });

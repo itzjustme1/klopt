@@ -316,6 +316,21 @@ export function blankTerm(explanation: string, term: string): string {
   return explanation.replace(re, "…");
 }
 
+/** Longest explanation on a card, in words. */
+const MAX_WORDS = 45;
+
+/**
+ * Keeps an explanation short enough to learn: when it runs long (a misread full stop can glue
+ * sentences together), it ends at the last full stop that leaves a real sentence, or is cut with "…".
+ */
+export function shorten(text: string): string {
+  const ws = text.split(" ");
+  if (ws.length <= MAX_WORDS) return text;
+  const head = ws.slice(0, MAX_WORDS);
+  for (let i = head.length - 1; i >= 9; i--) if (/[.!?]$/.test(head[i]!)) return head.slice(0, i + 1).join(" ");
+  return `${head.join(" ").replace(/[,;:]$/, "")} …`;
+}
+
 /** Share of words in a text that look like misreadings: stray bars, mixed-up capitals ("rsKasse"), no letters. */
 function junkShare(text: string): number {
   const ws = text.split(/\s+/).filter((w) => w && w !== "…" && !/^[\p{N}.,;:!?()"'„“”‘’-]+$/u.test(w));
@@ -483,7 +498,8 @@ export function cardsFromWords(raw: readonly StyledWord[]): { cards: TermCard[];
       }
       explanation = textOf(from, to);
     }
-    explanation = blankTerm(explanation.replace(/\s+/g, " ").trim(), term);
+    explanation = shorten(explanation.replace(/\s+/g, " ").trim());
+    explanation = blankTerm(explanation, term);
     explanation = explanation.charAt(0).toLocaleUpperCase() + explanation.slice(1);
     if (words(explanation.replace(/…/g, "")) < 3) continue;
     // An explanation full of misreadings would teach nonsense.
