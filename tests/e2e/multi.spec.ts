@@ -48,3 +48,23 @@ test("practise several lists together, and a whole folder", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1, name: "Toets 1" })).toBeVisible();
   await check();
 });
+
+test("search finds words inside lists, not only list names", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.goto("/#/lijsten");
+  await page.getByRole("searchbox").fill("pomme");
+  await expect(page.getByRole("status")).toContainText('Geen lijst heet zo, maar "pomme" staat wel in je woorden');
+  await expect(page.getByRole("heading", { name: "1 woord gevonden" })).toBeVisible();
+  const hit = page.getByRole("link", { name: /la pomme/ });
+  await expect(hit).toContainText("Frans: basiswoorden");
+  await hit.click();
+  await expect(page.getByRole("heading", { level: 1, name: "Frans: basiswoorden" })).toBeVisible();
+  // Accents and case do not matter.
+  await page.goto("/#/lijsten");
+  await page.getByRole("searchbox").fill("ECOLE");
+  await expect(page.getByRole("link", { name: /l'école/ })).toBeVisible();
+  await check();
+});

@@ -117,6 +117,8 @@ export const nl = {
   "lists.sortName": "Naam",
   "lists.sortNew": "Nieuwste",
   "lists.none": "Je hebt nog geen lijsten.",
+  "lists.wordHits": p("{n} woord gevonden", "{n} woorden gevonden"),
+  "lists.onlyWords": "Geen lijst heet zo, maar \"{q}\" staat wel in je woorden:",
   "lists.noResults": "Geen lijsten gevonden voor \"{q}\".",
   "lists.due": p("{n} te herhalen", "{n} te herhalen"),
   "lists.learned": "{p}% gekend",

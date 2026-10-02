@@ -116,6 +116,8 @@ export const en: Messages = {
   "lists.sortName": "Name",
   "lists.sortNew": "Newest",
   "lists.none": "You don't have any lists yet.",
+  "lists.wordHits": p("{n} word found", "{n} words found"),
+  "lists.onlyWords": "No list has that name, but \"{q}\" is in your words:",
   "lists.noResults": "No lists found for \"{q}\".",
   "lists.due": p("{n} to review", "{n} to review"),
   "lists.learned": "{p}% known",

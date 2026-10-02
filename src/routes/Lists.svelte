@@ -9,7 +9,7 @@
   import { decksScope } from "../lib/scope";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
-  import { normalize } from "../lib/answer";
+  import { normalize as norm, stripAccents } from "../lib/answer";
   import { href } from "../lib/router";
 
   let { subject: initialSubject }: { subject?: string } = $props();
@@ -29,9 +29,25 @@
     picked = [];
   }
 
+  /** Searching ignores case and accents: "ecole" finds "l'école". */
+  const normalize = (s: string) => stripAccents(norm(s));
   const other = $derived(t("lists.noSubject"));
   const subjectOf = (d: { subject?: string }) => d.subject?.trim() || other;
   const subjects = $derived(app.subjects(other).map((s) => s.name));
+  /** Words and terms in any list that match the search, so you find which list something is in. */
+  const wordHits = $derived.by(() => {
+    const q = normalize(query);
+    if (q.length < 2) return [];
+    const decks = new Map(app.decks.map((d) => [d.id, d]));
+    const hits: { id: string; front: string; back: string; deck: (typeof app.decks)[number] }[] = [];
+    for (const c of app.cards) {
+      const d = decks.get(c.deckId);
+      if (!d || (subject && subjectOf(d) !== subject)) continue;
+      if (normalize(`${c.front} ${c.back} ${(c.forms ?? []).join(" ")}`).includes(q)) hits.push({ id: c.id, front: c.front, back: c.back, deck: d });
+      if (hits.length >= 50) break;
+    }
+    return hits;
+  });
   const shown = $derived.by(() => {
     const q = normalize(query);
     const found = app.decks.filter((d) => (!subject || subjectOf(d) === subject) && (!q || normalize(`${d.name} ${d.subject ?? ""}`).includes(q)));
@@ -83,8 +99,10 @@
       </select>
     </div>
 
-    {#if shown.length === 0}
+    {#if shown.length === 0 && !wordHits.length}
       <p class="muted" role="status">{t("lists.noResults", { q: query })}</p>
+    {:else if shown.length === 0}
+      <p class="small muted" role="status">{t("lists.onlyWords", { q: query })}</p>
     {:else}
       {#if selecting}
         <p class="small muted">{t("multi.pick")}</p>
@@ -115,6 +133,22 @@
         </ul>
       {/if}
     {/if}
+    {#if wordHits.length && !selecting}
+      <h2 class="sect">{tp("lists.wordHits", wordHits.length)}</h2>
+      <ul class="rows">
+        {#each wordHits as hit (hit.id)}
+          <li>
+            <a class="row-item" href={href.deck(hit.deck.id)}>
+              <span class="row-main">
+                <span class="row-title">{hit.front || "…"}</span>
+                <span class="row-sub hit-back">{hit.back}</span>
+              </span>
+              <span class="row-end hit-deck">{hit.deck.name}</span>
+            </a>
+          </li>
+        {/each}
+      </ul>
+    {/if}
   {/if}
 </section>
 
@@ -123,6 +157,21 @@
 {/if}
 
 <style>
+  .sect {
+    margin-top: 1rem;
+  }
+  .hit-back {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .hit-deck {
+    max-width: 40%;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
   .select-btn {
     margin-right: auto;
   }
