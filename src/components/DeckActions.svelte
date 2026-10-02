@@ -1,13 +1,31 @@
-<script lang="ts">
+<script lang="ts" module>
   import { t } from "../i18n/index.svelte";
   import { LIMITS } from "../config";
   import { app } from "../lib/app.svelte";
+  import { newId } from "../lib/db";
+  import { generateQuiz } from "../lib/quizgen";
   import { href } from "../lib/router";
   import { setSelection } from "../lib/selection";
-  import type { Deck } from "../lib/types";
+  import type { Deck, Quiz } from "../lib/types";
   import FolderPicker from "./FolderPicker.svelte";
   import Icon from "./Icon.svelte";
   import Sheet from "./Sheet.svelte";
+
+  /** A practice test made from a list's own words; null when the list is too small. */
+  export async function makePracticeTest(deck: Deck): Promise<Quiz | null> {
+    const lang = deck.langBack === "xx" ? "" : t(`lang.${deck.langBack}`);
+    const questions = generateQuiz(deck, app.cardsIn(deck.id), {
+      whichTerm: t("quizgen.whichTerm"),
+      whatMeans: (term) => t("quizgen.whatMeans", { term }),
+      translate: (word) => (lang ? t("quizgen.translate", { word }) : t("quizgen.translatePlain", { word })),
+      pairing: (term, explanation) => t("quizgen.pairing", { term, explanation }),
+    }, newId);
+    if (questions.length < 2) return null;
+    return app.saveQuiz({ name: t("quizgen.name", { name: deck.name }).slice(0, LIMITS.deckNameChars), questions, ...(deck.subject ? { subject: deck.subject } : {}) });
+  }
+</script>
+
+<script lang="ts">
 
   /** The ⋯ menu of a list in an overview: rename, edit, share, copy, move, delete, without opening it. */
   let { deck, onclose }: { deck: Deck; onclose: () => void } = $props();
@@ -44,6 +62,23 @@
     } catch {
       app.showFlash(t("common.saveFailed"));
     } finally {
+      busy = false;
+    }
+  }
+
+  async function practiceTest() {
+    busy = true;
+    try {
+      const quiz = await makePracticeTest(deck);
+      if (!quiz) {
+        app.showFlash(t("quizgen.tooFew"));
+        busy = false;
+        return;
+      }
+      onclose();
+      location.hash = href.quiz(quiz.id);
+    } catch {
+      app.showFlash(t("common.saveFailed"));
       busy = false;
     }
   }
@@ -102,6 +137,7 @@
         <li><a class="drawer-item" href={href.edit(deck.id)} onclick={onclose}><Icon name="rows" />{t("deck.editWords")}</a></li>
         {#if hasCards}
           <li><a class="drawer-item" href={href.shareDeck(deck.id)} onclick={onclose}><Icon name="share" />{t("deck.share")}</a></li>
+          <li><button type="button" class="drawer-item" disabled={busy} onclick={practiceTest}><Icon name="quiz" />{t("quizgen.make")}</button></li>
           <li><button type="button" class="drawer-item" disabled={busy} onclick={copy}><Icon name="cards" />{t("deck.copy")}</button></li>
         {/if}
         <li><button type="button" class="drawer-item" onclick={() => (view = "move")}><Icon name="folder" />{t("folder.move")}{#if deck.folder}<span class="hint">{deck.folder}</span>{/if}</button></li>

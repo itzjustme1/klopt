@@ -52,3 +52,32 @@ test("the sidebar folds to icons on a laptop and remembers it", async ({ browser
   await expect.poll(width).toBe(232);
   await ctx.close();
 });
+
+test("make a practice test from a list and take it", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.getByRole("button", { name: "Opties voor WO2: begrippen" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Oefentoets maken" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "WO2: begrippen: oefentoets" })).toBeVisible();
+  await expect(page.getByText("Geschiedenis · 8 vragen")).toBeVisible();
+  await page.getByRole("link", { name: "Start quiz" }).click();
+  // Answer every question somehow and get a grade.
+  for (let i = 0; i < 8; i++) {
+    await expect(page.getByText(`Vraag ${i + 1} van 8`)).toBeVisible();
+    if (await page.locator(".blank").count()) {
+      for (const blank of await page.locator(".blank").all()) await blank.fill("x");
+      await page.keyboard.press("Enter");
+    } else if (await page.getByRole("button", { name: "Bekijk antwoord" }).count()) {
+      await page.getByRole("button", { name: "Bekijk antwoord" }).click();
+      await page.getByRole("button", { name: "Goed", exact: true }).click();
+      continue;
+    } else {
+      await page.keyboard.press("1");
+    }
+    await page.locator(".next").click();
+  }
+  await expect(page.getByRole("heading", { name: "Je cijfer" })).toBeVisible();
+  await check();
+});

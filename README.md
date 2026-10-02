@@ -74,6 +74,8 @@ npm run e2e
 - true or false
 - dictee: a word or short sentence the device reads aloud in the language you pick; you write it down. A small spelling slip is half a point. On a device without a voice for that language the question is skipped and left out of the grade.
 
+**Practice test from a list** (⋯ → *Oefentoets maken*): up to 20 questions made from the list itself, no AI. Term lists get "which term fits this explanation" and the other way round, the explanation to fill in, and true-or-false pairings; word lists get translations both ways and fill-ins; verb lists ask a form. Wrong options are other answers from the same list.
+
 Taking a quiz shows the right answer after each question, gives half points for a half-right fill-in, and ends with a Dutch grade (1 + 9 × score) and what went wrong. The last grade stays on the quiz.
 
 **While you practise:**

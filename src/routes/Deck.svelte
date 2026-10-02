@@ -3,6 +3,7 @@
   import { num, t, tp } from "../i18n/index.svelte";
   import BoxBar from "../components/BoxBar.svelte";
   import ConfirmInline from "../components/ConfirmInline.svelte";
+  import { makePracticeTest } from "../components/DeckActions.svelte";
   import ExamCard from "../components/ExamCard.svelte";
   import FolderPicker from "../components/FolderPicker.svelte";
   import Icon from "../components/Icon.svelte";
@@ -122,6 +123,21 @@
       const copy = await app.duplicateDeck(id, t("deck.copyName", { name: deck.name.slice(0, LIMITS.deckNameChars - 12) }));
       app.showFlash(t("deck.copied"));
       location.hash = href.deck(copy.id);
+    } catch {
+      app.showFlash(t("common.saveFailed"));
+    } finally {
+      copying = false;
+    }
+  }
+
+  async function practiceTest() {
+    if (!deck) return;
+    moreOpen = false;
+    copying = true;
+    try {
+      const quiz = await makePracticeTest(deck);
+      if (quiz) location.hash = href.quiz(quiz.id);
+      else app.showFlash(t("quizgen.tooFew"));
     } catch {
       app.showFlash(t("common.saveFailed"));
     } finally {
@@ -291,6 +307,7 @@
         <li><a class="drawer-item" href={href.edit(id)}><Icon name="edit" />{t("common.edit")}</a></li>
         {#if cards.length > 0}
           <li><a class="drawer-item" href={href.shareDeck(id)} onclick={() => (moreOpen = false)}><Icon name="share" />{t("deck.share")}</a></li>
+          <li><button type="button" class="drawer-item" disabled={copying} onclick={practiceTest}><Icon name="quiz" />{t("quizgen.make")}</button></li>
           <li><button type="button" class="drawer-item" disabled={copying} onclick={duplicate}><Icon name="cards" />{t("deck.copy")}</button></li>
           <li><button type="button" class="drawer-item" onclick={() => { moreOpen = false; setTimeout(() => window.print(), 50); }}><Icon name="file" />{t("deck.print")}</button></li>
         {/if}
