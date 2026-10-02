@@ -593,6 +593,8 @@ export const nl = {
   "quiz.finish": "Bekijk je cijfer",
   "quiz.result": "Je cijfer",
   "quiz.score": "{points} van {total} punten",
+  "quiz.retryMistakes": p("Oefen je fout opnieuw", "Oefen je {n} fouten opnieuw"),
+  "quiz.retryNote": "Dit was een herkansing van je fouten. Je cijfer bij de quiz blijft het cijfer van de hele quiz.",
   "quiz.again": "Opnieuw",
   "quiz.backToQuiz": "Terug naar de quiz",
   "quiz.mistakes": "Dit ging fout",

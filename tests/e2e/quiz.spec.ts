@@ -71,6 +71,18 @@ test("make a quiz with every question type, take it and get a grade", async ({ p
   await expect(page.locator(".grade")).toHaveText("6,6");
   await expect(page.getByText("2,5 van 4 punten")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Dit ging fout" })).toBeVisible();
+
+  // Retry only the two questions that went wrong; that does not replace the grade.
+  await page.getByRole("button", { name: "Oefen je 2 fouten opnieuw" }).click();
+  await expect(page.getByText("Vraag 1 van 2")).toBeVisible();
+  await page.getByLabel("Lege plek 1").fill("1941");
+  await page.getByLabel("Lege plek 2").fill("Amsterdam");
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Goed zo!")).toBeVisible();
+  await page.getByRole("button", { name: "Volgende" }).click();
+  await page.getByRole("button", { name: "Niet waar", exact: true }).click();
+  await page.getByRole("button", { name: "Bekijk je cijfer" }).click();
+  await expect(page.getByText("Dit was een herkansing van je fouten.")).toBeVisible();
   await page.getByRole("link", { name: "Terug naar de quiz" }).click();
   await expect(page.getByText("Laatste cijfer 6,6")).toBeVisible();
 

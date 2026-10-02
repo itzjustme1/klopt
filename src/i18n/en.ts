@@ -592,6 +592,8 @@ export const en: Messages = {
   "quiz.finish": "See your grade",
   "quiz.result": "Your grade",
   "quiz.score": "{points} of {total} points",
+  "quiz.retryMistakes": p("Retry your mistake", "Retry your {n} mistakes"),
+  "quiz.retryNote": "This was a retry of your mistakes. The grade on the quiz stays the one for the whole quiz.",
   "quiz.again": "Again",
   "quiz.backToQuiz": "Back to the quiz",
   "quiz.mistakes": "What went wrong",

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
-  import { getLang, t } from "../i18n/index.svelte";
+  import { getLang, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
   import { app } from "../lib/app.svelte";
   import { blanksOf, clozeParts, mark, quizGrade, type Marked, type Response } from "../lib/quiz";
@@ -12,7 +12,9 @@
   let { id }: { id: string } = $props();
 
   const quiz = $derived(app.quiz(id));
-  const questions = $derived(quiz?.questions ?? []);
+  /** When retrying only the questions that went wrong: their ids. Such a round does not count as the grade. */
+  let only = $state<string[] | null>(null);
+  const questions = $derived(only ? (quiz?.questions ?? []).filter((q) => only!.includes(q.id)) : (quiz?.questions ?? []));
   let index = $state(0);
   let results = $state<{ q: QuizQuestion; marked: Marked; response: Response }[]>([]);
   /** The marked answer to the current question while its feedback shows. */
@@ -107,13 +109,23 @@
     revealed = false;
     if (index + 1 >= questions.length) {
       finished = true;
-      if (total > 0) void app.recordQuizResult(id, points, total).catch(() => app.showFlash(t("common.saveFailed")));
+      if (total > 0 && !only) void app.recordQuizResult(id, points, total).catch(() => app.showFlash(t("common.saveFailed")));
       return;
     }
     index++;
   }
 
   function again() {
+    only = null;
+    restart();
+  }
+
+  function retryMistakes() {
+    only = results.filter((r) => r.marked.points < 1).map((r) => r.q.id);
+    restart();
+  }
+
+  function restart() {
     index = 0;
     results = [];
     skipped = 0;
@@ -178,8 +190,14 @@
         <h1 tabindex="-1">{t("quiz.result")}</h1>
         <p class="grade num" class:pass={total > 0 && grade >= 5.5} class:fail={total > 0 && grade < 5.5}>{total > 0 ? fmt.format(grade) : "–"}</p>
         <p class="muted">{t("quiz.score", { points: fmtPoints.format(points), total })}</p>
+        {#if only}<p class="small muted">{t("quiz.retryNote")}</p>{/if}
         <div class="row actions-row">
-          <button type="button" class="btn btn-primary btn-lg" onclick={again}>{t("quiz.again")}</button>
+          {#if results.some((r) => r.marked.points < 1)}
+            <button type="button" class="btn btn-primary btn-lg" onclick={retryMistakes}>{tp("quiz.retryMistakes", results.filter((r) => r.marked.points < 1).length)}</button>
+            <button type="button" class="btn btn-lg" onclick={again}>{t("quiz.again")}</button>
+          {:else}
+            <button type="button" class="btn btn-primary btn-lg" onclick={again}>{t("quiz.again")}</button>
+          {/if}
           <a class="btn btn-lg" href={href.quiz(id)}>{t("quiz.backToQuiz")}</a>
         </div>
       </section>
