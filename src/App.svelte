@@ -70,6 +70,8 @@
 
   let main: HTMLElement | undefined = $state();
   let first = true;
+  /** An element to focus after the next route change instead of the page heading. */
+  let focusAfterRoute: string | null = null;
 
   // On every route change: update the title, scroll up and move focus to the page heading.
   $effect(() => {
@@ -83,14 +85,17 @@
     }
     void tick().then(async () => {
       window.scrollTo(0, 0);
+      const wanted = focusAfterRoute;
+      focusAfterRoute = null;
       // A screen that loads on demand needs a moment before its heading exists.
-      let h = main?.querySelector<HTMLElement>("h1");
+      const find = () => (wanted ? document.getElementById(wanted) : main?.querySelector<HTMLElement>("h1"));
+      let h = find();
       for (let i = 0; !h && i < 20; i++) {
         await new Promise((r) => setTimeout(r, 25));
-        h = main?.querySelector<HTMLElement>("h1");
+        h = find();
       }
       if (h) {
-        h.tabIndex = -1;
+        if (!wanted) h.tabIndex = -1;
         h.focus({ preventScroll: true });
       }
     });
@@ -122,8 +127,12 @@
       newOpen = true;
     } else if (e.key === "/") {
       e.preventDefault();
-      if (app.route.name !== "lists") location.hash = href.lists();
-      void tick().then(() => setTimeout(() => document.getElementById("list-search")?.focus(), 30));
+      if (app.route.name === "lists") document.getElementById("list-search")?.focus();
+      else {
+        // The route change focuses the page heading; this asks it to focus the search instead.
+        focusAfterRoute = "list-search";
+        location.hash = href.lists();
+      }
     } else if (e.key === "[" && wide && !hideNav) {
       e.preventDefault();
       toggleSidebar();
