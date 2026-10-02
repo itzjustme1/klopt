@@ -68,3 +68,29 @@ test("search finds words inside lists, not only list names", async ({ page }) =>
   await expect(page.getByRole("link", { name: /l'école/ })).toBeVisible();
   await check();
 });
+
+test("an unfinished round over several lists can be continued from Today", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.goto("/#/lijsten");
+  await page.getByRole("button", { name: "Selecteren" }).click();
+  await page.getByRole("checkbox", { name: /WO2: begrippen/ }).check();
+  await page.getByRole("checkbox", { name: /Economie: begrippen/ }).check();
+  await page.getByRole("button", { name: "Oefen 2 lijsten" }).click();
+  await page.getByRole("dialog", { name: "Oefen met" }).getByRole("link", { name: /^Flashcards/ }).click();
+  for (let i = 0; i < 3; i++) {
+    await expect(page.locator(".flip:not(.flipped)")).toBeFocused();
+    await page.keyboard.press("Space");
+    await page.keyboard.press("2");
+  }
+  await page.goto("/");
+  const resume = page.getByRole("link", { name: /WO2: begrippen en Economie: begrippen/ });
+  await expect(resume).toContainText("8");
+  await resume.click();
+  await expect(page.getByText("Nog 8 woorden te gaan.")).toBeVisible();
+  await page.getByRole("button", { name: "Verder waar je was" }).click();
+  await expect(page.locator(".flip")).toBeVisible();
+  await check();
+});

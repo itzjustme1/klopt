@@ -16,6 +16,7 @@
   import { examPlan } from "../lib/plan";
   import { href, parseHash } from "../lib/router";
   import { peekSession } from "../lib/resume";
+  import { scopeName } from "../lib/scopeExit";
 
   const due = $derived(app.dueCount());
   const next = $derived(app.nextDue());
@@ -35,7 +36,7 @@
   // A practice left halfway today, if its list still exists.
   const saved = peekSession();
   const savedRoute = saved ? parseHash(`#/oefenen/${saved.key}`) : null;
-  const savedDeck = savedRoute?.name === "practice" && savedRoute.scope !== "alles" ? app.deck(savedRoute.scope) : undefined;
+  const savedName = savedRoute?.name === "practice" ? scopeName(savedRoute.scope, app.decks) : null;
   let busy = $state(false);
 
   function examTag(day: string): string {
@@ -129,11 +130,11 @@
       {/if}
     </div>
 
-    {#if saved && savedRoute?.name === "practice" && savedDeck}
+    {#if saved && savedRoute?.name === "practice" && savedName}
       <a class="continue" href={`#/oefenen/${saved.key}`}>
         <Icon name="play" size={18} />
         <span class="row-main">
-          <span class="row-title">{t("home.continue", { list: savedDeck.name })}</span>
+          <span class="row-title">{t("home.continue", { list: savedName })}</span>
           <span class="row-sub">{tp("home.continueMeta", saved.left, { mode: t(`mode.${savedRoute.mode}`) })}</span>
         </span>
         <Icon name="chevron" size={20} />
