@@ -395,6 +395,7 @@ export const nl = {
   "photo.editTerm": "{term} bewerken",
   "photo.editDone": "Klaar",
   "photo.addTerm": "Begrip toevoegen",
+  "photo.notAList": "Dit lijkt geen woordenlijst met twee kolommen, maar een bladzijde tekst. Kies hierboven Tekst met begrippen: dan worden de vette en schuine woorden begrippen.",
   "photo.title": "Foto van je boek",
   "photo.intro": "Recht van boven, met goed licht. Alles gebeurt op je telefoon.",
   "photo.langs": "Talen op de foto",

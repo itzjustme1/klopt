@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blankTerm, cardsFromWords, slant, strokeWidth, styleWords, type Gray, type PageWord, type StyledWord } from "../../src/lib/emphasis";
+import { blankTerm, cardsFromWords, relayout, slant, strokeWidth, styleWords, type Gray, type PageWord, type StyledWord } from "../../src/lib/emphasis";
 
 /** A white page with "words" drawn as rows of vertical strokes: `width` px thick, leaning `lean` px per px up. */
 function page(words: { x: number; y: number; strokes: number; width: number; lean?: number }[], w = 1200, h = 200): Gray {
@@ -127,5 +127,26 @@ describe("making term cards", () => {
 
   it("blanks every form of the term, but not inside other words", () => {
     expect(blankTerm("De VOC en de voc-tijd, niet vocaal.", "VOC")).toBe("De … en de …-tijd, niet vocaal.");
+  });
+});
+
+describe("pages from real photos", () => {
+  it("separates two columns the recogniser read as one line", () => {
+    // Left column: "De stoommachine was nieuw." over two lines; right column: "Het verzet groeide." over two lines.
+    const word = (text: string, x0: number, y0: number, line: number): PageWord => ({ text, x0, y0, x1: x0 + text.length * 10, y1: y0 + 20, para: 1, line });
+    const ws = [
+      word("De", 0, 0, 1), word("stoommachine", 30, 0, 1), word("Het", 400, 0, 1), word("verzet", 440, 0, 1),
+      word("was", 0, 30, 2), word("nieuw.", 40, 30, 2), word("groeide.", 400, 30, 2),
+      ...Array.from({ length: 8 }, (_, i) => [word("tekst", 0, 60 + i * 30, 3 + i), word("tekst", 400, 60 + i * 30, 3 + i)]).flat(),
+    ];
+    const text = relayout(ws).map((w) => w.text).join(" ");
+    expect(text.startsWith("De stoommachine was nieuw.")).toBe(true);
+    expect(text).toContain("Het verzet groeide.");
+    expect(text.indexOf("Het")).toBeGreaterThan(text.indexOf("nieuw."));
+  });
+
+  it("reads a run-in heading in capitals as a term, explained by its paragraph", () => {
+    const { cards } = cardsFromWords(styled("STOOMMACHINES Nog belangrijker was de uitvinding van een machine die op stoom liep. Zo konden fabrieken overal staan. ¶ AAN HET BEGIN VAN DE EEUW was alles anders."));
+    expect(cards).toEqual([{ term: "Stoommachines", explanation: "Nog belangrijker was de uitvinding van een machine die op stoom liep. Zo konden fabrieken overal staan." }]);
   });
 });

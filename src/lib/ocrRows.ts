@@ -46,7 +46,8 @@ function groupLines(words: OcrWord[]): Line[] {
 const DASH = /\s+[-–—=:]\s+/;
 
 export function rowsFromWords(input: OcrWord[]): string[] {
-  const words = input.filter((w) => w.text.trim() && !(w.confidence !== undefined && w.confidence < 30 && !/[\p{L}\p{N}]/u.test(w.text)));
+  // Drop specks and words the recogniser was unsure of (text in a picture, a smudge).
+  const words = input.filter((w) => w.text.trim() && !(w.confidence !== undefined && (w.confidence < 45 || (w.confidence < 30 && !/[\p{L}\p{N}]/u.test(w.text)))));
   if (!words.length) return [];
   const lines = groupLines(words);
   const charW = median(words.map((w) => (w.x1 - w.x0) / Math.max(1, w.text.length))) || 1;

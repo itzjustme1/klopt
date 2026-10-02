@@ -149,6 +149,8 @@ le chien;de hond
 2. Pick the date.
 3. The list page and the home screen then show how many words to practise today, with a button that starts Leren with the words you need most.
 
+**Real photos.** Before reading, a photo is put straight: the angle of the text lines is measured (`src/lib/orient.ts`), so a photo that arrives on its side (WhatsApp drops the rotation) or a few degrees tilted is turned upright, and a quick test read of a strip decides which way up. Small photos are enlarged up to twice. Columns that the recogniser reads as one line are separated again from the word positions (gaps and gutters), so sentences stay whole. On a noisy photo bold is ignored (it cannot be told from noise) and italic needs a clear slant or an italic neighbour; capitals that open a paragraph ("STOOMMACHINES …") count as a term. Words the recogniser was unsure of never become a term, and explanations full of misreadings are dropped.
+
 **Bold and italic, measured.** The recogniser (Tesseract's LSTM engine) does not report font styles, so `src/lib/emphasis.ts` measures them in the photo, per word: the stroke width (median width of the horizontal ink runs, with sub-pixel edges) compared with the other words on the same line, and the slant (the shear that makes the strokes most upright) compared with the page. When more than 15% of the words seem to stand out, the photo is called unclear.
 
 **Photograph a list.**

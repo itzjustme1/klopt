@@ -394,6 +394,7 @@ export const en: Messages = {
   "photo.editTerm": "Edit {term}",
   "photo.editDone": "Done",
   "photo.addTerm": "Add a term",
+  "photo.notAList": "This does not look like a two-column word list but like a page of text. Choose Text with terms above: the bold and italic words then become terms.",
   "photo.title": "Photo of your book",
   "photo.intro": "Straight from above, in good light. Everything happens on your phone.",
   "photo.langs": "Languages in the photo",

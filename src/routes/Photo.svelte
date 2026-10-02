@@ -69,6 +69,11 @@
       error = t("photo.none");
       return;
     }
+    // Running text instead of two columns: say so, rather than showing a table of nonsense.
+    if (rows.length >= 8 && rows.filter((r) => r.includes("\t")).length / rows.length < 0.4) {
+      error = t("photo.notAList");
+      return;
+    }
     setPendingImport({ text: rows.join("\n"), langFront, langBack, source: "photo" });
     location.hash = href.import(deckId);
   }

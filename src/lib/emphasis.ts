@@ -178,7 +178,7 @@ const LETTERS = /\p{L}/u;
 const letterCount = (s: string) => [...s].filter((c) => LETTERS.test(c)).length;
 
 /** Marks every word bold and/or italic, by comparing it with the rest of its page. */
-export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] {
+export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] & { blurry?: boolean } {
   // Per line: the height of its words, so stroke widths of different text sizes compare fairly.
   const lineHeights = new Map<string, number>();
   const byLine = new Map<string, PageWord[]>();
@@ -205,11 +205,20 @@ export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] {
     const vals = measured.filter((m) => `${m.w.para}:${m.w.line}` === key && m.stroke !== null).map((m) => m.stroke!);
     lineStroke.set(key, vals.length >= 4 ? Math.min(median(vals), pageStroke * 1.15) : pageStroke);
   }
+  // How much regular words already vary on this photo: on a small or blurry photo the stroke width of
+  // ordinary words scatters, so bold has to stand out further before it counts.
+  const ratios = measured.flatMap((m) => (m.stroke === null ? [] : [m.stroke / lineStroke.get(`${m.w.para}:${m.w.line}`)!])).sort((a, b) => a - b);
+  const q = (f: number) => ratios[Math.min(ratios.length - 1, Math.floor(ratios.length * f))] ?? 1;
+  const noise = ratios.length >= 20 ? Math.max(0, q(0.9) - q(0.5)) : 0;
+  // Too much scatter and bold cannot be told from noise at all; italic (a slant) still can.
+  const blurry = noise > 0.12;
+  const boldLong = blurry ? Infinity : Math.max(1.18, 1 + 2.5 * noise);
+  const boldShort = boldLong + 0.07;
   const styled: StyledWord[] = measured.map((m) => {
     const ref = lineStroke.get(`${m.w.para}:${m.w.line}`)!;
     return {
       ...m.w,
-      bold: m.stroke !== null && ref > 0 && m.stroke >= ref * (letterCount(m.w.text) >= 5 ? 1.18 : 1.25),
+      bold: m.stroke !== null && ref > 0 && m.stroke >= ref * (letterCount(m.w.text) >= 5 ? boldLong : boldShort),
       // Short words are noisier: they need a clearer slant.
       italic: m.slant !== null && m.slant - refSlant >= (letterCount(m.w.text) >= 5 ? 0.15 : 0.22),
     };
@@ -222,6 +231,17 @@ export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] {
     if (!w.italic || letterCount(w.text) >= 5) continue;
     const near = [styled[i - 1], styled[i + 1]].some((o) => o && o.para === w.para && o.italic && letterCount(o.text) >= 5);
     if (!near) w.italic = false;
+  }
+  // On a noisy photo a single word leaning a little can be chance: it needs a clear slant, or an
+  // italic neighbour (the phrase "spinning jenny" backs itself up).
+  if (blurry) {
+    const lean = styled.map((w, i) => (measured[i]!.slant ?? 0) - refSlant);
+    const keep = styled.map((w, i) => {
+      if (!w.italic) return false;
+      if (lean[i]! >= 0.2) return true;
+      return [styled[i - 1], styled[i + 1]].some((o) => o && o.para === w.para && o.italic);
+    });
+    styled.forEach((w, i) => (w.italic = keep[i]!));
   }
 
   // Short words (de, of, 3) are too small to measure: they take the style of the words around them.
@@ -240,7 +260,7 @@ export function styleWords(g: Gray, words: readonly PageWord[]): StyledWord[] {
       styled[i]!.italic = prev!.italic;
     }
   }
-  return styled;
+  return Object.assign(styled, { blurry });
 }
 
 // Building cards
@@ -255,7 +275,14 @@ interface Token {
   /** Height of the word, for telling headings from body text. */
   h: number;
   lineStart: boolean;
+  /** A run-in heading in capitals, written as a normal word in the card. */
+  caps?: boolean;
+  /** How sure the recogniser was of the word (0 to 100). */
+  conf: number;
 }
+
+/** All capitals, at least two letters: "STOOMMACHINES", "VOC". */
+const isCaps = (s: string) => letterCount(s) >= 2 && s === s.toLocaleUpperCase() && s !== s.toLocaleLowerCase();
 
 /** Ends a sentence: "." "!" "?" (also inside quotes), unless it is a known abbreviation or a single initial. */
 function endsSentence(word: string, next: Token | undefined): boolean {
@@ -277,8 +304,19 @@ function escapeRe(s: string): string {
 
 /** Replaces the term in its explanation with "…", so asking the other way round gives nothing away. */
 export function blankTerm(explanation: string, term: string): string {
-  const re = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRe(term)}(?![\\p{L}\\p{N}])`, "giu");
+  // Also the singular or plural: "Stoommachines" blanks "stoommachine" too.
+  const stem = term.replace(/('s|s|en)$/u, "");
+  const forms = stem.length >= 4 && stem !== term ? `${escapeRe(term)}|${escapeRe(stem)}(?:'s|s|en)?` : escapeRe(term);
+  const re = new RegExp(`(?<![\\p{L}\\p{N}])(?:${forms})(?![\\p{L}\\p{N}])`, "giu");
   return explanation.replace(re, "…");
+}
+
+/** Share of words in a text that look like misreadings: stray bars, mixed-up capitals ("rsKasse"), no letters. */
+function junkShare(text: string): number {
+  const ws = text.split(/\s+/).filter((w) => w && w !== "…" && !/^[\p{N}.,;:!?()"'„“”‘’-]+$/u.test(w));
+  if (!ws.length) return 1;
+  const junk = ws.filter((w) => /[|\\{}<>_~^]/.test(w) || /\p{Ll}\p{Lu}/u.test(w) || !/\p{L}{2}/u.test(w));
+  return junk.length / ws.length;
 }
 
 /**
@@ -314,7 +352,22 @@ export function cardsFromWords(raw: readonly StyledWord[]): { cards: TermCard[];
       last.emph = last.emph || w.bold || w.italic;
       continue;
     }
-    toks.push({ text: w.text, emph: w.bold || w.italic, para: w.para, line: w.line, h: w.y1 - w.y0, lineStart });
+    toks.push({ text: w.text, emph: w.bold || w.italic, para: w.para, line: w.line, h: w.y1 - w.y0, lineStart, conf: w.confidence ?? 100 });
+  }
+  // Run-in headings in capitals open a paragraph and name what it explains ("STOOMMACHINES Nog
+  // belangrijker was…"): one to three capitalised words, followed by normal text.
+  for (let i = 0; i < toks.length; i++) {
+    const startsPara = i === 0 || toks[i - 1]!.para !== toks[i]!.para;
+    if (!startsPara) continue;
+    let j = i;
+    while (j < toks.length && j - i < 4 && toks[j]!.para === toks[i]!.para && isCaps(toks[j]!.text)) j++;
+    const n = j - i;
+    if (n >= 1 && n <= 3 && j < toks.length && toks[j]!.para === toks[i]!.para && !isCaps(toks[j]!.text) && /^\p{L}/u.test(toks[j]!.text) && toks.slice(i, j).some((t) => letterCount(t.text) >= 4)) {
+      for (let k = i; k < j; k++) {
+        toks[k]!.emph = true;
+        toks[k]!.caps = true;
+      }
+    }
   }
   const bodyH = median(toks.filter((t) => letterCount(t.text) >= 3).map((t) => t.h)) || 1;
 
@@ -363,9 +416,18 @@ export function cardsFromWords(raw: readonly StyledWord[]): { cards: TermCard[];
     while (j + 1 < toks.length && toks[j + 1]!.emph && toks[j + 1]!.para === toks[i]!.para && !isHeading(toks[j + 1]!) && sentenceOf[j + 1] === sentenceOf[i]) j++;
     const runFrom = i;
     i = j;
-    const term = strip(textOf(runFrom, j));
+    // Words the recogniser was unsure of (text in a picture, a smudge) never become a term.
+    const run = toks.slice(runFrom, j + 1);
+    if (run.reduce((n, t) => n + t.conf, 0) / run.length < 70) continue;
+    // Capitals that belong to a longer line of capitals (a header, footer or long heading) are not a term.
+    const capsAround = (k: number) => !!toks[k] && toks[k]!.para === toks[runFrom]!.para && isCaps(toks[k]!.text);
+    if (!toks[runFrom]!.caps && run.every((t) => isCaps(t.text)) && (capsAround(runFrom - 1) || capsAround(j + 1))) continue;
+    const raw = strip(textOf(runFrom, j));
+    // "STOOMMACHINES" reads as "Stoommachines"; a short abbreviation such as "VOC" stays as it is.
+    const term = toks[runFrom]!.caps && letterCount(raw) > 4 ? raw.charAt(0) + raw.slice(1).toLocaleLowerCase() : raw;
     if (letterCount(term) < 2 || words(term) > 8) continue;
-    const key = term.toLocaleLowerCase();
+    // One card per term: "stoommachine" and "Stoommachines" are the same.
+    const key = term.toLocaleLowerCase().replace(/('s|s|en)$/u, "");
     if (seen.has(key)) continue;
 
     const para = toks[runFrom]!.para;
@@ -375,7 +437,13 @@ export function cardsFromWords(raw: readonly StyledWord[]): { cards: TermCard[];
     const aloneOnLine = startsLine && (!after || after.para !== para || after.line !== toks[j]!.line);
 
     let explanation: string;
-    if (glossary || aloneOnLine) {
+    if (toks[runFrom]!.caps) {
+      // A run-in heading: the paragraph after it explains it (its first two sentences).
+      const first = sentenceOf[j + 1];
+      let to = j + 1;
+      while (to + 1 < toks.length && toks[to + 1]!.para === para && sentenceOf[to + 1]! <= first! + 1) to++;
+      explanation = textOf(j + 1, to);
+    } else if (glossary || aloneOnLine) {
       // The text after the term, up to the next term that starts a line, at most three sentences.
       let from = j + 1;
       if (toks[from] && /^[:–—-]$/.test(toks[from]!.text)) from++;
@@ -413,8 +481,115 @@ export function cardsFromWords(raw: readonly StyledWord[]): { cards: TermCard[];
     explanation = blankTerm(explanation.replace(/\s+/g, " ").trim(), term);
     explanation = explanation.charAt(0).toLocaleUpperCase() + explanation.slice(1);
     if (words(explanation.replace(/…/g, "")) < 3) continue;
+    // An explanation full of misreadings would teach nonsense.
+    if (junkShare(explanation) > 0.12 || /\p{Ll}\p{Lu}/u.test(term)) continue;
     seen.add(key);
     cards.push({ term, explanation });
   }
-  return { cards, title: title ? strip(title.text.join(" ")) : "", unclear: false };
+  // A heading that was read only partly ("ustrie & kolon") is no name for a list.
+  const titleText = title ? strip(title.text.join(" ")) : "";
+  return { cards, title: /^[\p{Lu}\p{N}]/u.test(titleText) && junkShare(titleText) === 0 ? titleText : "", unclear: false };
+}
+
+/**
+ * Rebuilds the reading order of a page from the word positions: the recogniser sometimes reads two
+ * columns of a textbook as one line, which mixes up the sentences. Lines are split at a column gap,
+ * the pieces are grouped into columns (left to right), and paragraphs are found from extra space
+ * between lines or an indented first line.
+ */
+export function relayout(words: readonly PageWord[]): PageWord[] {
+  if (words.length < 3) return [...words];
+  const h = median(words.map((w) => w.y1 - w.y0)) || 1;
+  // 1. Line pieces: a recognised line split wherever the gap is much wider than a word space.
+  type Piece = { words: PageWord[]; x0: number; x1: number; y0: number; y1: number; yc: number };
+  const byLine = new Map<string, PageWord[]>();
+  for (const w of words) {
+    const k = `${w.para}:${w.line}`;
+    (byLine.get(k) ?? byLine.set(k, []).get(k)!).push(w);
+  }
+  const pieces: Piece[] = [];
+  const close = (ws: PageWord[]) => {
+    if (!ws.length) return;
+    const x0 = Math.min(...ws.map((w) => w.x0));
+    const x1 = Math.max(...ws.map((w) => w.x1));
+    const y0 = Math.min(...ws.map((w) => w.y0));
+    const y1 = Math.max(...ws.map((w) => w.y1));
+    pieces.push({ words: ws, x0, x1, y0, y1, yc: median(ws.map((w) => (w.y0 + w.y1) / 2)) });
+  };
+  // Column gutters: vertical strips that almost no word covers, with text on both sides.
+  const width = Math.ceil(Math.max(...words.map((w) => w.x1))) + 1;
+  const cover = new Float32Array(width);
+  for (const w of words) for (let x = Math.max(0, Math.floor(w.x0)); x < Math.min(width, Math.ceil(w.x1)); x++) cover[x]!++;
+  const peak = Math.max(...cover);
+  const gutters: number[] = [];
+  for (let x = 0; x < width; ) {
+    if (cover[x]! <= Math.max(1, peak * 0.04)) {
+      let end = x;
+      while (end + 1 < width && cover[end + 1]! <= Math.max(1, peak * 0.04)) end++;
+      const left = cover.slice(0, x).reduce((a, b) => a + b, 0);
+      const right = cover.slice(end + 1).reduce((a, b) => a + b, 0);
+      if (end - x + 1 >= h * 0.5 && left > peak * h && right > peak * h) gutters.push((x + end) / 2);
+      x = end + 1;
+    } else x++;
+  }
+  for (const ws of byLine.values()) {
+    ws.sort((a, b) => a.x0 - b.x0);
+    const gaps = ws.slice(1).map((w, i) => w.x0 - ws[i]!.x1);
+    const space = median(gaps.filter((g) => g > 0)) || h * 0.35;
+    const limit = Math.max(h * 1.8, space * 3.5);
+    let cur: PageWord[] = [];
+    ws.forEach((w, i) => {
+      const prev = ws[i - 1];
+      const acrossGutter = !!prev && gutters.some((g) => g > prev.x1 && g < w.x0);
+      if (i > 0 && (gaps[i - 1]! > limit || acrossGutter)) {
+        close(cur);
+        cur = [];
+      }
+      cur.push(w);
+    });
+    close(cur);
+  }
+  // 2. Columns: a piece joins the column it overlaps most horizontally, checked from top to bottom.
+  type Column = { x0: number; x1: number; pieces: Piece[] };
+  const columns: Column[] = [];
+  for (const p of pieces.toSorted((a, b) => a.yc - b.yc)) {
+    let best: Column | null = null;
+    let bestOverlap = 0;
+    for (const c of columns) {
+      const overlap = Math.min(p.x1, c.x1) - Math.max(p.x0, c.x0);
+      const share = overlap / Math.max(1, Math.min(p.x1 - p.x0, c.x1 - c.x0));
+      if (share > 0.5 && share > bestOverlap) {
+        best = c;
+        bestOverlap = share;
+      }
+    }
+    if (best) {
+      best.pieces.push(p);
+      // A column keeps its own width: a wide heading does not swallow the columns under it.
+      if (p.x1 - p.x0 < (best.x1 - best.x0) * 1.3) {
+        best.x0 = Math.min(best.x0, p.x0);
+        best.x1 = Math.max(best.x1, p.x1);
+      }
+    } else columns.push({ x0: p.x0, x1: p.x1, pieces: [p] });
+  }
+  // Reading order: columns from left to right (by where most of their lines start), top to bottom inside.
+  columns.sort((a, b) => median(a.pieces.map((p) => p.x0)) - median(b.pieces.map((p) => p.x0)) || a.pieces[0]!.yc - b.pieces[0]!.yc);
+  // 3. Paragraphs: extra space above a line, or an indented line after a finished sentence.
+  const out: PageWord[] = [];
+  let para = 0;
+  let line = 0;
+  for (const c of columns) {
+    const left = median(c.pieces.map((p) => p.x0));
+    let prev: Piece | null = null;
+    for (const p of c.pieces.toSorted((a, b) => a.yc - b.yc)) {
+      const gap = prev ? p.y0 - prev.y1 : Infinity;
+      const prevText = prev?.words.at(-1)?.text ?? "";
+      const indented = p.x0 > left + h * 0.8 && /[.!?:]["'”’)]*$/.test(prevText);
+      if (!prev || gap > h * 0.9 || indented) para++;
+      line++;
+      for (const w of p.words) out.push({ ...w, para, line });
+      prev = p;
+    }
+  }
+  return out;
 }
