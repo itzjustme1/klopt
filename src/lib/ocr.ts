@@ -151,7 +151,9 @@ export async function recognizeTerms(file: Blob, lang: ContentLang, onProgress: 
   const w = await worker([lang], onProgress);
   try {
     // More pixels than for a word list: telling bold from regular needs the detail.
-    const canvas = await uprightPage(file, w, 3000);
+    // Phones have less memory and slower processors: a little smaller there, so it never stalls.
+    const phone = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 1;
+    const canvas = await uprightPage(file, w, phone ? 2400 : 3000);
     const { data } = await w.recognize(canvas, {}, { blocks: true });
     const words: PageWord[] = [];
     let para = 0;

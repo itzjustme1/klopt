@@ -13,6 +13,8 @@ type Row = Record<string, unknown>;
 export class FakeAccount {
   users: { id: string; email: string; password: string; meta: Row }[] = [];
   tables: Record<string, Row[]> = { profiles: [], records: [], shares: [], groups: [], group_members: [], group_items: [], weekly_stats: [] };
+  /** Calls to the slim-herkennen function: who, which language, and whether a JPEG was sent. */
+  aiCalls: { user: string; lang: string; imageChars: number; jpeg: boolean }[] = [];
   private clock = Date.UTC(2026, 9, 1);
   private seq = 0;
 
@@ -66,6 +68,22 @@ export class FakeAccount {
     if (url.pathname === "/auth/v1/user") return me ? json(200, this.session(me).user) : json(401, { msg: "no user" });
     if (url.pathname === "/auth/v1/logout") return route.fulfill({ status: 204, headers: { "access-control-allow-origin": "*" } });
     if (!me) return json(401, { message: "JWT required" });
+
+    // Edge Function: slim herkennen. Answers with fixed terms; two pages per account per day.
+    if (url.pathname === "/functions/v1/recognize-terms") {
+      const b = body as { image?: string; lang?: string };
+      this.aiCalls.push({ user: me.id, lang: b.lang ?? "", imageChars: b.image?.length ?? 0, jpeg: !!b.image && Buffer.from(b.image.slice(0, 8), "base64")[0] === 0xff });
+      if (this.aiCalls.filter((c) => c.user === me.id).length > 2) return json(429, { error: "limit", limit: 2 });
+      return json(200, {
+        readable: true,
+        title: "Industrie & kolonialisme",
+        terms: [
+          { term: "Industriële Revolutie", explanation: "De overgang naar productie met machines in fabrieken; de Industriële Revolutie begon in Groot-Brittannië." },
+          { term: "spinning jenny", explanation: "Een spinmachine waarmee één spinner meerdere draden tegelijk kon maken." },
+          { term: "arbeiders", explanation: "Mensen die in loondienst in een fabriek werkten en geen eigen apparaten hadden." },
+        ],
+      });
+    }
 
     // RPC
     if (url.pathname.startsWith("/rest/v1/rpc/")) {

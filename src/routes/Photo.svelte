@@ -8,6 +8,10 @@
   import { app } from "../lib/app.svelte";
   import { setPendingImport } from "../lib/handoff";
   import { recognizeList, recognizeTerms, tesseractLangs, type OcrProgress } from "../lib/ocr";
+  import { account, accountsEnabled } from "../lib/account.svelte";
+  import { pageForAI, parseAIResult } from "../lib/aiTerms";
+  import type { TermCard } from "../lib/emphasis";
+  import Switch from "../components/Switch.svelte";
   import { href } from "../lib/router";
   import { SUBJECTS } from "../lib/subjects";
   import { CONTENT_LANGS, type ContentLang } from "../lib/types";
@@ -24,6 +28,24 @@
   let progress = $state<OcrProgress | null>(null);
   let error = $state("");
   let input: HTMLInputElement | undefined = $state();
+  // Slim herkennen with AI: only with accounts, remembered on this device.
+  let useAI = $state(readAIChoice());
+  let aiBusy = $state(false);
+  function readAIChoice(): boolean {
+    try {
+      return localStorage.getItem("klopt-ai") === "on";
+    } catch {
+      return false;
+    }
+  }
+  function setAI(on: boolean) {
+    useAI = on;
+    try {
+      localStorage.setItem("klopt-ai", on ? "on" : "off");
+    } catch {
+      // Private mode: not remembered.
+    }
+  }
   /** A camera through the browser: for laptops, whose file picker has no camera. */
   // Laptops only: a touch device (phone, tablet) already offers its camera in the photo picker.
   // A phone or tablet: a coarse pointer and several touch points. Everything else counts as a laptop.
@@ -86,6 +108,7 @@
   }
 
   async function readTerms(file: File) {
+    if (useAI && account.user) return readTermsAI(file);
     const res = await recognizeTerms(file, textLang, (p) => (progress = p));
     if (res.unclear) {
       error = t("photo.unclear");
@@ -95,6 +118,28 @@
       error = t("photo.none");
       return;
     }
+    addFound(res.cards, res.title);
+  }
+
+  /** Slim herkennen: Claude reads the page through the account's server. */
+  async function readTermsAI(file: File) {
+    aiBusy = true;
+    try {
+      const raw = await account.readPageWithAI(await pageForAI(file), textLang);
+      const res = parseAIResult(raw);
+      if (!res) return void (error = t("ai.failed"));
+      if (!res.readable) return void (error = t("photo.unclear"));
+      addFound(res.cards, res.title);
+    } catch (e) {
+      const m = e instanceof Error ? e.message : "";
+      error = m === "limit" ? t("ai.limit") : m === "signin" ? t("ai.signin") : t("ai.failed");
+    } finally {
+      aiBusy = false;
+    }
+  }
+
+  function addFound(cards: TermCard[], title: string) {
+    const res = { cards, title };
     const known = new Set(found.map((f) => f.term.toLocaleLowerCase()));
     const fresh = res.cards.filter((c) => !known.has(c.term.toLocaleLowerCase()));
     if (!fresh.length) {
@@ -227,7 +272,7 @@
       {#if error}<p class="error" role="alert">{error}</p>{/if}
       {#if progress}
         <div class="progress" role="status">
-          <p class="small">{progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}</p>
+          <p class="small">{aiBusy ? t("ai.reading") : progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}</p>
           <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
         </div>
       {:else}
@@ -262,6 +307,12 @@
             {#each CONTENT_LANGS as l (l)}<option value={l}>{t(`lang.${l}`)}</option>{/each}
           </select>
         </div>
+        {#if accountsEnabled}
+          <div class="ai">
+            <Switch checked={useAI && !!account.user} disabled={!account.user || !!progress} label={t("ai.label")} help={account.user ? t("ai.help") : undefined} onchange={setAI} />
+            {#if !account.user}<p class="small muted">{t("ai.needAccount")} <a href={href.account()}>{t("ai.signInLink")}</a></p>{/if}
+          </div>
+        {/if}
       {:else}
         <fieldset class="fieldset-wrap">
           <legend>{t("photo.langs")}</legend>
@@ -285,7 +336,7 @@
       {#if progress}
         <div class="progress" role="status">
           <p class="small">
-            {progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}
+            {aiBusy ? t("ai.reading") : progress.status === "reading" ? t("photo.reading", { p: Math.round(progress.progress * 100) }) : t("photo.loading", { p: Math.round(progress.progress * 100) })}
           </p>
           <div class="bar" aria-hidden="true"><span style:width="{Math.round(progress.progress * 100)}%"></span></div>
         </div>
@@ -319,6 +370,13 @@
   }
   .picks {
     flex-wrap: wrap;
+  }
+  .ai {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--r-md);
+    background: var(--surface-2);
   }
 
   .desk-hint {
