@@ -500,6 +500,7 @@ export const nl = {
   "quiz.questionsCount": p("{n} vraag", "{n} vragen"),
   "quiz.lastGrade": "Laatste cijfer {grade}",
   "quiz.start": "Start quiz",
+  "quiz.editQuestions": "Vragen bewerken",
   "quiz.edit": "Quiz bewerken",
   "quiz.deleteConfirm": "\"{name}\" verwijderen? Dit kun je niet ongedaan maken.",
   "quiz.deleted": "Quiz verwijderd.",

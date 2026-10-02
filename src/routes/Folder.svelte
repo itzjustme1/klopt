@@ -4,6 +4,7 @@
   import ConfirmInline from "../components/ConfirmInline.svelte";
   import Icon from "../components/Icon.svelte";
   import ListCard from "../components/ListCard.svelte";
+  import QuizRow from "../components/QuizRow.svelte";
   import PageHead from "../components/PageHead.svelte";
   import Sheet from "../components/Sheet.svelte";
   import SharePanel from "../components/SharePanel.svelte";
@@ -68,12 +69,7 @@
       <h2 class="sr">{t("quiz.title")}</h2>
       <ul class="rows">
         {#each folder.quizzes as quiz (quiz.id)}
-          <li>
-            <a class="row-item" href={href.quiz(quiz.id)}>
-              <Icon name="quiz" size={22} />
-              <span class="row-main"><span class="row-title">{quiz.name}</span><span class="row-sub">{tp("quiz.questionsCount", quiz.questions.length)}</span></span>
-            </a>
-          </li>
+          <li><QuizRow {quiz} /></li>
         {/each}
       </ul>
     {/if}

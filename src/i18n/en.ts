@@ -499,6 +499,7 @@ export const en: Messages = {
   "quiz.questionsCount": p("{n} question", "{n} questions"),
   "quiz.lastGrade": "Last grade {grade}",
   "quiz.start": "Start quiz",
+  "quiz.editQuestions": "Edit questions",
   "quiz.edit": "Edit quiz",
   "quiz.deleteConfirm": "Delete \"{name}\"? This cannot be undone.",
   "quiz.deleted": "Quiz deleted.",

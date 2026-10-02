@@ -81,3 +81,22 @@ test("make a practice test from a list and take it", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Je cijfer" })).toBeVisible();
   await check();
 });
+
+test("rename and delete a quiz from its ⋯ menu", async ({ page }) => {
+  const check = await guard(page);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Probeer met voorbeeldlijsten" }).click();
+  await page.locator(".hero-num").waitFor();
+  await page.goto("/#/quizzen");
+  await page.getByRole("button", { name: "Opties voor WO2: oefentoets" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Naam wijzigen" }).click();
+  await page.getByLabel("Nieuwe naam").fill("WO2 toets");
+  await page.getByRole("button", { name: "Opslaan" }).click();
+  await expect(page.getByRole("link", { name: /WO2 toets/ })).toBeVisible();
+  await page.getByRole("button", { name: "Opties voor WO2 toets" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Verwijderen" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Ja, verwijderen" }).click();
+  await expect(page.locator(".toast")).toHaveText("Quiz verwijderd.");
+  await expect(page.getByRole("link", { name: /WO2 toets/ })).toHaveCount(0);
+  await check();
+});
