@@ -1,10 +1,12 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { t } from "../i18n/index.svelte";
+  import { t, tp } from "../i18n/index.svelte";
   import CreationTabs from "../components/CreationTabs.svelte";
   import Icon from "../components/Icon.svelte";
   import ListCard from "../components/ListCard.svelte";
   import PageHead from "../components/PageHead.svelte";
+  import PracticeSheet from "../components/PracticeSheet.svelte";
+  import { decksScope } from "../lib/scope";
   import SubjectBadge from "../components/SubjectBadge.svelte";
   import { app } from "../lib/app.svelte";
   import { normalize } from "../lib/answer";
@@ -15,6 +17,17 @@
   let query = $state("");
   let subject = $state<string>(untrack(() => initialSubject ?? ""));
   let sort = $state<"recent" | "name" | "new">("recent");
+  // Picking several lists to practise together (chapters 1 to 3 before a test).
+  let selecting = $state(false);
+  let picked = $state<string[]>([]);
+  let practising = $state(false);
+  function togglePick(id: string) {
+    picked = picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id];
+  }
+  function stopSelecting() {
+    selecting = false;
+    picked = [];
+  }
 
   const other = $derived(t("lists.noSubject"));
   const subjectOf = (d: { subject?: string }) => d.subject?.trim() || other;
@@ -57,6 +70,11 @@
       </fieldset>
     {/if}
     <div class="sort">
+      {#if app.decks.length > 1}
+        <button type="button" class="btn btn-quiet select-btn" aria-pressed={selecting} onclick={() => (selecting ? stopSelecting() : (selecting = true))}>
+          <Icon name={selecting ? "check" : "rows"} size={18} />{selecting ? t("multi.cancel") : t("multi.select")}
+        </button>
+      {/if}
       <label class="small muted" for="list-sort">{t("lists.sort")}</label>
       <select id="list-sort" bind:value={sort}>
         <option value="recent">{t("lists.sortRecent")}</option>
@@ -68,16 +86,70 @@
     {#if shown.length === 0}
       <p class="muted" role="status">{t("lists.noResults", { q: query })}</p>
     {:else}
-      <ul class="rows">
-        {#each shown as deck (deck.id)}
-          <li><ListCard {deck} /></li>
-        {/each}
-      </ul>
+      {#if selecting}
+        <p class="small muted">{t("multi.pick")}</p>
+        <ul class="rows">
+          {#each shown as deck (deck.id)}
+            <li>
+              <label class="row-item pick" class:on={picked.includes(deck.id)}>
+                <input type="checkbox" checked={picked.includes(deck.id)} onchange={() => togglePick(deck.id)} />
+                <SubjectBadge subject={deck.subject} lang={deck.langFront} />
+                <span class="row-main">
+                  <span class="row-title">{deck.name}</span>
+                  <span class="row-sub">{tp(deck.kind === "terms" ? "common.termsCount" : "common.wordsCount", app.cardsIn(deck.id).length)}</span>
+                </span>
+              </label>
+            </li>
+          {/each}
+        </ul>
+        {#if picked.length}
+          <div class="pick-bar">
+            <button type="button" class="btn btn-primary btn-lg" aria-haspopup="dialog" onclick={() => (practising = true)}><Icon name="play" size={20} />{tp("multi.practise", picked.length)}</button>
+          </div>
+        {/if}
+      {:else}
+        <ul class="rows">
+          {#each shown as deck (deck.id)}
+            <li><ListCard {deck} /></li>
+          {/each}
+        </ul>
+      {/if}
     {/if}
   {/if}
 </section>
 
+{#if practising && picked.length}
+  <PracticeSheet scope={decksScope(picked)} title={t("deck.practiceWith")} onclose={() => (practising = false)} />
+{/if}
+
 <style>
+  .select-btn {
+    margin-right: auto;
+  }
+  .pick {
+    cursor: pointer;
+  }
+  .pick input {
+    width: 22px;
+    height: 22px;
+    flex: none;
+    accent-color: var(--green);
+  }
+  .pick.on {
+    background: var(--surface-2);
+  }
+  .pick-bar {
+    position: sticky;
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: center;
+    padding: 0.75rem 0;
+  }
+  @media (min-width: 720px) {
+    .pick-bar {
+      bottom: 1rem;
+    }
+  }
   .lists {
     display: grid;
     gap: 0.75rem;

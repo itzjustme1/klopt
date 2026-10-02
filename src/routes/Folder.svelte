@@ -6,6 +6,8 @@
   import ListCard from "../components/ListCard.svelte";
   import QuizRow from "../components/QuizRow.svelte";
   import PageHead from "../components/PageHead.svelte";
+  import PracticeSheet from "../components/PracticeSheet.svelte";
+  import { folderScope } from "../lib/scope";
   import Sheet from "../components/Sheet.svelte";
   import SharePanel from "../components/SharePanel.svelte";
   import { folderShareJson } from "../lib/share";
@@ -20,6 +22,8 @@
   let dissolving = $state(false);
   let newName = $state("");
   let sharing = $state(false);
+  let practising = $state(false);
+  const cardCount = $derived(folder ? folder.decks.reduce((n, d) => n + app.cardsIn(d.id).length, 0) : 0);
 
   async function rename(e: SubmitEvent) {
     e.preventDefault();
@@ -57,6 +61,10 @@
 
     {#if dissolving}
       <ConfirmInline message={t("folder.dissolveConfirm", { name })} confirmLabel={t("folder.dissolveYes")} onconfirm={dissolve} oncancel={() => (dissolving = false)} />
+    {/if}
+
+    {#if cardCount > 0}
+      <button type="button" class="btn btn-primary btn-lg practise" aria-haspopup="dialog" onclick={() => (practising = true)}><Icon name="play" size={20} />{t("multi.practiseFolder")}</button>
     {/if}
 
     {#if folder.decks.length}
@@ -97,7 +105,15 @@
   {/if}
 {/if}
 
+{#if practising && folder}
+  <PracticeSheet scope={folderScope(name)} title={t("deck.practiceWith")} onclose={() => (practising = false)} />
+{/if}
+
 <style>
+  .practise {
+    justify-self: center;
+    min-width: 15rem;
+  }
   .folder {
     display: grid;
     gap: 0.75rem;

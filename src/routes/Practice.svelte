@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { scopeExit } from "../lib/scopeExit";
   import { tick, untrack } from "svelte";
   import { t, tp } from "../i18n/index.svelte";
   import AccentBar from "../components/AccentBar.svelte";
@@ -9,7 +10,7 @@
   import { app } from "../lib/app.svelte";
   import { Practice, type Direction, type PracticeCard, type PracticeSnapshot } from "../lib/practice";
   import { clearSession, loadSession, saveSession } from "../lib/resume";
-  import { href, type Count, type Which } from "../lib/router";
+  import type { Count, Which } from "../lib/router";
   import { playRight, playWrong } from "../lib/sounds";
   import { canSpeak, loadVoices, speak, stopSpeaking } from "../lib/speech";
   import type { ContentLang, Grade, Mode } from "../lib/types";
@@ -34,8 +35,8 @@
   let optionsEl: HTMLElement | undefined = $state();
   let tilesEl: HTMLElement | undefined = $state();
 
-  const exitHref = $derived(scope === "alles" ? href.today() : href.deck(scope));
-  const exitLabel = $derived(scope === "alles" ? t("practice.backHome") : t("practice.backToList"));
+  const exitHref = $derived(scopeExit(scope).href);
+  const exitLabel = $derived(scopeExit(scope).label);
   const q = $derived.by(() => {
     void version;
     return engine?.current ?? null;

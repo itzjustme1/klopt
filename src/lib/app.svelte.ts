@@ -5,6 +5,7 @@ import { localDay } from "./dates";
 import { Store, defaultSettings, detectLang, newId, type DeckInput, type NewCard, type Snapshot } from "./db";
 import { downloadText } from "./files";
 import { setPendingImport, sharedTextFromUrl } from "./handoff";
+import { parseScope } from "./scope";
 import { difficulty, isHard, streakInfo, weekDays, type Difficulty, type StreakInfo } from "./history";
 import { requestPersist } from "./persist";
 import type { PracticeCard } from "./practice";
@@ -194,8 +195,20 @@ class App {
    * Cards for a practice session, with the languages of their list. With a count, the words that need
    * practice most are picked first: often wrong, sometimes wrong, never practised, then the rest.
    */
+  /** The lists a practice scope covers; null for every list. */
+  scopeDecks(scope: string): Deck[] | null {
+    const s = parseScope(scope);
+    if (s.kind === "all") return null;
+    if (s.kind === "folder") return this.decks.filter((d) => d.folder === s.name);
+    if (s.kind === "decks") return s.ids.flatMap((id) => this.decks.filter((d) => d.id === id));
+    return this.decks.filter((d) => d.id === s.id);
+  }
+
   practiceCards(scope: string, which: Which, count: Count = "all"): PracticeCard[] {
-    const pool = scope === "alles" ? this.cards : this.cardsIn(scope);
+    const decks = this.scopeDecks(scope);
+    const single = parseScope(scope).kind === "deck";
+    // Several lists: list by list, each in its own order.
+    const pool = decks === null ? this.cards : single ? this.cardsIn(scope) : decks.flatMap((d) => this.sortedCards(d.id));
     let chosen: Card[];
     if (which === "due") chosen = buildSession(pool, this.today);
     else if (which === "hard") chosen = pool.filter((c) => isHard(c.hist));
@@ -204,7 +217,7 @@ class App {
       const ids = new Set(getSelection(scope));
       chosen = ids.size ? this.sortedCards(scope).filter((c) => ids.has(c.id)) : this.sortedCards(scope);
     }
-    else chosen = scope === "alles" ? pool : this.sortedCards(scope);
+    else chosen = single ? this.sortedCards(scope) : pool;
     if (count !== "all" && which !== "due" && chosen.length > count) chosen = pickForPractice(chosen, count);
     const langs = new Map(this.decks.map((d) => [d.id, d]));
     return chosen.flatMap((c) => {

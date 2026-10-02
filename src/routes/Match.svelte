@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { scopeExit } from "../lib/scopeExit";
   import { untrack } from "svelte";
   import { getLang, t, tp } from "../i18n/index.svelte";
   import Icon from "../components/Icon.svelte";
   import { app } from "../lib/app.svelte";
   import { MatchGame } from "../lib/match";
-  import { href, type Count, type Which } from "../lib/router";
+  import type { Count, Which } from "../lib/router";
   import { playRight, playWrong } from "../lib/sounds";
 
   let { scope, which, count = "all" }: { scope: string; which: Which; count?: Count } = $props();
@@ -21,8 +22,8 @@
   let timer: ReturnType<typeof setInterval> | undefined;
   let heading: HTMLElement | undefined = $state();
 
-  const exitHref = $derived(scope === "alles" ? href.today() : href.deck(scope));
-  const exitLabel = $derived(scope === "alles" ? t("practice.backHome") : t("practice.backToList"));
+  const exitHref = $derived(scopeExit(scope).href);
+  const exitLabel = $derived(scopeExit(scope).label);
   const recordKey = $derived(`klopt-match-best-${scope}`);
   const view = $derived.by(() => {
     void version;
