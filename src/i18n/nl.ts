@@ -394,6 +394,7 @@ export const nl = {
   "photo.explanation": "Uitleg",
   "photo.editTerm": "{term} bewerken",
   "photo.editDone": "Klaar",
+  "photo.addTerm": "Begrip toevoegen",
   "photo.title": "Foto van je boek",
   "photo.intro": "Recht van boven, met goed licht. Alles gebeurt op je telefoon.",
   "photo.langs": "Talen op de foto",

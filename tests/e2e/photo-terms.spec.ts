@@ -66,16 +66,25 @@ test("a photo of a textbook page: its bold and italic words become a term list",
   await page.getByRole("button", { name: "Klaar" }).click();
   await expect(page.locator(".term", { hasText: "Blitzkrieg" })).toContainText("Een snelle aanval met tanks en vliegtuigen tegelijk.");
 
+  // A term the photo missed can be typed in; it only counts once both sides are filled.
+  await page.getByRole("button", { name: "Begrip toevoegen" }).click();
+  await expect(page.getByLabel("Begrip", { exact: true })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Lijst maken met 6 begrippen" })).toBeVisible();
+  await page.getByLabel("Begrip", { exact: true }).fill("D-Day");
+  await page.getByLabel("Uitleg").fill("De landing in Normandië op 6 juni 1944.");
+  await page.getByRole("button", { name: "Klaar" }).click();
+  await expect(page.getByRole("button", { name: "Lijst maken met 7 begrippen" })).toBeVisible();
+
   // A second page adds its terms; untick one.
   await page.locator('input[type="file"]').setInputFiles({ name: "bladzijde2.jpg", mimeType: "image/jpeg", buffer: economics });
-  await expect(page.getByRole("heading", { name: "10 begrippen gevonden" })).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByRole("heading", { name: "11 begrippen gevonden" })).toBeVisible({ timeout: 120_000 });
   for (const term of ECONOMICS_TERMS) await expect(page.locator(".t-front", { hasText: new RegExp(`^${term}$`) })).toBeVisible();
   await page.locator(".term", { hasText: "marktwerking" }).getByRole("checkbox").uncheck();
   await page.getByLabel("Vak", { exact: true }).fill("Geschiedenis");
-  await page.getByRole("button", { name: "Lijst maken met 9 begrippen" }).click();
+  await page.getByRole("button", { name: "Lijst maken met 10 begrippen" }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Nederland in de oorlog" })).toBeVisible();
-  await expect(page.getByText("Geschiedenis · 9 begrippen")).toBeVisible();
+  await expect(page.getByText("Geschiedenis · 10 begrippen")).toBeVisible();
   await expect(page.getByText("Februaristaking", { exact: true })).toBeVisible();
   await expect(page.getByText("Een snelle aanval met tanks en vliegtuigen tegelijk.", { exact: true })).toBeVisible();
   await check();

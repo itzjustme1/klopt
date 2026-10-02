@@ -37,6 +37,10 @@
   let selected = $state<number | null>(null);
 
   const named = $derived(boxes.filter((b) => b.text.trim()));
+  // Free the picture's memory when leaving the screen.
+  $effect(() => () => {
+    if (imgUrl) URL.revokeObjectURL(imgUrl);
+  });
 
   async function choose(f: File | undefined) {
     error = "";

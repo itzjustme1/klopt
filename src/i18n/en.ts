@@ -393,6 +393,7 @@ export const en: Messages = {
   "photo.explanation": "Explanation",
   "photo.editTerm": "Edit {term}",
   "photo.editDone": "Done",
+  "photo.addTerm": "Add a term",
   "photo.title": "Photo of your book",
   "photo.intro": "Straight from above, in good light. Everything happens on your phone.",
   "photo.langs": "Languages in the photo",

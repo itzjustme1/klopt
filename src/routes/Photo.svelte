@@ -32,7 +32,8 @@
   let name = $state("");
   let subject = $state("");
   let saving = $state(false);
-  const kept = $derived(found.filter((f) => f.keep));
+  // Only complete terms count: a term typed in by hand needs both sides.
+  const kept = $derived(found.filter((f) => f.keep && f.term.trim() && f.explanation.trim()));
 
   /** Rough download size in MB: engine plus the language data. */
   const LANG_MB: Record<string, number> = { nld: 3, eng: 3, fra: 0.7, deu: 1.3, spa: 2.1, ita: 1.7, lat: 1.7 };
@@ -131,6 +132,15 @@
     void handle(file);
   }
 
+  /** A term the photo missed, typed in by hand. */
+  async function addTerm() {
+    const id = nextId++;
+    found = [...found, { id, term: "", explanation: "", keep: true }];
+    editing = id;
+    await tick();
+    document.getElementById(`ph-term-${id}`)?.focus();
+  }
+
   async function edit(id: number) {
     editing = id;
     await tick();
@@ -182,6 +192,7 @@
           </li>
         {/each}
       </ul>
+      <button type="button" class="btn btn-quiet add-term" onclick={addTerm}><Icon name="plus" size={18} />{t("photo.addTerm")}</button>
       {#if !deck}
         <div class="meta">
           <div class="field">
@@ -359,6 +370,9 @@
     padding: 1rem;
   }
   .done {
+    justify-self: start;
+  }
+  .add-term {
     justify-self: start;
   }
   .term {

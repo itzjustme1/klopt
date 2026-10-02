@@ -112,7 +112,8 @@
 
   /** Laptop shortcuts, outside practice: N new, / search, [ fold the sidebar, ? this list. */
   function onGlobalKey(e: KeyboardEvent) {
-    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || focusMode || newOpen || keysOpen) return;
+    // Not while practising or editing: a stray N must never take you away from a half-made list.
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || hideNav || newOpen || keysOpen) return;
     const el = e.target as HTMLElement | null;
     if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
     if (document.querySelector("[role=dialog]")) return;
