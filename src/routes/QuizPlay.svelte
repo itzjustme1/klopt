@@ -253,7 +253,14 @@
             <button type="submit" hidden aria-hidden="true" tabindex="-1"></button>
           </form>
         {:else}
-          <p class="prompt" class:long={q.prompt.length > 80}>{q.prompt}</p>
+          {@const [first, ...rest] = q.prompt.split("\n")}
+          {#if rest.join("").trim()}
+            <!-- A question with a source text under it ("Welk begrip past bij deze uitleg?"). -->
+            <p class="prompt">{first}</p>
+            <blockquote class="context">{rest.join("\n").trim()}</blockquote>
+          {:else}
+            <p class="prompt" class:long={q.prompt.length > 80}>{q.prompt}</p>
+          {/if}
         {/if}
 
         {#if q.type === "mc"}
@@ -388,6 +395,17 @@
     line-height: 1.3;
     overflow-wrap: anywhere;
     white-space: pre-wrap;
+  }
+  .context {
+    margin: 0;
+    padding: 0.875rem 1rem;
+    border-left: 4px solid var(--accent);
+    border-radius: var(--r-xs);
+    background: var(--surface-2);
+    font-size: var(--fs-lead);
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
   .prompt.long {
     font-size: var(--fs-lead);
