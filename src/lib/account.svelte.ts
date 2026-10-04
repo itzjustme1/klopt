@@ -312,23 +312,6 @@ class Account {
 
   // Groups
 
-  // Slim herkennen (AI)
-
-  /**
-   * Has a page photo read by Claude, through the Edge Function recognize-terms. Throws "signin",
-   * "limit" (the daily number of pages is used up) or "failed".
-   */
-  async readPageWithAI(image: string, lang: string): Promise<unknown> {
-    if (!this.user) throw new Error("signin");
-    const c = await sb();
-    const { data, error } = await c.functions.invoke("recognize-terms", { body: { image, lang } });
-    if (error) {
-      const status = (error as { context?: { status?: number } }).context?.status;
-      throw new Error(status === 429 ? "limit" : status === 401 ? "signin" : "failed");
-    }
-    return data;
-  }
-
   // Weekly ranking (opt-in)
 
   /** Whether this account takes part in group rankings: it does once it has a weekly row. */

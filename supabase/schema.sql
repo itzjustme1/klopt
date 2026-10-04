@@ -182,25 +182,3 @@ drop policy if exists "weekly: stop taking part" on public.weekly_stats;
 create policy "weekly: stop taking part" on public.weekly_stats for delete to authenticated using (user_id = auth.uid());
 revoke all on function public.shares_a_group(uuid) from public, anon;
 grant execute on function public.shares_a_group(uuid) to authenticated;
-
--- "Slim herkennen" (a photo read by AI through the Edge Function recognize-terms): pages per account
--- per day, so one account cannot run up the bill. Only the Edge Function (service role) touches it.
-create table if not exists public.ai_usage (
-  user_id uuid not null references auth.users on delete cascade,
-  day date not null default current_date,
-  pages integer not null default 0,
-  primary key (user_id, day)
-);
-alter table public.ai_usage enable row level security;
--- Counts one page; false when the account already used its pages for today.
-create or replace function public.use_ai(uid uuid, max_per_day integer) returns boolean language plpgsql security definer set search_path = public as $$
-declare
-  n integer;
-begin
-  insert into public.ai_usage (user_id, day, pages) values (uid, current_date, 1)
-  on conflict (user_id, day) do update set pages = ai_usage.pages + 1 where ai_usage.pages < max_per_day
-  returning pages into n;
-  return n is not null;
-end $$;
-revoke all on function public.use_ai(uuid, integer) from public, anon, authenticated;
-grant execute on function public.use_ai(uuid, integer) to service_role;

@@ -189,17 +189,6 @@ How sync works (`src/lib/sync.ts`):
 - Answers are append-only, so both sides keep the union, and each card's box and due date are replayed from the combined answers.
 - Everything that comes down goes through the same strict validation as a backup file before it is used.
 
-## Slim herkennen (AI) switching on
-
-Optional, needs accounts. A page photo is read by Claude (Haiku 4.5) through the Supabase Edge Function `supabase/functions/recognize-terms`; the Anthropic API key lives only there, as a secret, never in the app.
-
-1. At console.anthropic.com make an API key, add some credit and set a monthly spend limit.
-2. Run `supabase/schema.sql` again (it adds the `ai_usage` table and `use_ai`, the per-account daily limit).
-3. In Supabase, *Edge Functions → Deploy a new function → Via editor*, name it `recognize-terms` and paste `supabase/functions/recognize-terms/index.ts` (or `supabase functions deploy recognize-terms` with the CLI).
-4. *Edge Functions → Secrets*: add `ANTHROPIC_API_KEY`. Optionally `AI_DAILY_LIMIT` (pages per account per day, default 30).
-
-Cost: a page is about 1,600 input and a few hundred output tokens, roughly half a cent with Haiku 4.5. The function only serves signed-in accounts, checks the image, counts pages per day in the database, asks for a fixed JSON shape (structured outputs), and the app validates the answer again (`src/lib/aiTerms.ts`) before showing it. Students switch it on per device under *Foto van je boek → Tekst met begrippen*; the free on-device reading stays the default.
-
 ## Project layout
 
 ```
@@ -281,7 +270,6 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Continuing a session** after a reload.
 - **Text shared from another app.**
 - **Photo:** a real image goes through the on-device OCR.
-- **Slim herkennen:** the Edge Function runs against stand-in Supabase and Claude servers (sign-in required, bad images refused, daily limit, model, image block and JSON format checked); in the app, a signed-in student reads a page with AI, gets the terms with their explanation blanked, and hits the daily limit on the third page.
 - **Photo of a textbook page:** two rendered pages (a serif history page and a sans-serif economics page), turned into phone-like photos (tilted, blurred, uneven light, JPEG), give exactly their bold and italic terms; a photo too blurry to tell bold from regular says so instead of guessing.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link** (a list; a quiz and a folder opened in a second, empty browser), **and the backup reminder.**

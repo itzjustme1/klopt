@@ -17,7 +17,7 @@ const noHtmlSinks = {
 };
 
 export default ts.config(
-  { ignores: ["dist", "dev-dist", "node_modules", "test-results", "playwright-report", "public/ocr", "supabase/functions"] },
+  { ignores: ["dist", "dev-dist", "node_modules", "test-results", "playwright-report", "public/ocr"] },
   js.configs.recommended,
   ...ts.configs.recommended,
   ...svelte.configs.recommended,
