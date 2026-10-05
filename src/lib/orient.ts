@@ -6,7 +6,19 @@
  * the ink histogram has sharp peaks (the lines) and gaps (the spaces between them); at a wrong angle
  * it smears out. The angle with the sharpest histogram is the angle of the lines. Pure, testable.
  */
-import type { Gray } from "./emphasis";
+export interface Gray {
+  width: number;
+  height: number;
+  /** One byte per pixel, 0 = black. */
+  data: Uint8Array;
+}
+
+/** Converts RGBA pixels (canvas ImageData) to grey. */
+export function toGray(rgba: Uint8ClampedArray, width: number, height: number): Gray {
+  const data = new Uint8Array(width * height);
+  for (let i = 0, j = 0; j < data.length; i += 4, j++) data[j] = (rgba[i]! * 77 + rgba[i + 1]! * 150 + rgba[i + 2]! * 29) >> 8;
+  return { width, height, data };
+}
 
 /** Otsu's threshold for the whole picture. */
 function threshold(g: Gray): number {

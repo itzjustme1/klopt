@@ -46,9 +46,7 @@ npm run e2e
 **Five ways to fill a list**
 - **Type it yourself:** a table editor. Enter moves to the next cell, there are accent keys, and you can paste several lines into one cell.
 - **Laptop:** take a photo with the *Camera* button (the webcam, or an iPhone through Continuity Camera, at the camera's full resolution where the browser allows), drag a photo onto *Foto van je boek* or paste one (⌘V / Ctrl+V). Shortcuts: N new, / search, [ fold the sidebar, ? all shortcuts.
-- **Photo of your book:** the text is recognised on the device. Two kinds:
-  - a word list (two columns) becomes rows to check in the paste screen;
-  - a page of running text (history, economics, biology…) becomes a term list: every **bold** or *italic* word or phrase is a term, explained by the sentence it stands in (with the term blanked as "…"). "Dat noemen we …" takes the sentences before it; a short sentence takes the next one; "Term: explanation" glossary lines and margin boxes are read as such; the page heading names the list. You tick off what is not a term and can add more pages before saving.
+- **Photo of your book:** a word list (two columns) is recognised on the device and becomes rows to check in the paste screen. A photo that arrives on its side or a few degrees tilted (WhatsApp drops the rotation) is put straight first; a page of running text is recognised as such and the app says photos are for word lists.
 - **Labelled picture** (*Plaatje met namen*, for biology, geography…): pick a diagram or map; the names on it are found on the device and covered. Remove boxes, draw new ones by dragging, rename them. Each name becomes a card whose question is the picture with all names covered and the one asked marked "?".
 - **Paste:** from Quizlet, Excel or Google Sheets (tab or semicolon separated, spreadsheet quotes handled), or from your own notes: "term: explanation", "word = translation" and "term - explanation" lines, with bullets and numbers dropped and explanations that run on to the next line kept together.
 - **Shared file:** open a list someone else shared.
@@ -149,9 +147,7 @@ le chien;de hond
 2. Pick the date.
 3. The list page and the home screen then show how many words to practise today, with a button that starts Leren with the words you need most.
 
-**Real photos.** Before reading, a photo is put straight: the angle of the text lines is measured (`src/lib/orient.ts`), so a photo that arrives on its side (WhatsApp drops the rotation) or a few degrees tilted is turned upright, and a quick test read of a strip decides which way up. Small photos are enlarged up to twice. Columns that the recogniser reads as one line are separated again from the word positions (gaps and gutters), so sentences stay whole. On a noisy photo bold is ignored (it cannot be told from noise) and italic needs a clear slant or an italic neighbour; capitals that open a paragraph ("STOOMMACHINES …") count as a term. Words the recogniser was unsure of never become a term, and explanations full of misreadings are dropped.
-
-**Bold and italic, measured.** The recogniser (Tesseract's LSTM engine) does not report font styles, so `src/lib/emphasis.ts` measures them in the photo, per word: the stroke width (median width of the horizontal ink runs, with sub-pixel edges) compared with the other words on the same line, and the slant (the shear that makes the strokes most upright) compared with the page. When more than 15% of the words seem to stand out, the photo is called unclear.
+**Straightening photos.** Before reading, the angle of the text lines is measured (`src/lib/orient.ts`), so a photo on its side or slightly tilted is turned upright, and a quick test read of a strip decides which way up. Small photos are enlarged up to twice.
 
 **Photograph a list.**
 1. Go to *Nieuwe lijst → Foto van je boek* and pick the two languages.
@@ -270,7 +266,6 @@ The unit suite was also run 30 times in a row to rule out flaky tests.
 - **Continuing a session** after a reload.
 - **Text shared from another app.**
 - **Photo:** a real image goes through the on-device OCR.
-- **Photo of a textbook page:** two rendered pages (a serif history page and a sans-serif economics page), turned into phone-like photos (tilted, blurred, uneven light, JPEG), give exactly their bold and italic terms; a photo too blurry to tell bold from regular says so instead of guessing.
 - **Import and backup:** paste, back up, wipe, restore, merge.
 - **Sharing by link** (a list; a quiz and a folder opened in a second, empty browser), **and the backup reminder.**
 - **A term list** made from the Nieuw menu and learnt with flashcards.

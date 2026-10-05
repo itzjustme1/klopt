@@ -3,8 +3,7 @@
  * Everything is served from this app's own origin (/ocr/); nothing is sent anywhere.
  * Loaded lazily: the engine is only downloaded the first time a student uses it.
  */
-import { cardsFromWords, relayout, styleWords, toGray, type PageWord, type TermCard } from "./emphasis";
-import { lineAngle, uprightCandidates } from "./orient";
+import { lineAngle, toGray, uprightCandidates } from "./orient";
 import { groupLabels, type LabelBox, type OcrLabelWord } from "./occlusion";
 import { rowsFromWords, type OcrWord } from "./ocrRows";
 import type { PSM } from "tesseract.js";
@@ -138,43 +137,6 @@ export async function recognizeList(file: Blob, langs: readonly ContentLang[], o
       for (const p of block.paragraphs) for (const l of p.lines) for (const w of l.words) words.push({ text: w.text, confidence: w.confidence, ...w.bbox });
     }
     return rowsFromWords(words);
-  } finally {
-    await w.terminate();
-  }
-}
-
-/**
- * A photo of a textbook page: its bold and italic words become terms, explained by the sentence
- * they stand in. Also returns the page's heading, as a name for the list.
- */
-export async function recognizeTerms(file: Blob, lang: ContentLang, onProgress: (p: OcrProgress) => void): Promise<{ cards: TermCard[]; title: string; words: number; unclear: boolean }> {
-  const w = await worker([lang], onProgress);
-  try {
-    // More pixels than for a word list: telling bold from regular needs the detail.
-    // Phones have less memory and slower processors: a little smaller there, so it never stalls.
-    const phone = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches && navigator.maxTouchPoints > 1;
-    const canvas = await uprightPage(file, w, phone ? 2400 : 3000);
-    const { data } = await w.recognize(canvas, {}, { blocks: true });
-    const words: PageWord[] = [];
-    let para = 0;
-    let line = 0;
-    for (const block of (data.blocks ?? []) as TessBlock[]) {
-      for (const p of block.paragraphs) {
-        para++;
-        for (const l of p.lines) {
-          line++;
-          for (const x of l.words) if (x.text.trim()) words.push({ text: x.text, confidence: x.confidence, para, line, ...x.bbox });
-        }
-      }
-    }
-    const ctx = canvas.getContext("2d")!;
-    const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const styled = styleWords(toGray(img.data, canvas.width, canvas.height), relayout(words));
-    const res = cardsFromWords(styled);
-    // A blurry photo where nothing could be found: say so, with tips, rather than "no terms".
-    const unclear = res.unclear || (!!styled.blurry && res.cards.length === 0);
-    const { cards, title } = res;
-    return { cards, title, unclear, words: words.length };
   } finally {
     await w.terminate();
   }

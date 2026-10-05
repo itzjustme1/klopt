@@ -70,8 +70,8 @@ for (const scheme of ["light", "dark"] as const) {
     await page.getByRole("heading", { level: 1, name: "Plaatje met namen" }).waitFor();
     await check("labelled picture");
     await page.goto(base + "#/foto");
-    await page.getByText("Tekst met begrippen").click();
-    await check("photo: terms");
+    await page.getByRole("heading", { level: 1, name: "Foto van je boek" }).waitFor();
+    await check("photo");
     await page.goto(base + "#/lijsten");
     await page.getByRole("button", { name: "Selecteren" }).click();
     await page.getByRole("checkbox").first().check();
